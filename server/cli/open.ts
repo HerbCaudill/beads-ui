@@ -2,13 +2,25 @@ import { spawn } from "node:child_process"
 import http from "node:http"
 
 /**
- * Compute a platform-specific command to open a URL in the default browser.
- *
- * @param {string} url
- * @param {string} platform
- * @returns {{ cmd: string, args: string[] }}
+ * Command configuration for opening URLs.
  */
-export function computeOpenCommand(url, platform) {
+interface OpenCommand {
+  cmd: string
+  args: string[]
+}
+
+/**
+ * Workspace registration payload.
+ */
+interface WorkspacePayload {
+  path: string
+  database: string
+}
+
+/**
+ * Compute a platform-specific command to open a URL in the default browser.
+ */
+export function computeOpenCommand(url: string, platform: string): OpenCommand {
   if (platform === "darwin") {
     return { cmd: "open", args: [url] }
   }
@@ -22,11 +34,8 @@ export function computeOpenCommand(url, platform) {
 
 /**
  * Open the given URL in the default browser. Best-effort; resolves true on spawn success.
- *
- * @param {string} url
- * @returns {Promise<boolean>}
  */
-export async function openUrl(url) {
+export async function openUrl(url: string): Promise<boolean> {
   const { cmd, args } = computeOpenCommand(url, process.platform)
   try {
     const child = spawn(cmd, args, {
@@ -43,16 +52,12 @@ export async function openUrl(url) {
 /**
  * Wait until the server at the URL accepts a connection, with a brief retry.
  * Does not throw; returns when either a connection was accepted or timeout elapsed.
- *
- * @param {string} url
- * @param {number} total_timeout_ms
- * @returns {Promise<void>}
  */
-export async function waitForServer(url, total_timeout_ms = 600) {
+export async function waitForServer(url: string, total_timeout_ms: number = 600): Promise<void> {
   const deadline = Date.now() + total_timeout_ms
 
   // Attempt one GET; if it fails, wait and try once more within the deadline
-  const tryOnce = () =>
+  const tryOnce = (): Promise<void> =>
     new Promise(resolve => {
       let done = false
       const req = http.get(url, res => {
@@ -90,23 +95,18 @@ export async function waitForServer(url, total_timeout_ms = 600) {
   }
 }
 
-/**
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
  * Register a workspace with the running server.
  * Makes a POST request to /api/register-workspace.
- *
- * @param {string} base_url - Server base URL (e.g., "http://127.0.0.1:3000")
- * @param {{ path: string, database: string }} workspace
- * @returns {Promise<boolean>} True if registration succeeded
  */
-export async function registerWorkspaceWithServer(base_url, workspace) {
+export async function registerWorkspaceWithServer(
+  base_url: string,
+  workspace: WorkspacePayload,
+): Promise<boolean> {
   return new Promise(resolve => {
     const url = new URL("/api/register-workspace", base_url)
     const body = JSON.stringify(workspace)

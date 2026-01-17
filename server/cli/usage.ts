@@ -1,9 +1,14 @@
 /**
- * Print CLI usage to a stream-like target.
- *
- * @param {{ write: (chunk: string) => any }} out_stream
+ * Output stream interface for printing usage.
  */
-export function printUsage(out_stream) {
+interface OutputStream {
+  write: (chunk: string) => void
+}
+
+/**
+ * Print CLI usage to a stream-like target.
+ */
+export function printUsage(out_stream: OutputStream): void {
   const lines = [
     "Usage: bdui <command> [options]",
     "",

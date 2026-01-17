@@ -3,18 +3,29 @@ import { handleRestart, handleStart, handleStop } from "./commands.js"
 import { printUsage } from "./usage.js"
 
 /**
- * Parse argv into a command token, flags, and options.
- *
- * @param {string[]} args
- * @returns {{ command: string | null, flags: string[], options: { host?: string, port?: number } }}
+ * Parsed command-line options.
  */
-export function parseArgs(args) {
-  /** @type {string[]} */
-  const flags = []
-  /** @type {string | null} */
-  let command = null
-  /** @type {{ host?: string, port?: number }} */
-  const options = {}
+interface ParsedOptions {
+  host?: string | undefined
+  port?: number | undefined
+}
+
+/**
+ * Result of parsing command-line arguments.
+ */
+interface ParsedArgs {
+  command: string | null
+  flags: string[]
+  options: ParsedOptions
+}
+
+/**
+ * Parse argv into a command token, flags, and options.
+ */
+export function parseArgs(args: string[]): ParsedArgs {
+  const flags: string[] = []
+  let command: string | null = null
+  const options: ParsedOptions = {}
 
   for (let i = 0; i < args.length; i++) {
     const token = args[i]
@@ -31,13 +42,19 @@ export function parseArgs(args) {
       continue
     }
     if (token === "--host" && i + 1 < args.length) {
-      options.host = args[++i]
+      const host_value = args[++i]
+      if (host_value !== undefined) {
+        options.host = host_value
+      }
       continue
     }
     if (token === "--port" && i + 1 < args.length) {
-      const port_value = Number.parseInt(args[++i], 10)
-      if (Number.isFinite(port_value) && port_value > 0) {
-        options.port = port_value
+      const port_str = args[++i]
+      if (port_str !== undefined) {
+        const port_value = Number.parseInt(port_str, 10)
+        if (Number.isFinite(port_value) && port_value > 0) {
+          options.port = port_value
+        }
       }
       continue
     }
@@ -54,11 +71,8 @@ export function parseArgs(args) {
 /**
  * CLI main entry. Returns an exit code and prints usage on `--help` or errors.
  * No side effects beyond invoking stub handlers.
- *
- * @param {string[]} args
- * @returns {Promise<number>}
  */
-export async function main(args) {
+export async function main(args: string[]): Promise<number> {
   const { command, flags, options } = parseArgs(args)
 
   const is_debug = flags.includes("debug")

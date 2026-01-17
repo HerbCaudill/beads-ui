@@ -1,22 +1,34 @@
-/**
- * @import { SpawnOptions } from 'node:child_process'
- */
+import type { SpawnOptions } from "node:child_process"
 import { spawn } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { getConfig } from "../config.js"
-import { resolveDbPath } from "../db.ts"
+import { resolveDbPath } from "../db.js"
+
+/**
+ * Options for starting the daemon.
+ */
+export interface StartDaemonOptions {
+  is_debug?: boolean | undefined
+  host?: string | undefined
+  port?: number | undefined
+}
+
+/**
+ * Result of starting the daemon.
+ */
+export interface StartDaemonResult {
+  pid: number
+}
 
 /**
  * Resolve the runtime directory used for PID and log files.
  * Prefers `BDUI_RUNTIME_DIR`, then `$XDG_RUNTIME_DIR/beads-ui`,
  * and finally `os.tmpdir()/beads-ui`.
- *
- * @returns {string}
  */
-export function getRuntimeDir() {
+export function getRuntimeDir(): string {
   const override_dir = process.env.BDUI_RUNTIME_DIR
   if (override_dir && override_dir.length > 0) {
     return ensureDir(override_dir)
@@ -32,11 +44,8 @@ export function getRuntimeDir() {
 
 /**
  * Ensure a directory exists with safe permissions and return its path.
- *
- * @param {string} dir_path
- * @returns {string}
  */
-function ensureDir(dir_path) {
+function ensureDir(dir_path: string): string {
   try {
     fs.mkdirSync(dir_path, { recursive: true, mode: 0o700 })
   } catch {
@@ -45,28 +54,20 @@ function ensureDir(dir_path) {
   return dir_path
 }
 
-/**
- * @returns {string}
- */
-export function getPidFilePath() {
+export function getPidFilePath(): string {
   const runtime_dir = getRuntimeDir()
   return path.join(runtime_dir, "server.pid")
 }
 
-/**
- * @returns {string}
- */
-export function getLogFilePath() {
+export function getLogFilePath(): string {
   const runtime_dir = getRuntimeDir()
   return path.join(runtime_dir, "daemon.log")
 }
 
 /**
  * Read PID from the PID file if present.
- *
- * @returns {number | null}
  */
-export function readPidFile() {
+export function readPidFile(): number | null {
   const pid_file = getPidFilePath()
   try {
     const text = fs.readFileSync(pid_file, "utf8")
@@ -80,10 +81,7 @@ export function readPidFile() {
   return null
 }
 
-/**
- * @param {number} pid
- */
-export function writePidFile(pid) {
+export function writePidFile(pid: number): void {
   const pid_file = getPidFilePath()
   try {
     fs.writeFileSync(pid_file, String(pid) + "\n", { encoding: "utf8" })
@@ -92,7 +90,7 @@ export function writePidFile(pid) {
   }
 }
 
-export function removePidFile() {
+export function removePidFile(): void {
   const pid_file = getPidFilePath()
   try {
     fs.unlinkSync(pid_file)
@@ -103,11 +101,8 @@ export function removePidFile() {
 
 /**
  * Check whether a process is running.
- *
- * @param {number} pid
- * @returns {boolean}
  */
-export function isProcessRunning(pid) {
+export function isProcessRunning(pid: number): boolean {
   try {
     if (pid <= 0) {
       return false
@@ -115,7 +110,7 @@ export function isProcessRunning(pid) {
     process.kill(pid, 0)
     return true
   } catch (err) {
-    const code = /** @type {{ code?: string }} */ (err).code
+    const code = (err as { code?: string }).code
     if (code === "ESRCH") {
       return false
     }
@@ -126,10 +121,8 @@ export function isProcessRunning(pid) {
 
 /**
  * Compute the absolute path to the server entry file.
- *
- * @returns {string}
  */
-export function getServerEntryPath() {
+export function getServerEntryPath(): string {
   const here = fileURLToPath(new URL(import.meta.url))
   const cli_dir = path.dirname(here)
   const server_entry = path.resolve(cli_dir, "..", "index.js")
@@ -139,17 +132,13 @@ export function getServerEntryPath() {
 /**
  * Spawn the server as a detached daemon, redirecting stdio to the log file.
  * Writes the PID file upon success.
- *
- * @param {{ is_debug?: boolean, host?: string, port?: number }} [options]
- * @returns {{ pid: number } | null} Returns child PID on success; null on failure.
  */
-export function startDaemon(options = {}) {
+export function startDaemon(options: StartDaemonOptions = {}): StartDaemonResult | null {
   const server_entry = getServerEntryPath()
   const log_file = getLogFilePath()
 
   // Open the log file for appending; reuse for both stdout and stderr
-  /** @type {number} */
-  let log_fd
+  let log_fd: number
   try {
     log_fd = fs.openSync(log_file, "a")
     if (options.is_debug) {
@@ -160,8 +149,7 @@ export function startDaemon(options = {}) {
     log_fd = -1
   }
 
-  /** @type {Record<string, string | undefined>} */
-  const spawn_env = { ...process.env }
+  const spawn_env: Record<string, string | undefined> = { ...process.env }
   if (options.host) {
     spawn_env.HOST = options.host
   }
@@ -169,8 +157,7 @@ export function startDaemon(options = {}) {
     spawn_env.PORT = String(options.port)
   }
 
-  /** @type {SpawnOptions} */
-  const opts = {
+  const opts: SpawnOptions = {
     detached: true,
     env: spawn_env,
     stdio: log_fd >= 0 ? ["ignore", log_fd, log_fd] : "ignore",
@@ -205,16 +192,12 @@ export function startDaemon(options = {}) {
 
 /**
  * Send SIGTERM then (optionally) SIGKILL to stop a process and wait for exit.
- *
- * @param {number} pid
- * @param {number} timeout_ms
- * @returns {Promise<boolean>} Resolves true if the process is gone.
  */
-export async function terminateProcess(pid, timeout_ms) {
+export async function terminateProcess(pid: number, timeout_ms: number): Promise<boolean> {
   try {
     process.kill(pid, "SIGTERM")
   } catch (err) {
-    const code = /** @type {{ code?: string }} */ (err).code
+    const code = (err as { code?: string }).code
     if (code === "ESRCH") {
       return true
     }
@@ -242,11 +225,7 @@ export async function terminateProcess(pid, timeout_ms) {
   return !isProcessRunning(pid)
 }
 
-/**
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(() => {
       resolve()
@@ -257,7 +236,7 @@ function sleep(ms) {
 /**
  * Print the server URL derived from current config.
  */
-export function printServerUrl() {
+export function printServerUrl(): void {
   // Resolve from the caller's working directory by default
   const resolved_db = resolveDbPath()
   console.log(

@@ -111,6 +111,11 @@ Never update `CHANGES.md`.
   - `server/ws.ts` - WebSocket server handler for client-server communication
   - `server/app.ts` - Express app setup and configuration
   - `server/index.ts` - Server entry point and wiring
+  - `server/cli/usage.ts` - CLI help text and usage printing
+  - `server/cli/open.ts` - Browser opening and server URL utilities
+  - `server/cli/daemon.ts` - Daemon management (PID file, process lifecycle)
+  - `server/cli/commands.ts` - CLI command handlers (start, stop, restart)
+  - `server/cli/index.ts` - CLI main entry point and argument parsing
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

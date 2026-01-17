@@ -1,5 +1,5 @@
 import { getConfig } from "../config.js"
-import { resolveDbPath } from "../db.ts"
+import { resolveDbPath } from "../db.js"
 import {
   isProcessRunning,
   printServerUrl,
@@ -11,14 +11,31 @@ import {
 import { openUrl, registerWorkspaceWithServer, waitForServer } from "./open.js"
 
 /**
+ * Options for the start command.
+ */
+export interface StartOptions {
+  open?: boolean | undefined
+  is_debug?: boolean | undefined
+  host?: string | undefined
+  port?: number | undefined
+}
+
+/**
+ * Options for the restart command.
+ */
+export interface RestartOptions {
+  open?: boolean | undefined
+  is_debug?: boolean | undefined
+  host?: string | undefined
+  port?: number | undefined
+}
+
+/**
  * Handle `start` command. Idempotent when already running.
  * - Spawns a detached server process, writes PID file, returns 0.
  * - If already running (PID file present and process alive), prints URL and returns 0.
- *
- * @param {{ open?: boolean, is_debug?: boolean, host?: string, port?: number }} [options]
- * @returns {Promise<number>} Exit code (0 on success)
  */
-export async function handleStart(options) {
+export async function handleStart(options?: StartOptions): Promise<number> {
   // Default: do not open a browser unless explicitly requested via `open: true`.
   const should_open = options?.open === true
   const existing_pid = readPidFile()
@@ -81,10 +98,8 @@ export async function handleStart(options) {
  * Handle `stop` command.
  * - Sends SIGTERM and waits for exit (with SIGKILL fallback), removes PID file.
  * - Returns 2 if not running.
- *
- * @returns {Promise<number>} Exit code
  */
-export async function handleStop() {
+export async function handleStop(): Promise<number> {
   const existing_pid = readPidFile()
   if (!existing_pid) {
     return 2
@@ -108,18 +123,10 @@ export async function handleStop() {
 
 /**
  * Handle `restart` command: stop (ignore not-running) then start.
- *
- * @returns {Promise<number>} Exit code (0 on success)
- */
-/**
- * Handle `restart` command: stop (ignore not-running) then start.
  * Accepts the same options as `handleStart` and passes them through,
  * so restart only opens a browser when `open` is explicitly true.
- *
- * @param {{ open?: boolean }} [options]
- * @returns {Promise<number>}
  */
-export async function handleRestart(options) {
+export async function handleRestart(options?: RestartOptions): Promise<number> {
   const stop_code = await handleStop()
   // 0 = stopped, 2 = not running; both are acceptable to proceed
   if (stop_code !== 0 && stop_code !== 2) {
