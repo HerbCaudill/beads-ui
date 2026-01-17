@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { createWsClient } from "./ws.js"
+import { createWsClient } from "./ws.ts"
 
 /**
  * @returns {any[]}

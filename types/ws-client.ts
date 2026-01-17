@@ -5,6 +5,8 @@
  * WebSocket client with auto-reconnect and message correlation.
  */
 
+import type { MessageType } from "./protocol.js"
+
 /** Connection state for the WebSocket client. */
 export type ConnectionState = "connecting" | "open" | "closed" | "reconnecting"
 
@@ -42,7 +44,7 @@ export interface WsClient {
    * @param payload - Optional message payload
    * @returns Promise resolving to the reply payload
    */
-  send(type: string, payload?: unknown): Promise<unknown>
+  send(type: MessageType, payload?: unknown): Promise<unknown>
 
   /**
    * Register a handler for a server-initiated event type.
@@ -51,7 +53,7 @@ export interface WsClient {
    * @param handler - Callback for received events
    * @returns Unsubscribe function
    */
-  on(type: string, handler: (payload: unknown) => void): () => void
+  on(type: MessageType, handler: (payload: unknown) => void): () => void
 
   /**
    * Subscribe to connection state changes.

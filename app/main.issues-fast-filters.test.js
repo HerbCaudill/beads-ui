@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.js"
-import { createWsClient } from "./ws.js"
+import { createWsClient } from "./ws.ts"
 
 /**
  * Helper to toggle a filter option in a dropdown.
@@ -27,7 +27,7 @@ function toggleFilter(dropdownIndex, optionText) {
 // Mock WS client to drive push envelopes and record RPCs
 /** @type {{ type: string, payload: any }[]} */
 const calls = []
-vi.mock("./ws.js", () => {
+vi.mock("./ws.ts", () => {
   /** @type {Record<string, (p: any) => void>} */
   const handlers = {}
   /** @type {Set<(s: 'connecting'|'open'|'closed'|'reconnecting') => void>} */

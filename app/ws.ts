@@ -1,7 +1,4 @@
 /**
- * @import { MessageType } from './protocol.ts'
- */
-/**
  * Persistent WebSocket client with reconnect, request/response correlation,
  * and simple event dispatching.
  *
@@ -10,39 +7,36 @@
  *   const data = await ws.send('list-issues', { filters: {} });
  *   const off = ws.on('snapshot', (payload) => { <push event> });
  */
-import { MESSAGE_TYPES, makeRequest, nextId } from "./protocol.ts"
+import type { MessageType, RequestEnvelope } from "../types/protocol.js"
+import type {
+  BackoffOptions,
+  ClientOptions,
+  ConnectionState,
+  WsClient,
+} from "../types/ws-client.js"
+import { MESSAGE_TYPES, makeRequest, nextId } from "./protocol.js"
 import { debug } from "./utils/logging.js"
 
-/**
- * @typedef {'connecting'|'open'|'closed'|'reconnecting'} ConnectionState
- */
-
-/**
- * @typedef {{ initialMs?: number, maxMs?: number, factor?: number, jitterRatio?: number }} BackoffOptions
- */
-
-/**
- * @typedef {{ url?: string, backoff?: BackoffOptions }} ClientOptions
- */
+interface PendingRequest {
+  resolve: (value: unknown) => void
+  reject: (reason: unknown) => void
+  type: MessageType
+}
 
 /**
  * Create a WebSocket client with auto-reconnect and message correlation.
- *
- * @param {ClientOptions} [options]
  */
-export function createWsClient(options = {}) {
+export function createWsClient(options: ClientOptions = {}): WsClient {
   const log = debug("ws")
 
-  /** @type {BackoffOptions} */
-  const backoff = {
+  const backoff: Required<BackoffOptions> = {
     initialMs: options.backoff?.initialMs ?? 1000,
     maxMs: options.backoff?.maxMs ?? 30000,
     factor: options.backoff?.factor ?? 2,
     jitterRatio: options.backoff?.jitterRatio ?? 0.2,
   }
 
-  /** @type {() => string} */
-  const resolveUrl = () => {
+  const resolveUrl = (): string => {
     if (options.url && options.url.length > 0) {
       return options.url
     }
@@ -52,30 +46,18 @@ export function createWsClient(options = {}) {
     return "ws://localhost/ws"
   }
 
-  /** @type {WebSocket | null} */
-  let ws = null
-  /** @type {ConnectionState} */
-  let state = "closed"
-  /** @type {number} */
+  let ws: WebSocket | null = null
+  let state: ConnectionState = "closed"
   let attempts = 0
-  /** @type {ReturnType<typeof setTimeout> | null} */
-  let reconnect_timer = null
-  /** @type {boolean} */
+  let reconnect_timer: ReturnType<typeof setTimeout> | null = null
   let should_reconnect = true
 
-  /** @type {Map<string, { resolve: (v: any) => void, reject: (e: any) => void, type: string }>} */
-  const pending = new Map()
-  /** @type {Array<ReturnType<typeof makeRequest>>} */
-  const queue = []
-  /** @type {Map<string, Set<(payload: any) => void>>} */
-  const handlers = new Map()
-  /** @type {Set<(s: ConnectionState) => void>} */
-  const connection_handlers = new Set()
+  const pending = new Map<string, PendingRequest>()
+  const queue: RequestEnvelope[] = []
+  const handlers = new Map<string, Set<(payload: unknown) => void>>()
+  const connection_handlers = new Set<(s: ConnectionState) => void>()
 
-  /**
-   * @param {ConnectionState} s
-   */
-  function notifyConnection(s) {
+  function notifyConnection(s: ConnectionState): void {
     for (const fn of Array.from(connection_handlers)) {
       try {
         fn(s)
@@ -85,18 +67,15 @@ export function createWsClient(options = {}) {
     }
   }
 
-  function scheduleReconnect() {
+  function scheduleReconnect(): void {
     if (!should_reconnect || reconnect_timer) {
       return
     }
     state = "reconnecting"
     log("ws reconnecting…")
     notifyConnection(state)
-    const base = Math.min(
-      backoff.maxMs || 0,
-      (backoff.initialMs || 0) * Math.pow(backoff.factor || 1, attempts),
-    )
-    const jitter = (backoff.jitterRatio || 0) * base
+    const base = Math.min(backoff.maxMs, backoff.initialMs * Math.pow(backoff.factor, attempts))
+    const jitter = backoff.jitterRatio * base
     const delay = Math.max(0, Math.round(base + (Math.random() * 2 - 1) * jitter))
     log("ws retry in %d ms (attempt %d)", delay, attempts + 1)
     reconnect_timer = setTimeout(() => {
@@ -105,8 +84,7 @@ export function createWsClient(options = {}) {
     }, delay)
   }
 
-  /** @param {ReturnType<typeof makeRequest>} req */
-  function sendRaw(req) {
+  function sendRaw(req: RequestEnvelope): void {
     try {
       ws?.send(JSON.stringify(req))
     } catch (err) {
@@ -114,7 +92,7 @@ export function createWsClient(options = {}) {
     }
   }
 
-  function onOpen() {
+  function onOpen(): void {
     state = "open"
     log("ws open")
     notifyConnection(state)
@@ -128,10 +106,8 @@ export function createWsClient(options = {}) {
     }
   }
 
-  /** @param {MessageEvent} ev */
-  function onMessage(ev) {
-    /** @type {any} */
-    let msg
+  function onMessage(ev: MessageEvent): void {
+    let msg: { id?: unknown; type?: unknown; ok?: unknown; payload?: unknown; error?: unknown }
     try {
       msg = JSON.parse(String(ev.data))
     } catch {
@@ -143,9 +119,10 @@ export function createWsClient(options = {}) {
       return
     }
 
-    if (pending.has(msg.id)) {
-      const entry = pending.get(msg.id)
-      pending.delete(msg.id)
+    const id = msg.id
+    if (pending.has(id)) {
+      const entry = pending.get(id)
+      pending.delete(id)
       if (msg.ok) {
         entry?.resolve(msg.payload)
       } else {
@@ -169,7 +146,7 @@ export function createWsClient(options = {}) {
     }
   }
 
-  function onClose() {
+  function onClose(): void {
     state = "closed"
     log("ws closed")
     notifyConnection(state)
@@ -182,7 +159,7 @@ export function createWsClient(options = {}) {
     scheduleReconnect()
   }
 
-  function connect() {
+  function connect(): void {
     if (!should_reconnect) {
       return
     }
@@ -209,12 +186,8 @@ export function createWsClient(options = {}) {
   return {
     /**
      * Send a request and await its correlated reply payload.
-     *
-     * @param {MessageType} type
-     * @param {unknown} [payload]
-     * @returns {Promise<any>}
      */
-    send(type, payload) {
+    send(type: MessageType, payload?: unknown): Promise<unknown> {
       if (!MESSAGE_TYPES.includes(type)) {
         return Promise.reject(new Error(`unknown message type: ${type}`))
       }
@@ -231,15 +204,12 @@ export function createWsClient(options = {}) {
         }
       })
     },
+
     /**
      * Register a handler for a server-initiated event type.
      * Returns an unsubscribe function.
-     *
-     * @param {MessageType} type
-     * @param {(payload: any) => void} handler
-     * @returns {() => void}
      */
-    on(type, handler) {
+    on(type: MessageType, handler: (payload: unknown) => void): () => void {
       if (!handlers.has(type)) {
         handlers.set(type, new Set())
       }
@@ -249,20 +219,19 @@ export function createWsClient(options = {}) {
         set?.delete(handler)
       }
     },
+
     /**
      * Subscribe to connection state changes.
-     *
-     * @param {(state: ConnectionState) => void} handler
-     * @returns {() => void}
      */
-    onConnection(handler) {
+    onConnection(handler: (state: ConnectionState) => void): () => void {
       connection_handlers.add(handler)
       return () => {
         connection_handlers.delete(handler)
       }
     },
+
     /** Close and stop reconnecting. */
-    close() {
+    close(): void {
       should_reconnect = false
       if (reconnect_timer) {
         clearTimeout(reconnect_timer)
@@ -274,8 +243,9 @@ export function createWsClient(options = {}) {
         /* ignore */
       }
     },
+
     /** For diagnostics in tests or UI. */
-    getState() {
+    getState(): ConnectionState {
       return state
     },
   }

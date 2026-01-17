@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.js"
-import { createWsClient } from "./ws.js"
+import { createWsClient } from "./ws.ts"
 
 // Mock WS client to drive push envelopes and connection state
-vi.mock("./ws.js", () => {
+vi.mock("./ws.ts", () => {
   /** @type {Record<string, (p: any) => void>} */
   const handlers = {}
   /** @type {Set<(s: 'connecting'|'open'|'closed'|'reconnecting') => void>} */

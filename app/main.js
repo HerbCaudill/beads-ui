@@ -20,7 +20,7 @@ import { createListView } from "./views/list.js"
 import { createTopNav } from "./views/nav.js"
 import { createNewIssueDialog } from "./views/new-issue-dialog.js"
 import { createWorkspacePicker } from "./views/workspace-picker.js"
-import { createWsClient } from "./ws.js"
+import { createWsClient } from "./ws.ts"
 
 /**
  * Bootstrap the SPA shell with two panels.

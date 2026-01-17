@@ -72,6 +72,7 @@ Never update `CHANGES.md`.
   - `app/data/subscriptions-store.ts` - Client-side list subscription store
   - `app/router.ts` - Hash-based URL router for views and issue deep-linking
   - `app/state.ts` - Global app state store with subscription support
+  - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types
