@@ -1,5 +1,5 @@
 /**
- * @import { MessageType } from './protocol.js'
+ * @import { MessageType } from './protocol.ts'
  */
 /**
  * Persistent WebSocket client with reconnect, request/response correlation,
@@ -10,7 +10,7 @@
  *   const data = await ws.send('list-issues', { filters: {} });
  *   const off = ws.on('snapshot', (payload) => { <push event> });
  */
-import { MESSAGE_TYPES, makeRequest, nextId } from "./protocol.js"
+import { MESSAGE_TYPES, makeRequest, nextId } from "./protocol.ts"
 import { debug } from "./utils/logging.js"
 
 /**

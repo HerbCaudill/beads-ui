@@ -1,11 +1,11 @@
 /**
  * @import { Server } from 'node:http'
  * @import { RawData, WebSocket } from 'ws'
- * @import { MessageType } from '../app/protocol.js'
+ * @import { MessageType } from '../app/protocol.ts'
  */
 import path from "node:path"
 import { WebSocketServer } from "ws"
-import { isRequest, makeError, makeOk } from "../app/protocol.js"
+import { isRequest, makeError, makeOk } from "../app/protocol.ts"
 import { getGitUserName, runBd, runBdJson } from "./bd.js"
 import { resolveDbPath } from "./db.js"
 import { fetchListForSubscription } from "./list-adapters.js"

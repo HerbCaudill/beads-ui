@@ -1,5 +1,5 @@
 /**
- * @import { MessageType } from './protocol.js'
+ * @import { MessageType } from './protocol.ts'
  */
 import { html, render } from "lit-html"
 import { createListSelectors } from "./data/list-selectors.js"

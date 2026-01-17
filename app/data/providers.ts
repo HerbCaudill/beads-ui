@@ -1,4 +1,4 @@
-import type { MessageType } from "../../types/protocol.js"
+import type { MessageType } from "../protocol.ts"
 import { debug } from "../utils/logging.js"
 
 /**

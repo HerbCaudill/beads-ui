@@ -67,6 +67,7 @@ Never update `CHANGES.md`.
   not contain runtime code or side effects.
 - **TypeScript Migration (in progress)**: Converting modules from `.js` to `.ts`
   with full runtime code. Converted modules:
+  - `app/protocol.ts` - WebSocket protocol definitions (message types, envelopes)
   - `app/data/providers.ts` - Data layer for issue mutations
   - `app/data/subscriptions-store.ts` - Client-side list subscription store
 - Shared types live in `types/`:

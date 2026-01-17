@@ -1,5 +1,5 @@
 /**
- * @import { MessageType } from '../protocol.js'
+ * @import { MessageType } from '../protocol.ts'
  */
 import { debug } from "./logging.js"
 

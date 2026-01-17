@@ -9,7 +9,7 @@ import {
   makeError,
   makeOk,
   makeRequest,
-} from "./protocol.js"
+} from "./protocol.ts"
 
 describe("protocol", () => {
   test("version and message types", () => {
