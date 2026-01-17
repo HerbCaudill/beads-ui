@@ -1,6 +1,6 @@
 // Issue Detail view implementation (lit-html based)
 import { html, render } from "lit-html"
-import { parseView } from "../router.js"
+import { parseView } from "../router.ts"
 import { issueHashFor } from "../utils/issue-url.js"
 import { debug } from "../utils/logging.js"
 import { renderMarkdown } from "../utils/markdown.js"

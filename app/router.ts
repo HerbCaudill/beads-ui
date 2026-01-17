@@ -1,19 +1,39 @@
+/**
+ * Hash-based router for tabs (issues/epics/board) and deep-linked issue ids.
+ */
+
 import { issueHashFor } from "./utils/issue-url.js"
 import { debug } from "./utils/logging.js"
 
 /**
- * Hash-based router for tabs (issues/epics/board) and deep-linked issue ids.
+ * The view names supported by the router.
  */
+export type ViewName = "issues" | "epics" | "board"
+
+/**
+ * Minimal interface for the app state store used by the router.
+ */
+export interface RouterStore {
+  getState: () => { selected_id: string | null; view: ViewName }
+  setState: (patch: { selected_id?: string | null; view?: ViewName }) => void
+}
+
+/**
+ * The hash router instance.
+ */
+export interface HashRouter {
+  start: () => void
+  stop: () => void
+  gotoIssue: (id: string) => void
+  gotoView: (view: ViewName) => void
+}
 
 /**
  * Parse an application hash and extract the selected issue id.
  * Supports canonical form "#/(issues|epics|board)?issue=<id>" and legacy
  * "#/issue/<id>" which we will rewrite to the canonical form.
- *
- * @param {string} hash
- * @returns {string | null}
  */
-export function parseHash(hash) {
+export function parseHash(hash: string): string | null {
   const h = String(hash || "")
   // Extract the fragment sans leading '#'
   const frag = h.startsWith("#") ? h.slice(1) : h
@@ -28,16 +48,13 @@ export function parseHash(hash) {
   }
   // Legacy pattern: #/issue/<id>
   const m = /^\/issue\/([^\s?#]+)/.exec(frag)
-  return m && m[1] ? decodeURIComponent(m[1]) : null
+  return m?.[1] ? decodeURIComponent(m[1]) : null
 }
 
 /**
  * Parse the current view from hash.
- *
- * @param {string} hash
- * @returns {'issues'|'epics'|'board'}
  */
-export function parseView(hash) {
+export function parseView(hash: string): ViewName {
   const h = String(hash || "")
   if (/^#\/epics(\b|\/|$)/.test(h)) {
     return "epics"
@@ -50,16 +67,18 @@ export function parseView(hash) {
 }
 
 /**
- * @param {{ getState: () => any, setState: (patch: any) => void }} store
+ * Create a hash-based router that syncs URL hash with app state.
+ *
+ * @param store - The app state store to update on hash changes.
  */
-export function createHashRouter(store) {
+export function createHashRouter(store: RouterStore): HashRouter {
   const log = debug("router")
-  /** @type {(ev?: HashChangeEvent) => any} */
-  const onHashChange = () => {
+
+  const onHashChange = (): void => {
     const hash = window.location.hash || ""
     // Rewrite legacy #/issue/<id> to canonical #/issues?issue=<id>
     const legacyMatch = /^#\/issue\/([^\s?#]+)/.exec(hash)
-    if (legacyMatch && legacyMatch[1]) {
+    if (legacyMatch?.[1]) {
       const id = decodeURIComponent(legacyMatch[1])
       // Update state immediately for consumers expecting sync selection
       store.setState({ selected_id: id, view: "issues" })
@@ -83,12 +102,9 @@ export function createHashRouter(store) {
     stop() {
       window.removeEventListener("hashchange", onHashChange)
     },
-    /**
-     * @param {string} id
-     */
-    gotoIssue(id) {
+    gotoIssue(id: string) {
       // Keep current view in hash and append issue param via helper
-      const s = store.getState ? store.getState() : { view: "issues" }
+      const s = store.getState()
       const view = s.view || "issues"
       const next = issueHashFor(view, id)
       log("goto issue %s (view=%s)", id, view)
@@ -99,16 +115,8 @@ export function createHashRouter(store) {
         store.setState({ selected_id: id, view })
       }
     },
-    /**
-     * Navigate to a top-level view.
-     *
-     * @param {'issues'|'epics'|'board'} view
-     */
-    /**
-     * @param {'issues'|'epics'|'board'} view
-     */
-    gotoView(view) {
-      const s = store.getState ? store.getState() : { selected_id: null }
+    gotoView(view: ViewName) {
+      const s = store.getState()
       const id = s.selected_id
       const next = id ? issueHashFor(view, id) : `#/${view}`
       log("goto view %s (id=%s)", view, id || "")

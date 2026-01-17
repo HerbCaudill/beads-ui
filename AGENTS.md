@@ -70,6 +70,7 @@ Never update `CHANGES.md`.
   - `app/protocol.ts` - WebSocket protocol definitions (message types, envelopes)
   - `app/data/providers.ts` - Data layer for issue mutations
   - `app/data/subscriptions-store.ts` - Client-side list subscription store
+  - `app/router.ts` - Hash-based URL router for views and issue deep-linking
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

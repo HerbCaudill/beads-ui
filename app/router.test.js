@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createHashRouter, parseHash, parseView } from "./router.js"
+import { createHashRouter, parseHash, parseView } from "./router.ts"
 import { createStore } from "./state.js"
 
 describe("router", () => {
