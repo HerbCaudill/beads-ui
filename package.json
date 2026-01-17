@@ -18,20 +18,14 @@
     "node": ">=22"
   },
   "scripts": {
-    "all": "npm run lint && npm run tsc && npm test && npm run prettier:check",
+    "test:all": "pnpm typecheck && pnpm test",
     "start": "node server/index.js --debug",
     "build": "node scripts/build-frontend.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "tsc": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint --ext .js .",
-    "prettier:write": "prettier --write .",
-    "prettier:check": "prettier --check .",
-    "preversion": "npm run all",
-    "version": "changes --commits --footer",
-    "postversion": "git push --follow-tags && npm publish",
-    "prepack": "npm run build",
-    "postpack": "rm app/main.bundle.js app/main.bundle.js.map"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "prettier --write .",
+    "prettier:check": "prettier --check ."
   },
   "dependencies": {
     "debug": "^4.4.3",
