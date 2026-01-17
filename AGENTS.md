@@ -84,6 +84,7 @@ Never update `CHANGES.md`.
   - `server/subscriptions.ts` - Server-side subscription registry for list data with per-key locking
   - `server/list-adapters.ts` - List query adapters mapping subscription types to bd CLI commands
   - `server/bd.ts` - BD CLI integration module (runs the bd command-line tool)
+  - `server/ws.ts` - WebSocket server handler for client-server communication
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

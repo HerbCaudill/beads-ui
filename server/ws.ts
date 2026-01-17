@@ -1,18 +1,20 @@
-/**
- * @import { Server } from 'node:http'
- * @import { RawData, WebSocket } from 'ws'
- * @import { MessageType } from '../app/protocol.ts'
- */
+import type { Server } from "node:http"
+import type { RawData, WebSocket } from "ws"
+import type { MessageType } from "../types/protocol.js"
+import type { SubscriptionSpec, ItemLike } from "./subscriptions.js"
+import type { FetchListResult } from "./list-adapters.js"
+import type { NormalizedIssue } from "../types/issues.js"
+
 import path from "node:path"
 import { WebSocketServer } from "ws"
-import { isRequest, makeError, makeOk } from "../app/protocol.ts"
-import { getGitUserName, runBd, runBdJson } from "./bd.ts"
-import { resolveDbPath } from "./db.ts"
-import { fetchListForSubscription } from "./list-adapters.ts"
-import { debug } from "./logging.ts"
-import { getAvailableWorkspaces } from "./registry-watcher.ts"
-import { keyOf, registry } from "./subscriptions.ts"
-import { validateSubscribeListPayload } from "./validators.ts"
+import { isRequest, makeError, makeOk } from "../app/protocol.js"
+import { getGitUserName, runBd, runBdJson } from "./bd.js"
+import { resolveDbPath } from "./db.js"
+import { fetchListForSubscription } from "./list-adapters.js"
+import { debug } from "./logging.js"
+import { getAvailableWorkspaces } from "./registry-watcher.js"
+import { keyOf, registry } from "./subscriptions.js"
+import { validateSubscribeListPayload } from "./validators.js"
 
 const log = debug("ws")
 
@@ -20,8 +22,7 @@ const log = debug("ws")
  * Debounced refresh scheduling for active list subscriptions.
  * A trailing window coalesces rapid change bursts into a single refresh run.
  */
-/** @type {ReturnType<typeof setTimeout> | null} */
-let REFRESH_TIMER = null
+let REFRESH_TIMER: ReturnType<typeof setTimeout> | null = null
 let REFRESH_DEBOUNCE_MS = 75
 
 /**
@@ -30,14 +31,13 @@ let REFRESH_DEBOUNCE_MS = 75
  * arrives (via scheduleListRefresh) or when a timeout elapses, at which
  * point a single refresh pass over all active list subscriptions is run.
  */
-/**
- * @typedef {Object} MutationGate
- * @property {boolean} resolved
- * @property {(reason: 'watcher'|'timeout') => void} resolve
- * @property {ReturnType<typeof setTimeout>} timer
- */
-/** @type {MutationGate | null} */
-let MUTATION_GATE = null
+export interface MutationGate {
+  resolved: boolean
+  resolve: (reason: "watcher" | "timeout") => void
+  timer: ReturnType<typeof setTimeout>
+}
+
+let MUTATION_GATE: MutationGate | null = null
 
 /**
  * Start a mutation window gate if not already active. The gate resolves on the
@@ -47,15 +47,14 @@ let MUTATION_GATE = null
  *
  * Fire-and-forget; callers should not await this.
  *
- * @param {number} [timeout_ms]
+ * @param timeout_ms - Timeout in milliseconds before auto-resolving the gate.
  */
-function triggerMutationRefreshOnce(timeout_ms = 500) {
+function triggerMutationRefreshOnce(timeout_ms: number = 500): void {
   if (MUTATION_GATE) {
     return
   }
-  /** @type {(r: 'watcher'|'timeout') => void} */
-  let doResolve = () => {}
-  const p = new Promise(resolve => {
+  let doResolve: (r: "watcher" | "timeout") => void = () => {}
+  const p = new Promise<"watcher" | "timeout">(resolve => {
     doResolve = resolve
   })
   MUTATION_GATE = {
@@ -103,14 +102,10 @@ function triggerMutationRefreshOnce(timeout_ms = 500) {
 
 /**
  * Collect unique active list subscription specs across all connected clients.
- *
- * @returns {Array<{ type: string, params?: Record<string,string|number|boolean> }>}
  */
-function collectActiveListSpecs() {
-  /** @type {Array<{ type: string, params?: Record<string,string|number|boolean> }>} */
-  const specs = []
-  /** @type {Set<string>} */
-  const seen = new Set()
+function collectActiveListSpecs(): SubscriptionSpec[] {
+  const specs: SubscriptionSpec[] = []
+  const seen: Set<string> = new Set()
   const wss = CURRENT_WSS
   if (!wss) {
     return specs
@@ -119,7 +114,7 @@ function collectActiveListSpecs() {
     if (ws.readyState !== ws.OPEN) {
       continue
     }
-    const s = ensureSubs(/** @type {any} */ (ws))
+    const s = ensureSubs(ws)
     if (!s.list_subs) {
       continue
     }
@@ -136,7 +131,7 @@ function collectActiveListSpecs() {
 /**
  * Run refresh for all active list subscription specs and publish deltas.
  */
-async function refreshAllActiveListSubscriptions() {
+async function refreshAllActiveListSubscriptions(): Promise<void> {
   const specs = collectActiveListSpecs()
   // Run refreshes concurrently; locking is handled per key in the registry
   await Promise.all(
@@ -153,7 +148,7 @@ async function refreshAllActiveListSubscriptions() {
 /**
  * Schedule a coalesced refresh of all active list subscriptions.
  */
-export function scheduleListRefresh() {
+export function scheduleListRefresh(): void {
   // Suppress watcher-driven refreshes during an active mutation gate; resolve gate once
   if (MUTATION_GATE) {
     try {
@@ -175,40 +170,44 @@ export function scheduleListRefresh() {
 }
 
 /**
- * @typedef {{
- *   show_id?: string | null,
- *   list_subs?: Map<string, { key: string, spec: { type: string, params?: Record<string, string | number | boolean> } }>,
- *   list_revisions?: Map<string, number>
- * }} ConnectionSubs
+ * Per-connection subscription state.
  */
+export interface ConnectionSubs {
+  show_id?: string | null
+  list_subs?: Map<string, { key: string; spec: SubscriptionSpec }>
+  list_revisions?: Map<string, number>
+}
 
-/** @type {WeakMap<WebSocket, any>} */
-const SUBS = new WeakMap()
+const SUBS: WeakMap<WebSocket, ConnectionSubs> = new WeakMap()
 
-/** @type {WebSocketServer | null} */
-let CURRENT_WSS = null
+let CURRENT_WSS: WebSocketServer | null = null
 
 /**
  * Current workspace configuration.
- *
- * @type {{ root_dir: string, db_path: string } | null}
  */
-let CURRENT_WORKSPACE = null
+export interface WorkspaceConfig {
+  root_dir: string
+  db_path: string
+}
+
+let CURRENT_WORKSPACE: WorkspaceConfig | null = null
 
 /**
  * Reference to the database watcher for rebinding on workspace change.
- *
- * @type {{ rebind: (opts?: { root_dir?: string }) => void, path: string } | null}
  */
-let DB_WATCHER = null
+export interface DbWatcher {
+  rebind: (opts?: { root_dir?: string }) => void
+  path: string
+}
+
+let DB_WATCHER: DbWatcher | null = null
 
 /**
  * Get or initialize the subscription state for a socket.
  *
- * @param {WebSocket} ws
- * @returns {any}
+ * @param ws - The WebSocket connection.
  */
-function ensureSubs(ws) {
+function ensureSubs(ws: WebSocket): ConnectionSubs {
   let s = SUBS.get(ws)
   if (!s) {
     s = {
@@ -224,16 +223,12 @@ function ensureSubs(ws) {
 /**
  * Get next monotonically increasing revision for a subscription key on this connection.
  *
- * @param {WebSocket} ws
- * @param {string} key
+ * @param ws - The WebSocket connection.
+ * @param key - The subscription key.
  */
-/**
- * @param {WebSocket} ws
- * @param {string} key
- */
-function nextListRevision(ws, key) {
+function nextListRevision(ws: WebSocket, key: string): number {
   const s = ensureSubs(ws)
-  const m = s.list_revisions || new Map()
+  const m = s.list_revisions || new Map<string, number>()
   s.list_revisions = m
   const prev = m.get(key) || 0
   const next = prev + 1
@@ -245,16 +240,24 @@ function nextListRevision(ws, key) {
  * Emit per-subscription envelopes to a specific client id on a socket.
  * Helpers for snapshot / upsert / delete.
  */
+
 /**
- * @param {WebSocket} ws
- * @param {string} client_id
- * @param {string} key
- * @param {Array<Record<string, unknown>>} issues
+ * Emit a subscription snapshot to a client.
+ *
+ * @param ws - The WebSocket connection.
+ * @param client_id - The client subscription ID.
+ * @param key - The subscription key.
+ * @param issues - Array of issue objects to send.
  */
-function emitSubscriptionSnapshot(ws, client_id, key, issues) {
+function emitSubscriptionSnapshot(
+  ws: WebSocket,
+  client_id: string,
+  key: string,
+  issues: Array<Record<string, unknown>>,
+): void {
   const revision = nextListRevision(ws, key)
   const payload = {
-    type: /** @type {const} */ ("snapshot"),
+    type: "snapshot" as const,
     id: client_id,
     revision,
     issues,
@@ -262,7 +265,7 @@ function emitSubscriptionSnapshot(ws, client_id, key, issues) {
   const msg = JSON.stringify({
     id: `evt-${Date.now()}`,
     ok: true,
-    type: /** @type {MessageType} */ ("snapshot"),
+    type: "snapshot" as MessageType,
     payload,
   })
   try {
@@ -273,12 +276,19 @@ function emitSubscriptionSnapshot(ws, client_id, key, issues) {
 }
 
 /**
- * @param {WebSocket} ws
- * @param {string} client_id
- * @param {string} key
- * @param {Record<string, unknown>} issue
+ * Emit a subscription upsert to a client.
+ *
+ * @param ws - The WebSocket connection.
+ * @param client_id - The client subscription ID.
+ * @param key - The subscription key.
+ * @param issue - The issue object to send.
  */
-function emitSubscriptionUpsert(ws, client_id, key, issue) {
+function emitSubscriptionUpsert(
+  ws: WebSocket,
+  client_id: string,
+  key: string,
+  issue: Record<string, unknown>,
+): void {
   const revision = nextListRevision(ws, key)
   const payload = {
     type: "upsert",
@@ -289,7 +299,7 @@ function emitSubscriptionUpsert(ws, client_id, key, issue) {
   const msg = JSON.stringify({
     id: `evt-${Date.now()}`,
     ok: true,
-    type: /** @type {MessageType} */ ("upsert"),
+    type: "upsert" as MessageType,
     payload,
   })
   try {
@@ -300,12 +310,19 @@ function emitSubscriptionUpsert(ws, client_id, key, issue) {
 }
 
 /**
- * @param {WebSocket} ws
- * @param {string} client_id
- * @param {string} key
- * @param {string} issue_id
+ * Emit a subscription delete to a client.
+ *
+ * @param ws - The WebSocket connection.
+ * @param client_id - The client subscription ID.
+ * @param key - The subscription key.
+ * @param issue_id - The ID of the deleted issue.
  */
-function emitSubscriptionDelete(ws, client_id, key, issue_id) {
+function emitSubscriptionDelete(
+  ws: WebSocket,
+  client_id: string,
+  key: string,
+  issue_id: string,
+): void {
   const revision = nextListRevision(ws, key)
   const payload = {
     type: "delete",
@@ -316,7 +333,7 @@ function emitSubscriptionDelete(ws, client_id, key, issue_id) {
   const msg = JSON.stringify({
     id: `evt-${Date.now()}`,
     ok: true,
-    type: /** @type {MessageType} */ ("delete"),
+    type: "delete" as MessageType,
     payload,
   })
   try {
@@ -332,14 +349,13 @@ function emitSubscriptionDelete(ws, client_id, key, issue_id) {
  * Refresh a subscription spec: fetch via adapter, apply to registry and emit
  * per-subscription full-issue envelopes to subscribers. Serialized per key.
  *
- * @param {{ type: string, params?: Record<string, string|number|boolean> }} spec
+ * @param spec - The subscription spec to refresh.
  */
-async function refreshAndPublish(spec) {
+async function refreshAndPublish(spec: SubscriptionSpec): Promise<void> {
   const key = keyOf(spec)
   await registry.withKeyLock(key, async () => {
-    const res = await fetchListForSubscription(spec, {
-      cwd: CURRENT_WORKSPACE?.root_dir,
-    })
+    const fetch_opts = CURRENT_WORKSPACE?.root_dir ? { cwd: CURRENT_WORKSPACE.root_dir } : {}
+    const res = await fetchListForSubscription(spec, fetch_opts)
     if (!res.ok) {
       log("refresh failed for %s: %s %o", key, res.error.message, res.error)
       return
@@ -351,23 +367,27 @@ async function refreshAndPublish(spec) {
     if (!entry || entry.subscribers.size === 0) {
       return
     }
-    /** @type {Map<string, any>} */
-    const by_id = new Map()
+    const by_id: Map<string, NormalizedIssue> = new Map()
     for (const it of items) {
       if (it && typeof it.id === "string") {
         by_id.set(it.id, it)
       }
     }
     for (const ws of entry.subscribers) {
-      if (ws.readyState !== ws.OPEN) continue
-      const s = ensureSubs(ws)
-      const subs = s.list_subs || new Map()
-      /** @type {string[]} */
-      const client_ids = []
-      for (const [cid, v] of subs.entries()) {
-        if (v.key === key) client_ids.push(cid)
+      if (ws.readyState !== ws.OPEN) {
+        continue
       }
-      if (client_ids.length === 0) continue
+      const s = ensureSubs(ws)
+      const subs = s.list_subs || new Map<string, { key: string; spec: SubscriptionSpec }>()
+      const client_ids: string[] = []
+      for (const [cid, v] of subs.entries()) {
+        if (v.key === key) {
+          client_ids.push(cid)
+        }
+      }
+      if (client_ids.length === 0) {
+        continue
+      }
       if (prev_size === 0) {
         for (const cid of client_ids) {
           emitSubscriptionSnapshot(ws, cid, key, items)
@@ -390,12 +410,25 @@ async function refreshAndPublish(spec) {
 }
 
 /**
+ * Closed issue item with required timestamp fields.
+ */
+interface ClosedIssueItem {
+  id: string
+  updated_at: number
+  closed_at: number | null
+  [key: string]: unknown
+}
+
+/**
  * Apply pre-diff filtering for closed-issues lists based on spec.params.since (epoch ms).
  *
- * @param {{ type: string, params?: Record<string, string|number|boolean> }} spec
- * @param {Array<{ id: string, updated_at: number, closed_at: number | null } & Record<string, unknown>>} items
+ * @param spec - The subscription spec.
+ * @param items - Array of issue items.
  */
-function applyClosedIssuesFilter(spec, items) {
+function applyClosedIssuesFilter(
+  spec: SubscriptionSpec,
+  items: NormalizedIssue[],
+): NormalizedIssue[] {
   if (String(spec.type) !== "closed-issues") {
     return items
   }
@@ -404,8 +437,7 @@ function applyClosedIssuesFilter(spec, items) {
   if (!Number.isFinite(since) || since <= 0) {
     return items
   }
-  /** @type {typeof items} */
-  const out = []
+  const out: NormalizedIssue[] = []
   for (const it of items) {
     const ca = it.closed_at
     if (typeof ca === "number" && Number.isFinite(ca) && ca >= since) {
@@ -416,13 +448,36 @@ function applyClosedIssuesFilter(spec, items) {
 }
 
 /**
+ * Options for attaching the WebSocket server.
+ */
+export interface AttachWsServerOptions {
+  path?: string
+  heartbeat_ms?: number
+  refresh_debounce_ms?: number
+  root_dir?: string
+  watcher?: DbWatcher
+}
+
+/**
+ * Return type for attachWsServer.
+ */
+export interface WsServerHandle {
+  wss: WebSocketServer
+  broadcast: (type: MessageType, payload?: unknown) => void
+  scheduleListRefresh: () => void
+  setWorkspace: (root_dir: string) => { changed: boolean; workspace: WorkspaceConfig }
+}
+
+/**
  * Attach a WebSocket server to an existing HTTP server.
  *
- * @param {Server} http_server
- * @param {{ path?: string, heartbeat_ms?: number, refresh_debounce_ms?: number, root_dir?: string, watcher?: { rebind: (opts?: { root_dir?: string }) => void, path: string } }} [options]
- * @returns {{ wss: WebSocketServer, broadcast: (type: MessageType, payload?: unknown) => void, scheduleListRefresh: () => void, setWorkspace: (root_dir: string) => { changed: boolean, workspace: { root_dir: string, db_path: string } } }}
+ * @param http_server - The HTTP server to attach to.
+ * @param options - Configuration options.
  */
-export function attachWsServer(http_server, options = {}) {
+export function attachWsServer(
+  http_server: Server,
+  options: AttachWsServerOptions = {},
+): WsServerHandle {
   const ws_path = options.path || "/ws"
 
   // Initialize workspace state
@@ -496,10 +551,10 @@ export function attachWsServer(http_server, options = {}) {
   /**
    * Broadcast a server-initiated event to all open clients.
    *
-   * @param {MessageType} type
-   * @param {unknown} [payload]
+   * @param type - Message type.
+   * @param payload - Message payload.
    */
-  function broadcast(type, payload) {
+  function broadcast(type: MessageType, payload?: unknown): void {
     const msg = JSON.stringify({
       id: `evt-${Date.now()}`,
       ok: true,
@@ -516,10 +571,9 @@ export function attachWsServer(http_server, options = {}) {
   /**
    * Change the current workspace and rebind the database watcher.
    *
-   * @param {string} new_root_dir - Absolute path to the new workspace root.
-   * @returns {{ changed: boolean, workspace: { root_dir: string, db_path: string } }}
+   * @param new_root_dir - Absolute path to the new workspace root.
    */
-  function setWorkspace(new_root_dir) {
+  function setWorkspace(new_root_dir: string): { changed: boolean; workspace: WorkspaceConfig } {
     const resolved_root = path.resolve(new_root_dir)
     const new_db = resolveDbPath({ cwd: resolved_root })
     const old_path = CURRENT_WORKSPACE?.db_path || ""
@@ -564,12 +618,11 @@ export function attachWsServer(http_server, options = {}) {
 /**
  * Handle an incoming message frame and respond to the same socket.
  *
- * @param {WebSocket} ws
- * @param {RawData} data
+ * @param ws - The WebSocket connection.
+ * @param data - Raw message data.
  */
-export async function handleMessage(ws, data) {
-  /** @type {unknown} */
-  let json
+export async function handleMessage(ws: WebSocket, data: RawData): Promise<void> {
+  let json: unknown
   try {
     json = JSON.parse(data.toString())
   } catch {
@@ -598,16 +651,16 @@ export async function handleMessage(ws, data) {
   const req = json
 
   // Dispatch known types here as we implement them. For now, only a ping utility.
-  if (req.type === /** @type {MessageType} */ ("ping")) {
+  if (req.type === ("ping" as MessageType)) {
     ws.send(JSON.stringify(makeOk(req, { ts: Date.now() })))
     return
   }
 
   // subscribe-list: payload { id: string, type: string, params?: object }
   if (req.type === "subscribe-list") {
-    const payload_id = /** @type {any} */ (req.payload)?.id || ""
+    const payload_id = (req.payload as Record<string, unknown> | undefined)?.id || ""
     log("subscribe-list %s", payload_id)
-    const validation = validateSubscribeListPayload(/** @type {any} */ (req.payload || {}))
+    const validation = validateSubscribeListPayload((req.payload || {}) as Record<string, unknown>)
     if (!validation.ok) {
       ws.send(JSON.stringify(makeError(req, validation.code, validation.message)))
       return
@@ -619,24 +672,23 @@ export async function handleMessage(ws, data) {
     /**
      * Reply with an error and avoid attaching the subscription when
      * initialization fails.
-     *
-     * @param {string} code
-     * @param {string} message
-     * @param {Record<string, unknown>|undefined} details
      */
-    const replyWithError = (code, message, details = undefined) => {
+    const replyWithError = (
+      code: string,
+      message: string,
+      details?: Record<string, unknown>,
+    ): void => {
       ws.send(JSON.stringify(makeError(req, code, message, details)))
     }
 
-    /** @type {Awaited<ReturnType<typeof fetchListForSubscription>> | null} */
-    let initial = null
+    let initial: FetchListResult | null = null
+    const subscribe_fetch_opts =
+      CURRENT_WORKSPACE?.root_dir ? { cwd: CURRENT_WORKSPACE.root_dir } : {}
     try {
-      initial = await fetchListForSubscription(spec, {
-        cwd: CURRENT_WORKSPACE?.root_dir,
-      })
+      initial = await fetchListForSubscription(spec, subscribe_fetch_opts)
     } catch (err) {
       log("subscribe-list snapshot error for %s: %o", key, err)
-      const message = (err && /** @type {any} */ (err).message) || "Failed to load list"
+      const message = (err && (err as { message?: unknown }).message) || "Failed to load list"
       replyWithError("bd_error", String(message), { key })
       return
     }
@@ -676,8 +728,8 @@ export async function handleMessage(ws, data) {
 
   // unsubscribe-list: payload { id: string }
   if (req.type === "unsubscribe-list") {
-    log("unsubscribe-list %s", /** @type {any} */ (req.payload)?.id || "")
-    const { id: client_id } = /** @type {any} */ (req.payload || {})
+    log("unsubscribe-list %s", (req.payload as Record<string, unknown> | undefined)?.id || "")
+    const { id: client_id } = (req.payload || {}) as { id?: unknown }
     if (typeof client_id !== "string" || client_id.length === 0) {
       ws.send(
         JSON.stringify(makeError(req, "bad_request", "payload.id must be a non-empty string")),
@@ -716,7 +768,7 @@ export async function handleMessage(ws, data) {
 
   // update-assignee
   if (req.type === "update-assignee") {
-    const { id, assignee } = /** @type {any} */ (req.payload || {})
+    const { id, assignee } = (req.payload || {}) as { id?: unknown; assignee?: unknown }
     if (typeof id !== "string" || id.length === 0 || typeof assignee !== "string") {
       ws.send(
         JSON.stringify(
@@ -748,7 +800,7 @@ export async function handleMessage(ws, data) {
   // update-status
   if (req.type === "update-status") {
     log("update-status")
-    const { id, status } = /** @type {any} */ (req.payload)
+    const { id, status } = (req.payload || {}) as { id?: unknown; status?: unknown }
     const allowed = new Set(["open", "in_progress", "closed"])
     if (
       typeof id !== "string" ||
@@ -790,7 +842,7 @@ export async function handleMessage(ws, data) {
   // update-priority
   if (req.type === "update-priority") {
     log("update-priority")
-    const { id, priority } = /** @type {any} */ (req.payload)
+    const { id, priority } = (req.payload || {}) as { id?: unknown; priority?: unknown }
     if (
       typeof id !== "string" ||
       id.length === 0 ||
@@ -827,7 +879,11 @@ export async function handleMessage(ws, data) {
   // edit-text
   if (req.type === "edit-text") {
     log("edit-text")
-    const { id, field, value } = /** @type {any} */ (req.payload)
+    const { id, field, value } = (req.payload || {}) as {
+      id?: unknown
+      field?: unknown
+      value?: unknown
+    }
     if (
       typeof id !== "string" ||
       id.length === 0 ||
@@ -883,7 +939,12 @@ export async function handleMessage(ws, data) {
   // create-issue
   if (req.type === "create-issue") {
     log("create-issue")
-    const { title, type, priority, description } = /** @type {any} */ (req.payload || {})
+    const { title, type, priority, description } = (req.payload || {}) as {
+      title?: unknown
+      type?: unknown
+      priority?: unknown
+      description?: unknown
+    }
     if (typeof title !== "string" || title.length === 0) {
       ws.send(
         JSON.stringify(makeError(req, "bad_request", "payload requires { title: string, ... }")),
@@ -925,7 +986,11 @@ export async function handleMessage(ws, data) {
 
   // dep-add: payload { a: string, b: string, view_id?: string }
   if (req.type === "dep-add") {
-    const { a, b, view_id } = /** @type {any} */ (req.payload || {})
+    const { a, b, view_id } = (req.payload || {}) as {
+      a?: unknown
+      b?: unknown
+      view_id?: unknown
+    }
     if (typeof a !== "string" || a.length === 0 || typeof b !== "string" || b.length === 0) {
       ws.send(
         JSON.stringify(makeError(req, "bad_request", "payload requires { a: string, b: string }")),
@@ -954,7 +1019,11 @@ export async function handleMessage(ws, data) {
 
   // dep-remove: payload { a: string, b: string, view_id?: string }
   if (req.type === "dep-remove") {
-    const { a, b, view_id } = /** @type {any} */ (req.payload || {})
+    const { a, b, view_id } = (req.payload || {}) as {
+      a?: unknown
+      b?: unknown
+      view_id?: unknown
+    }
     if (typeof a !== "string" || a.length === 0 || typeof b !== "string" || b.length === 0) {
       ws.send(
         JSON.stringify(makeError(req, "bad_request", "payload requires { a: string, b: string }")),
@@ -983,7 +1052,7 @@ export async function handleMessage(ws, data) {
 
   // label-add: payload { id: string, label: string }
   if (req.type === "label-add") {
-    const { id, label } = /** @type {any} */ (req.payload || {})
+    const { id, label } = (req.payload || {}) as { id?: unknown; label?: unknown }
     if (
       typeof id !== "string" ||
       id.length === 0 ||
@@ -1018,7 +1087,7 @@ export async function handleMessage(ws, data) {
 
   // label-remove: payload { id: string, label: string }
   if (req.type === "label-remove") {
-    const { id, label } = /** @type {any} */ (req.payload || {})
+    const { id, label } = (req.payload || {}) as { id?: unknown; label?: unknown }
     if (
       typeof id !== "string" ||
       id.length === 0 ||
@@ -1053,7 +1122,7 @@ export async function handleMessage(ws, data) {
 
   // get-comments: payload { id: string }
   if (req.type === "get-comments") {
-    const { id } = /** @type {any} */ (req.payload || {})
+    const { id } = (req.payload || {}) as { id?: unknown }
     if (typeof id !== "string" || id.length === 0) {
       ws.send(JSON.stringify(makeError(req, "bad_request", "payload requires { id: string }")))
       return
@@ -1069,7 +1138,7 @@ export async function handleMessage(ws, data) {
 
   // add-comment: payload { id: string, text: string }
   if (req.type === "add-comment") {
-    const { id, text } = /** @type {any} */ (req.payload || {})
+    const { id, text } = (req.payload || {}) as { id?: unknown; text?: unknown }
     if (
       typeof id !== "string" ||
       id.length === 0 ||
@@ -1109,7 +1178,7 @@ export async function handleMessage(ws, data) {
 
   // delete-issue: payload { id: string }
   if (req.type === "delete-issue") {
-    const { id } = /** @type {any} */ (req.payload || {})
+    const { id } = (req.payload || {}) as { id?: unknown }
     if (typeof id !== "string" || id.length === 0) {
       ws.send(JSON.stringify(makeError(req, "bad_request", "payload requires { id: string }")))
       return
@@ -1153,7 +1222,7 @@ export async function handleMessage(ws, data) {
   // set-workspace: payload { path: string }
   if (req.type === "set-workspace") {
     log("set-workspace")
-    const { path: workspace_path } = /** @type {any} */ (req.payload || {})
+    const { path: workspace_path } = (req.payload || {}) as { path?: unknown }
     if (typeof workspace_path !== "string" || workspace_path.length === 0) {
       ws.send(
         JSON.stringify(
