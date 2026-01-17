@@ -13,7 +13,10 @@ import type { HashRouter } from "./router.js"
 import type { WsClient } from "../types/ws-client.js"
 import { createListSelectors } from "./data/list-selectors.js"
 import { createDataLayer, type Transport } from "./data/providers.js"
-import { createSubscriptionIssueStores } from "./data/subscription-issue-stores.js"
+import {
+  createSubscriptionIssueStores,
+  type SubscriptionIssueStoresRegistry,
+} from "./data/subscription-issue-stores.js"
 import { createSubscriptionStore, type SubscriptionStore } from "./data/subscriptions-store.js"
 import { createHashRouter, parseHash, parseView } from "./router.js"
 import { createStore } from "./state.js"
@@ -46,8 +49,7 @@ interface PersistedBoard {
 /** Unsubscribe function returned by list subscriptions. */
 type UnsubscribeFn = (() => Promise<void>) | null
 
-/** Type for the subscription issue stores registry. */
-type SubscriptionIssueStoresRegistry = ReturnType<typeof createSubscriptionIssueStores>
+// SubscriptionIssueStoresRegistry is imported from subscription-issue-stores.js
 
 /** Type for the activity indicator instance. */
 type ActivityIndicator = ReturnType<typeof createActivityIndicator>
