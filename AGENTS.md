@@ -116,6 +116,8 @@ Never update `CHANGES.md`.
   - `server/cli/daemon.ts` - Daemon management (PID file, process lifecycle)
   - `server/cli/commands.ts` - CLI command handlers (start, stop, restart)
   - `server/cli/index.ts` - CLI main entry point and argument parsing
+  - `scripts/build-frontend.ts` - esbuild bundler for frontend build
+  - `bin/bdui.ts` - CLI entry point for bdui command
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types
@@ -125,7 +127,8 @@ Never update `CHANGES.md`.
   - `subscription-issue-store.ts` - Store interface types
   - `list-adapters.ts` - Server list adapter types
 - TypeScript strict mode is enabled with additional checks:
-  `noUncheckedIndexedAccess`, `noImplicitOverride`, `exactOptionalPropertyTypes`.
+  `noUncheckedIndexedAccess`, `noImplicitOverride`, `exactOptionalPropertyTypes`,
+  `allowImportingTsExtensions` (for scripts run directly with Node's native TS support).
 - Target ES2024 for Node 22+ and modern browser compatibility.
 - Place a JSDoc type import block at the top of each file when needed:
   ```js

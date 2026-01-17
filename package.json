@@ -12,7 +12,7 @@
   "author": "Herb Caudill <herbcaudill@devresults.com>",
   "type": "module",
   "bin": {
-    "bdui": "bin/bdui.js"
+    "bdui": "bin/bdui.ts"
   },
   "engines": {
     "node": ">=22"
@@ -20,7 +20,7 @@
   "scripts": {
     "test:all": "pnpm typecheck && pnpm test",
     "start": "node server/index.ts --debug",
-    "build": "node scripts/build-frontend.js",
+    "build": "node scripts/build-frontend.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -59,12 +59,13 @@
     "app/styles.css",
     "app/main.bundle.js",
     "app/main.bundle.js.map",
-    "app/protocol.js",
     "bin",
     "server",
+    "types",
     "CHANGES.md",
     "LICENSE",
     "README.md",
-    "!**/*.test.js"
+    "!**/*.test.js",
+    "!**/*.test.ts"
   ]
 }

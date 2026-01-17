@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Thin CLI entry for `bdui`.
- * Delegates to `server/cli/index.js` and sets the process exit code.
+ * Delegates to `server/cli/index.ts` and sets the process exit code.
  */
-import { main } from "../server/cli/index.js"
-import { debug } from "../server/logging.js"
+import { main } from "../server/cli/index.ts"
+import { debug } from "../server/logging.ts"
 
 const argv = process.argv.slice(2)
 

@@ -5,9 +5,8 @@
  * - Produces `app/main.bundle.js` with an external source map.
  * - Minifies in production builds.
  * - Keeps ESM output targeting modern browsers.
- *
- * @import { BuildOptions } from 'esbuild'
  */
+import type { BuildOptions } from "esbuild"
 import { mkdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -16,20 +15,19 @@ import { debug } from "../server/logging.ts"
 /**
  * Build frontend bundle to `app/main.bundle.js` using esbuild.
  */
-async function run() {
+async function run(): Promise<void> {
   const log = debug("build")
   // Resolve repo root regardless of where this script is launched from
   const this_file = fileURLToPath(new URL(import.meta.url))
   const repo_root = path.resolve(path.dirname(this_file), "..")
   const app_dir = path.join(repo_root, "app")
-  const entry = path.join(app_dir, "main.js")
+  const entry = path.join(app_dir, "main.ts")
   const outfile = path.join(app_dir, "main.bundle.js")
 
   // Ensure output directory exists when running from a fresh checkout
   mkdirSync(app_dir, { recursive: true })
 
-  /** @type {BuildOptions} */
-  const options = {
+  const options: BuildOptions = {
     entryPoints: [entry],
     bundle: true,
     format: "esm",
