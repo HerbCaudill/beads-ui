@@ -89,6 +89,7 @@ Never update `CHANGES.md`.
   - `app/utils/type-badge.ts` - Type badge DOM element factory
   - `app/utils/issue-id-renderer.ts` - Copy-to-clipboard issue ID button
   - `app/utils/activity-indicator.ts` - In-flight request activity tracker
+  - `app/views/detail.ts` - Issue detail panel view component with lit-html templating
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)

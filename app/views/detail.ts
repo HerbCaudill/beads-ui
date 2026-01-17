@@ -1,6 +1,6 @@
 // Issue Detail view implementation (lit-html based)
-import { html, render } from "lit-html"
-import { parseView } from "../router.ts"
+import { html, render, TemplateResult } from "lit-html"
+import { parseView } from "../router.js"
 import { issueHashFor } from "../utils/issue-url.js"
 import { debug } from "../utils/logging.js"
 import { renderMarkdown } from "../utils/markdown.js"
@@ -9,14 +9,40 @@ import { priority_levels } from "../utils/priority.js"
 import { statusLabel } from "../utils/status.js"
 import { showToast } from "../utils/toast.js"
 import { createTypeBadge } from "../utils/type-badge.js"
+import type { Comment, DependencyRef, IssueDetail } from "../../types/issues.js"
+import type { ViewName } from "../router.js"
+
+/**
+ * Issue stores interface for live updates.
+ */
+interface IssueStores {
+  snapshotFor?: (client_id: string) => IssueDetail[]
+  subscribe?: (fn: () => void) => () => void
+}
+
+/**
+ * RPC transport function type.
+ */
+type SendFn = (type: string, payload?: unknown) => Promise<unknown>
+
+/**
+ * Navigation function type.
+ */
+type NavigateFn = (hash: string) => void
+
+/**
+ * View API returned by createDetailView.
+ */
+export interface DetailViewAPI {
+  load: (id: string) => Promise<void>
+  clear: () => void
+  destroy: () => void
+}
 
 /**
  * Format a date string for display.
- *
- * @param {string} [dateStr]
- * @returns {string}
  */
-function formatCommentDate(dateStr) {
+function formatCommentDate(dateStr?: string): string {
   if (!dateStr) return ""
   try {
     const date = new Date(dateStr)
@@ -33,91 +59,44 @@ function formatCommentDate(dateStr) {
 }
 
 /**
- * @typedef {Object} Dependency
- * @property {string} id
- * @property {string} [title]
- * @property {string} [status]
- * @property {number} [priority]
- * @property {string} [issue_type]
+ * Default navigation function using window.location.hash.
  */
-
-/**
- * @typedef {Object} Comment
- * @property {number} id
- * @property {string} [author]
- * @property {string} text
- * @property {string} [created_at]
- */
-
-/**
- * @typedef {Object} IssueDetail
- * @property {string} id
- * @property {string} [title]
- * @property {string} [description]
- * @property {string} [design]
- * @property {string} [acceptance]
- * @property {string} [notes]
- * @property {string} [status]
- * @property {string} [assignee]
- * @property {number} [priority]
- * @property {string[]} [labels]
- * @property {Dependency[]} [dependencies]
- * @property {Dependency[]} [dependents]
- * @property {Comment[]} [comments]
- */
-
-/**
- * @param {string} hash
- */
-function defaultNavigateFn(hash) {
+function defaultNavigateFn(hash: string): void {
   window.location.hash = hash
 }
 
 /**
  * Create the Issue Detail view.
  *
- * @param {HTMLElement} mount_element - Element to render into.
- * @param {(type: string, payload?: unknown) => Promise<unknown>} sendFn - RPC transport.
- * @param {(hash: string) => void} [navigateFn] - Navigation function; defaults to setting location.hash.
- * @param {{ snapshotFor?: (client_id: string) => any[], subscribe?: (fn: () => void) => () => void }} [issue_stores] - Optional issue stores for live updates.
- * @returns {{ load: (id: string) => Promise<void>, clear: () => void, destroy: () => void }} View API.
+ * @param mount_element - Element to render into.
+ * @param sendFn - RPC transport.
+ * @param navigateFn - Navigation function; defaults to setting location.hash.
+ * @param issue_stores - Optional issue stores for live updates.
+ * @returns View API.
  */
 export function createDetailView(
-  mount_element,
-  sendFn,
-  navigateFn = defaultNavigateFn,
-  issue_stores = undefined,
-) {
+  mount_element: HTMLElement,
+  sendFn: SendFn,
+  navigateFn: NavigateFn = defaultNavigateFn,
+  issue_stores: IssueStores | undefined = undefined,
+): DetailViewAPI {
   const log = debug("views:detail")
-  /** @type {IssueDetail | null} */
-  let current = null
-  /** @type {string | null} */
-  let current_id = null
-  /** @type {boolean} */
+  let current: IssueDetail | null = null
+  let current_id: string | null = null
   let pending = false
-  /** @type {boolean} */
   let edit_title = false
-  /** @type {boolean} */
   let edit_desc = false
-  /** @type {boolean} */
   let edit_design = false
-  /** @type {boolean} */
   let edit_notes = false
-  /** @type {boolean} */
   let edit_accept = false
-  /** @type {boolean} */
   let edit_assignee = false
-  /** @type {string} */
   let new_label_text = ""
-  /** @type {string} */
   let comment_text = ""
-  /** @type {boolean} */
   let comment_pending = false
 
-  /** @type {HTMLDialogElement | null} */
-  let delete_dialog = null
+  let delete_dialog: HTMLDialogElement | null = null
 
-  function ensureDeleteDialog() {
+  function ensureDeleteDialog(): HTMLDialogElement {
     if (delete_dialog) return delete_dialog
     delete_dialog = document.createElement("dialog")
     delete_dialog.id = "delete-confirm-dialog"
@@ -127,7 +106,7 @@ export function createDetailView(
     return delete_dialog
   }
 
-  function openDeleteDialog() {
+  function openDeleteDialog(): void {
     if (!current) return
     const dialog = ensureDeleteDialog()
     const issueId = current.id
@@ -162,7 +141,7 @@ export function createDetailView(
       await performDelete()
     })
 
-    dialog.addEventListener("cancel", ev => {
+    dialog.addEventListener("cancel", (ev: Event) => {
       ev.preventDefault()
       if (typeof dialog.close === "function") {
         dialog.close()
@@ -182,7 +161,7 @@ export function createDetailView(
     }
   }
 
-  async function performDelete() {
+  async function performDelete(): Promise<void> {
     if (!current) return
     const id = current.id
     try {
@@ -199,26 +178,18 @@ export function createDetailView(
     }
   }
 
-  /**
-   * @param {Event} ev
-   */
-  function onDeleteClick(ev) {
+  function onDeleteClick(ev: Event): void {
     ev.stopPropagation()
     ev.preventDefault()
     openDeleteDialog()
   }
 
-  /** @param {string} id */
-  function issueHref(id) {
-    /** @type {'issues'|'epics'|'board'} */
-    const view = parseView(window.location.hash || "")
+  function issueHref(id: string): string {
+    const view: ViewName = parseView(window.location.hash || "")
     return issueHashFor(view, id)
   }
 
-  /**
-   * @param {string} message
-   */
-  function renderPlaceholder(message) {
+  function renderPlaceholder(message: string): void {
     render(
       html`
         <div class="panel__body" id="detail-root">
@@ -232,15 +203,15 @@ export function createDetailView(
   /**
    * Refresh current from subscription store snapshot if available.
    */
-  function refreshFromStore() {
+  function refreshFromStore(): void {
     if (!current_id || !issue_stores || typeof issue_stores.snapshotFor !== "function") {
       return
     }
-    const arr = /** @type {IssueDetail[]} */ (issue_stores.snapshotFor(`detail:${current_id}`))
+    const arr = issue_stores.snapshotFor(`detail:${current_id}`)
     if (Array.isArray(arr) && arr.length > 0) {
       // First item is the issue for this subscription
-      const found = arr.find(it => String(it.id) === String(current_id)) || arr[0]
-      current = /** @type {IssueDetail} */ (found)
+      const found = arr.find(it => String(it.id) === String(current_id)) ?? arr[0]
+      current = found ?? null
     }
   }
 
@@ -257,14 +228,12 @@ export function createDetailView(
   }
 
   // Handlers
-  const onTitleSpanClick = () => {
+  const onTitleSpanClick = (): void => {
     edit_title = true
     doRender()
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onTitleKeydown = ev => {
+
+  const onTitleKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Enter") {
       edit_title = true
       doRender()
@@ -273,11 +242,12 @@ export function createDetailView(
       doRender()
     }
   }
-  const onTitleSave = async () => {
+
+  const onTitleSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const input = /** @type {HTMLInputElement|null} */ (mount_element.querySelector("h2 input"))
+    const input = mount_element.querySelector("h2 input") as HTMLInputElement | null
     const prev = current.title || ""
     const next = input ? input.value : ""
     if (next === prev) {
@@ -297,7 +267,7 @@ export function createDetailView(
         value: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_title = false
         doRender()
       }
@@ -311,19 +281,19 @@ export function createDetailView(
       pending = false
     }
   }
-  const onTitleCancel = () => {
+
+  const onTitleCancel = (): void => {
     edit_title = false
     doRender()
   }
+
   // Assignee inline edit handlers
-  const onAssigneeSpanClick = () => {
+  const onAssigneeSpanClick = (): void => {
     edit_assignee = true
     doRender()
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onAssigneeKeydown = ev => {
+
+  const onAssigneeKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Enter") {
       ev.preventDefault()
       edit_assignee = true
@@ -334,13 +304,14 @@ export function createDetailView(
       doRender()
     }
   }
-  const onAssigneeSave = async () => {
+
+  const onAssigneeSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const input = /** @type {HTMLInputElement|null} */ (
-      mount_element.querySelector("#detail-root .prop.assignee input")
-    )
+    const input = mount_element.querySelector(
+      "#detail-root .prop.assignee input",
+    ) as HTMLInputElement | null
     const prev = current?.assignee ?? ""
     const next = input?.value ?? ""
     if (next === prev) {
@@ -359,7 +330,7 @@ export function createDetailView(
         assignee: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_assignee = false
         doRender()
       }
@@ -374,29 +345,26 @@ export function createDetailView(
       pending = false
     }
   }
-  const onAssigneeCancel = () => {
+
+  const onAssigneeCancel = (): void => {
     edit_assignee = false
     doRender()
   }
 
   // Labels handlers
-  /**
-   * @param {Event} ev
-   */
-  const onLabelInput = ev => {
-    const el = /** @type {HTMLInputElement} */ (ev.currentTarget)
+  const onLabelInput = (ev: Event): void => {
+    const el = ev.currentTarget as HTMLInputElement
     new_label_text = el.value || ""
   }
-  /**
-   * @param {KeyboardEvent} e
-   */
-  function onLabelKeydown(e) {
+
+  function onLabelKeydown(e: KeyboardEvent): void {
     if (e.key === "Enter") {
       e.preventDefault()
       void onAddLabel()
     }
   }
-  async function onAddLabel() {
+
+  async function onAddLabel(): Promise<void> {
     if (!current || pending) {
       return
     }
@@ -412,7 +380,7 @@ export function createDetailView(
         label: text,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         new_label_text = ""
         doRender()
       }
@@ -423,10 +391,8 @@ export function createDetailView(
       pending = false
     }
   }
-  /**
-   * @param {string} label
-   */
-  async function onRemoveLabel(label) {
+
+  async function onRemoveLabel(label: string): Promise<void> {
     if (!current || pending) {
       return
     }
@@ -438,7 +404,7 @@ export function createDetailView(
         label,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         doRender()
       }
     } catch (err) {
@@ -448,15 +414,13 @@ export function createDetailView(
       pending = false
     }
   }
-  /**
-   * @param {Event} ev
-   */
-  const onStatusChange = async ev => {
+
+  const onStatusChange = async (ev: Event): Promise<void> => {
     if (!current || pending) {
       doRender()
       return
     }
-    const sel = /** @type {HTMLSelectElement} */ (ev.currentTarget)
+    const sel = ev.currentTarget as HTMLSelectElement
     const prev = current.status || "open"
     const next = sel.value
     if (next === prev) {
@@ -472,7 +436,7 @@ export function createDetailView(
         status: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         doRender()
       }
     } catch (err) {
@@ -484,15 +448,13 @@ export function createDetailView(
       pending = false
     }
   }
-  /**
-   * @param {Event} ev
-   */
-  const onPriorityChange = async ev => {
+
+  const onPriorityChange = async (ev: Event): Promise<void> => {
     if (!current || pending) {
       doRender()
       return
     }
-    const sel = /** @type {HTMLSelectElement} */ (ev.currentTarget)
+    const sel = ev.currentTarget as HTMLSelectElement
     const prev = typeof current.priority === "number" ? current.priority : 2
     const next = Number(sel.value)
     if (next === prev) {
@@ -508,7 +470,7 @@ export function createDetailView(
         priority: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         doRender()
       }
     } catch (err) {
@@ -521,33 +483,30 @@ export function createDetailView(
     }
   }
 
-  const onDescEdit = () => {
+  const onDescEdit = (): void => {
     edit_desc = true
     doRender()
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onDescKeydown = ev => {
+
+  const onDescKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Escape") {
       edit_desc = false
       doRender()
     } else if (ev.key === "Enter" && ev.ctrlKey) {
-      const btn = /** @type {HTMLButtonElement|null} */ (
-        mount_element.querySelector("#detail-root .editable-actions button")
-      )
+      const btn = mount_element.querySelector(
+        "#detail-root .editable-actions button",
+      ) as HTMLButtonElement | null
       if (btn) {
         btn.click()
       }
     }
   }
-  const onDescSave = async () => {
+
+  const onDescSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const ta = /** @type {HTMLTextAreaElement|null} */ (
-      mount_element.querySelector("#detail-root textarea")
-    )
+    const ta = mount_element.querySelector("#detail-root textarea") as HTMLTextAreaElement | null
     const prev = current.description || ""
     const next = ta ? ta.value : ""
     if (next === prev) {
@@ -567,7 +526,7 @@ export function createDetailView(
         value: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_desc = false
         doRender()
       }
@@ -581,19 +540,20 @@ export function createDetailView(
       pending = false
     }
   }
-  const onDescCancel = () => {
+
+  const onDescCancel = (): void => {
     edit_desc = false
     doRender()
   }
 
   // Design inline edit handlers (same UX as Description)
-  const onDesignEdit = () => {
+  const onDesignEdit = (): void => {
     edit_design = true
     doRender()
     try {
-      const ta = /** @type {HTMLTextAreaElement|null} */ (
-        mount_element.querySelector("#detail-root .design textarea")
-      )
+      const ta = mount_element.querySelector(
+        "#detail-root .design textarea",
+      ) as HTMLTextAreaElement | null
       if (ta) {
         ta.focus()
       }
@@ -601,29 +561,28 @@ export function createDetailView(
       log("focus design textarea failed %o", err)
     }
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onDesignKeydown = ev => {
+
+  const onDesignKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Escape") {
       edit_design = false
       doRender()
     } else if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
-      const btn = /** @type {HTMLButtonElement|null} */ (
-        mount_element.querySelector("#detail-root .design .editable-actions button")
-      )
+      const btn = mount_element.querySelector(
+        "#detail-root .design .editable-actions button",
+      ) as HTMLButtonElement | null
       if (btn) {
         btn.click()
       }
     }
   }
-  const onDesignSave = async () => {
+
+  const onDesignSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const ta = /** @type {HTMLTextAreaElement|null} */ (
-      mount_element.querySelector("#detail-root .design textarea")
-    )
+    const ta = mount_element.querySelector(
+      "#detail-root .design textarea",
+    ) as HTMLTextAreaElement | null
     const prev = current.design || ""
     const next = ta ? ta.value : ""
     if (next === prev) {
@@ -643,7 +602,7 @@ export function createDetailView(
         value: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_design = false
         doRender()
       }
@@ -657,39 +616,39 @@ export function createDetailView(
       pending = false
     }
   }
-  const onDesignCancel = () => {
+
+  const onDesignCancel = (): void => {
     edit_design = false
     doRender()
   }
 
   // Notes inline edit handlers
-  const onNotesEdit = () => {
+  const onNotesEdit = (): void => {
     edit_notes = true
     doRender()
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onNotesKeydown = ev => {
+
+  const onNotesKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Escape") {
       edit_notes = false
       doRender()
     } else if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
-      const btn = /** @type {HTMLButtonElement|null} */ (
-        mount_element.querySelector("#detail-root .notes .editable-actions button")
-      )
+      const btn = mount_element.querySelector(
+        "#detail-root .notes .editable-actions button",
+      ) as HTMLButtonElement | null
       if (btn) {
         btn.click()
       }
     }
   }
-  const onNotesSave = async () => {
+
+  const onNotesSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const ta = /** @type {HTMLTextAreaElement|null} */ (
-      mount_element.querySelector("#detail-root .notes textarea")
-    )
+    const ta = mount_element.querySelector(
+      "#detail-root .notes textarea",
+    ) as HTMLTextAreaElement | null
     const prev = current.notes || ""
     const next = ta ? ta.value : ""
     if (next === prev) {
@@ -709,7 +668,7 @@ export function createDetailView(
         value: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_notes = false
         doRender()
       }
@@ -723,38 +682,38 @@ export function createDetailView(
       pending = false
     }
   }
-  const onNotesCancel = () => {
+
+  const onNotesCancel = (): void => {
     edit_notes = false
     doRender()
   }
 
-  const onAcceptEdit = () => {
+  const onAcceptEdit = (): void => {
     edit_accept = true
     doRender()
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onAcceptKeydown = ev => {
+
+  const onAcceptKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Escape") {
       edit_accept = false
       doRender()
     } else if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
-      const btn = /** @type {HTMLButtonElement|null} */ (
-        mount_element.querySelector("#detail-root .acceptance .editable-actions button")
-      )
+      const btn = mount_element.querySelector(
+        "#detail-root .acceptance .editable-actions button",
+      ) as HTMLButtonElement | null
       if (btn) {
         btn.click()
       }
     }
   }
-  const onAcceptSave = async () => {
+
+  const onAcceptSave = async (): Promise<void> => {
     if (!current || pending) {
       return
     }
-    const ta = /** @type {HTMLTextAreaElement|null} */ (
-      mount_element.querySelector("#detail-root .acceptance textarea")
-    )
+    const ta = mount_element.querySelector(
+      "#detail-root .acceptance textarea",
+    ) as HTMLTextAreaElement | null
     const prev = current.acceptance || ""
     const next = ta ? ta.value : ""
     if (next === prev) {
@@ -774,7 +733,7 @@ export function createDetailView(
         value: next,
       })
       if (updated && typeof updated === "object") {
-        current = /** @type {IssueDetail} */ (updated)
+        current = updated as IssueDetail
         edit_accept = false
         doRender()
       }
@@ -788,17 +747,15 @@ export function createDetailView(
       pending = false
     }
   }
-  const onAcceptCancel = () => {
+
+  const onAcceptCancel = (): void => {
     edit_accept = false
     doRender()
   }
 
   // Comment input handlers
-  /**
-   * @param {Event} ev
-   */
-  const onCommentInput = ev => {
-    const el = /** @type {HTMLTextAreaElement} */ (ev.currentTarget)
+  const onCommentInput = (ev: Event): void => {
+    const el = ev.currentTarget as HTMLTextAreaElement
     const prev_has_text = comment_text.trim().length > 0
     comment_text = el.value || ""
     const has_text = comment_text.trim().length > 0
@@ -808,7 +765,7 @@ export function createDetailView(
     }
   }
 
-  const onCommentSubmit = async () => {
+  const onCommentSubmit = async (): Promise<void> => {
     if (!current || comment_pending || !comment_text.trim()) {
       return
     }
@@ -822,7 +779,7 @@ export function createDetailView(
       })
       if (Array.isArray(result)) {
         // Update comments in current issue
-        /** @type {any} */ current.comments = result
+        ;(current as IssueDetail & { comments?: Comment[] }).comments = result
         comment_text = ""
         doRender()
       }
@@ -835,21 +792,17 @@ export function createDetailView(
     }
   }
 
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  const onCommentKeydown = ev => {
+  const onCommentKeydown = (ev: KeyboardEvent): void => {
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
       ev.preventDefault()
       onCommentSubmit()
     }
   }
 
-  /**
-   * @param {'Dependencies'|'Dependents'} title
-   * @param {Dependency[]} items
-   */
-  function depsSection(title, items) {
+  function depsSection(
+    title: "Dependencies" | "Dependents",
+    items: DependencyRef[],
+  ): TemplateResult {
     const test_id = title === "Dependencies" ? "add-dependency" : "add-dependent"
     return html`
       <div class="props-card">
@@ -882,10 +835,7 @@ export function createDetailView(
     `
   }
 
-  /**
-   * @param {IssueDetail} issue
-   */
-  function detailTemplate(issue) {
+  function detailTemplate(issue: IssueDetail): TemplateResult {
     const title_zone =
       edit_title ?
         html`<div class="detail-title">
@@ -980,8 +930,7 @@ export function createDetailView(
 
     // Normalize acceptance text: prefer issue.acceptance, fallback to acceptance_criteria from bd
     const acceptance_text = (() => {
-      /** @type {any} */
-      const any_issue = issue
+      const any_issue = issue as IssueDetail & { acceptance_criteria?: string }
       const raw = String(issue.acceptance || any_issue.acceptance_criteria || "")
       return raw
     })()
@@ -1133,8 +1082,8 @@ export function createDetailView(
 
     // Comments section
     const comments =
-      Array.isArray(/** @type {any} */ (issue).comments) ?
-        /** @type {Comment[]} */ (/** @type {any} */ (issue).comments)
+      Array.isArray((issue as IssueDetail & { comments?: Comment[] }).comments) ?
+        (issue as IssueDetail & { comments?: Comment[] }).comments!
       : []
     const comments_block = html`<div class="comments">
       <div class="props-card__title">Comments</div>
@@ -1190,7 +1139,7 @@ export function createDetailView(
                 <div class="prop">
                   <div class="label">Type</div>
                   <div class="value">
-                    ${createTypeBadge(/** @type {any} */ (issue).issue_type)}
+                    ${createTypeBadge((issue as IssueDetail & { issue_type?: string }).issue_type)}
                   </div>
                 </div>
                 <div class="prop">
@@ -1209,19 +1158,17 @@ export function createDetailView(
                         html`<input
                             type="text"
                             aria-label="Edit assignee"
-                            .value=${/** @type {any} */ (issue).assignee || ""}
+                            .value=${(issue as IssueDetail).assignee || ""}
                             size=${Math.min(40, Math.max(12, (issue.assignee || "").length + 3))}
-                            @keydown=${
-                              /** @param {KeyboardEvent} e */ e => {
-                                if (e.key === "Escape") {
-                                  e.preventDefault()
-                                  onAssigneeCancel()
-                                } else if (e.key === "Enter") {
-                                  e.preventDefault()
-                                  onAssigneeSave()
-                                }
+                            @keydown=${(e: KeyboardEvent) => {
+                              if (e.key === "Escape") {
+                                e.preventDefault()
+                                onAssigneeCancel()
+                              } else if (e.key === "Enter") {
+                                e.preventDefault()
+                                onAssigneeSave()
                               }
-                            }
+                            }}
                           />
                           <button class="btn" style="margin-left:6px" @click=${onAssigneeSave}>
                             Save
@@ -1258,7 +1205,7 @@ export function createDetailView(
     `
   }
 
-  function doRender() {
+  function doRender(): void {
     if (!current) {
       renderPlaceholder(current_id ? "Loading…" : "No issue selected")
       return
@@ -1268,13 +1215,12 @@ export function createDetailView(
 
   /**
    * Create a click handler for the remove button of a dependency row.
-   *
-   * @param {string} did
-   * @param {'Dependencies'|'Dependents'} title
-   * @returns {(ev: Event) => Promise<void>}
    */
-  function makeDepRemoveClick(did, title) {
-    return async ev => {
+  function makeDepRemoveClick(
+    did: string,
+    title: "Dependencies" | "Dependents",
+  ): (ev: Event) => Promise<void> {
+    return async (ev: Event): Promise<void> => {
       ev.stopPropagation()
       if (!current || pending) {
         return
@@ -1288,7 +1234,7 @@ export function createDetailView(
             view_id: current.id,
           })
           if (updated && typeof updated === "object") {
-            current = /** @type {IssueDetail} */ (updated)
+            current = updated as IssueDetail
             doRender()
           }
         } else {
@@ -1298,7 +1244,7 @@ export function createDetailView(
             view_id: current.id,
           })
           if (updated && typeof updated === "object") {
-            current = /** @type {IssueDetail} */ (updated)
+            current = updated as IssueDetail
             doRender()
           }
         }
@@ -1312,18 +1258,17 @@ export function createDetailView(
 
   /**
    * Create a click handler for the Add button in a dependency section.
-   *
-   * @param {Dependency[]} items
-   * @param {'Dependencies'|'Dependents'} title
-   * @returns {(ev: Event) => Promise<void>}
    */
-  function makeDepAddClick(items, title) {
-    return async ev => {
+  function makeDepAddClick(
+    items: DependencyRef[],
+    title: "Dependencies" | "Dependents",
+  ): (ev: Event) => Promise<void> {
+    return async (ev: Event): Promise<void> => {
       if (!current || pending) {
         return
       }
-      const btn = /** @type {HTMLButtonElement} */ (ev.currentTarget)
-      const input = /** @type {HTMLInputElement|null} */ (btn.previousElementSibling)
+      const btn = ev.currentTarget as HTMLButtonElement
+      const input = btn.previousElementSibling as HTMLInputElement | null
       const target = input ? input.value.trim() : ""
       if (!target || target === current.id) {
         showToast("Enter a different issue id")
@@ -1349,7 +1294,7 @@ export function createDetailView(
             view_id: current.id,
           })
           if (updated && typeof updated === "object") {
-            current = /** @type {IssueDetail} */ (updated)
+            current = updated as IssueDetail
             doRender()
           }
         } else {
@@ -1359,7 +1304,7 @@ export function createDetailView(
             view_id: current.id,
           })
           if (updated && typeof updated === "object") {
-            current = /** @type {IssueDetail} */ (updated)
+            current = updated as IssueDetail
             doRender()
           }
         }
@@ -1371,10 +1316,8 @@ export function createDetailView(
       }
     }
   }
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  function onTitleInputKeydown(ev) {
+
+  function onTitleInputKeydown(ev: KeyboardEvent): void {
     if (ev.key === "Escape") {
       edit_title = false
       doRender()
@@ -1384,44 +1327,32 @@ export function createDetailView(
     }
   }
 
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  function onDescEditableKeydown(ev) {
+  function onDescEditableKeydown(ev: KeyboardEvent): void {
     if (ev.key === "Enter") {
       onDescEdit()
     }
   }
 
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  function onAcceptEditableKeydown(ev) {
+  function onAcceptEditableKeydown(ev: KeyboardEvent): void {
     if (ev.key === "Enter") {
       onAcceptEdit()
     }
   }
 
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  function onNotesEditableKeydown(ev) {
+  function onNotesEditableKeydown(ev: KeyboardEvent): void {
     if (ev.key === "Enter") {
       onNotesEdit()
     }
   }
 
-  /**
-   * @param {KeyboardEvent} ev
-   */
-  function onDesignEditableKeydown(ev) {
+  function onDesignEditableKeydown(ev: KeyboardEvent): void {
     if (ev.key === "Enter") {
       onDesignEdit()
     }
   }
 
   return {
-    async load(id) {
+    async load(id: string): Promise<void> {
       if (!id) {
         renderPlaceholder("No issue selected")
         return
@@ -1440,11 +1371,11 @@ export function createDetailView(
       doRender()
 
       // Fetch comments if not already present
-      if (current && !(/** @type {any} */ (current).comments)) {
+      if (current && !(current as IssueDetail & { comments?: Comment[] }).comments) {
         try {
           const comments = await sendFn("get-comments", { id: current_id })
           if (Array.isArray(comments) && current && current_id === id) {
-            /** @type {any} */ current.comments = comments
+            ;(current as IssueDetail & { comments?: Comment[] }).comments = comments
             doRender()
           }
         } catch (err) {
@@ -1452,10 +1383,10 @@ export function createDetailView(
         }
       }
     },
-    clear() {
+    clear(): void {
       renderPlaceholder("Select an issue to view details")
     },
-    destroy() {
+    destroy(): void {
       mount_element.replaceChildren()
       if (delete_dialog && delete_dialog.parentNode) {
         delete_dialog.parentNode.removeChild(delete_dialog)
