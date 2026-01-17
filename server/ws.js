@@ -8,10 +8,10 @@ import { WebSocketServer } from "ws"
 import { isRequest, makeError, makeOk } from "../app/protocol.ts"
 import { getGitUserName, runBd, runBdJson } from "./bd.js"
 import { resolveDbPath } from "./db.ts"
-import { fetchListForSubscription } from "./list-adapters.js"
+import { fetchListForSubscription } from "./list-adapters.ts"
 import { debug } from "./logging.ts"
 import { getAvailableWorkspaces } from "./registry-watcher.ts"
-import { keyOf, registry } from "./subscriptions.js"
+import { keyOf, registry } from "./subscriptions.ts"
 import { validateSubscribeListPayload } from "./validators.ts"
 
 const log = debug("ws")

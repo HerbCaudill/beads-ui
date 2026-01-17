@@ -1,9 +1,9 @@
 import { createServer } from "node:http"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { fetchListForSubscription } from "./list-adapters.js"
+import { fetchListForSubscription } from "./list-adapters.ts"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
-vi.mock("./list-adapters.js", () => ({
+vi.mock("./list-adapters.ts", () => ({
   fetchListForSubscription: vi.fn(async () => {
     return {
       ok: true,

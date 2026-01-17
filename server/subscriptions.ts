@@ -1,7 +1,4 @@
 /**
- * @import { WebSocket } from 'ws'
- */
-/**
  * Server-side subscription registry for list-like data.
  *
  * Maintains per-subscription entries keyed by a stable string derived from
@@ -13,32 +10,34 @@
  * No TTL eviction; entries are swept when sockets disconnect (and only when
  * that leaves the subscriber set empty).
  */
+import type { WebSocket } from "ws"
 
-/**
- * @typedef {{
- *   type: string,
- *   params?: Record<string, string | number | boolean>
- * }} SubscriptionSpec
- */
+export interface SubscriptionSpec {
+  type: string
+  params?: Record<string, string | number | boolean>
+}
 
-/**
- * @typedef {{ updated_at: number, closed_at: number | null }} ItemMeta
- */
+export interface ItemMeta {
+  updated_at: number
+  closed_at: number | null
+}
 
-/**
- * @typedef {{
- *   itemsById: Map<string, ItemMeta>,
- *   subscribers: Set<WebSocket>,
- *   lock: Promise<void>
- * }} Entry
- */
+export interface Entry {
+  itemsById: Map<string, ItemMeta>
+  subscribers: Set<WebSocket>
+  lock: Promise<void>
+}
+
+export interface Delta {
+  added: string[]
+  updated: string[]
+  removed: string[]
+}
 
 /**
  * Create a new, empty entry object.
- *
- * @returns {Entry}
  */
-function createEntry() {
+function createEntry(): Entry {
   return {
     itemsById: new Map(),
     subscribers: new Set(),
@@ -48,19 +47,17 @@ function createEntry() {
 
 /**
  * Generate a stable subscription key string from a spec. Sorts params keys.
- *
- * @param {SubscriptionSpec} spec
- * @returns {string}
  */
-export function keyOf(spec) {
+export function keyOf(spec: SubscriptionSpec): string {
   const type = String(spec.type || "").trim()
-  /** @type {Record<string, string>} */
-  const flat = {}
+  const flat: Record<string, string> = {}
   if (spec.params && typeof spec.params === "object") {
     const keys = Object.keys(spec.params).sort()
     for (const k of keys) {
       const v = spec.params[k]
-      flat[k] = String(v)
+      if (v !== undefined) {
+        flat[k] = String(v)
+      }
     }
   }
   const enc = new URLSearchParams(flat).toString()
@@ -69,18 +66,11 @@ export function keyOf(spec) {
 
 /**
  * Compute a delta between previous and next item maps.
- *
- * @param {Map<string, ItemMeta>} prev
- * @param {Map<string, ItemMeta>} next
- * @returns {{ added: string[], updated: string[], removed: string[] }}
  */
-export function computeDelta(prev, next) {
-  /** @type {string[]} */
-  const added = []
-  /** @type {string[]} */
-  const updated = []
-  /** @type {string[]} */
-  const removed = []
+export function computeDelta(prev: Map<string, ItemMeta>, next: Map<string, ItemMeta>): Delta {
+  const added: string[] = []
+  const updated: string[] = []
+  const removed: string[] = []
 
   for (const [id, meta] of next) {
     const p = prev.get(id)
@@ -100,22 +90,23 @@ export function computeDelta(prev, next) {
   return { added, updated, removed }
 }
 
+export interface ItemLike {
+  id: string
+  updated_at: number
+  closed_at?: number | null
+}
+
 /**
  * Normalize array of issue-like objects into an itemsById map.
- *
- * @param {Array<{ id: string, updated_at: number, closed_at?: number|null }>} items
- * @returns {Map<string, ItemMeta>}
  */
-export function toItemsMap(items) {
-  /** @type {Map<string, ItemMeta>} */
-  const map = new Map()
+export function toItemsMap(items: ItemLike[]): Map<string, ItemMeta> {
+  const map: Map<string, ItemMeta> = new Map()
   for (const it of items) {
     if (!it || typeof it.id !== "string") {
       continue
     }
     const updated_at = Number(it.updated_at) || 0
-    /** @type {number|null} */
-    let closed_at = null
+    let closed_at: number | null = null
     if (it.closed_at === null || it.closed_at === undefined) {
       closed_at = null
     } else {
@@ -131,28 +122,19 @@ export function toItemsMap(items) {
  * Create a subscription registry with attach/detach and per-key locking.
  */
 export class SubscriptionRegistry {
-  constructor() {
-    /** @type {Map<string, Entry>} */
-    this._entries = new Map()
-  }
+  private _entries: Map<string, Entry> = new Map()
 
   /**
    * Get an entry by key, or null if missing.
-   *
-   * @param {string} key
-   * @returns {Entry | null}
    */
-  get(key) {
-    return this._entries.get(key) || null
+  get(key: string): Entry | null {
+    return this._entries.get(key) ?? null
   }
 
   /**
    * Ensure an entry exists for a spec; returns the key and entry.
-   *
-   * @param {SubscriptionSpec} spec
-   * @returns {{ key: string, entry: Entry }}
    */
-  ensure(spec) {
+  ensure(spec: SubscriptionSpec): { key: string; entry: Entry } {
     const key = keyOf(spec)
     let entry = this._entries.get(key)
     if (!entry) {
@@ -164,12 +146,8 @@ export class SubscriptionRegistry {
 
   /**
    * Attach a subscriber to a spec. Creates the entry if missing.
-   *
-   * @param {SubscriptionSpec} spec
-   * @param {WebSocket} ws
-   * @returns {{ key: string, subscribed: true }}
    */
-  attach(spec, ws) {
+  attach(spec: SubscriptionSpec, ws: WebSocket): { key: string; subscribed: true } {
     const { key, entry } = this.ensure(spec)
     entry.subscribers.add(ws)
     return { key, subscribed: true }
@@ -178,12 +156,8 @@ export class SubscriptionRegistry {
   /**
    * Detach a subscriber from the spec. Keeps entry even if empty; eviction
    * is handled by `onDisconnect` sweep.
-   *
-   * @param {SubscriptionSpec} spec
-   * @param {WebSocket} ws
-   * @returns {boolean} true when the subscriber was removed
    */
-  detach(spec, ws) {
+  detach(spec: SubscriptionSpec, ws: WebSocket): boolean {
     const key = keyOf(spec)
     const entry = this._entries.get(key)
     if (!entry) {
@@ -195,12 +169,9 @@ export class SubscriptionRegistry {
   /**
    * On socket disconnect, remove it from all subscriber sets and evict any
    * entries that become empty as a result of this sweep.
-   *
-   * @param {WebSocket} ws
    */
-  onDisconnect(ws) {
-    /** @type {string[]} */
-    const empties = []
+  onDisconnect(ws: WebSocket): void {
+    const empties: string[] = []
     for (const [key, entry] of this._entries) {
       entry.subscribers.delete(ws)
       if (entry.subscribers.size === 0) {
@@ -214,13 +185,8 @@ export class SubscriptionRegistry {
 
   /**
    * Serialize a function against a key so only one runs at a time per key.
-   *
-   * @template T
-   * @param {string} key
-   * @param {() => Promise<T>} fn
-   * @returns {Promise<T>}
    */
-  async withKeyLock(key, fn) {
+  async withKeyLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     let entry = this._entries.get(key)
     if (!entry) {
       entry = createEntry()
@@ -230,9 +196,8 @@ export class SubscriptionRegistry {
     const prev = entry.lock
     // Create our own release function and store it locally (not in shared state)
     // to avoid race conditions when multiple operations queue concurrently
-    /** @type {(v?: void) => void} */
-    let release = () => {}
-    const our_lock = new Promise(resolve => {
+    let release: (v?: void) => void = () => {}
+    const our_lock = new Promise<void>(resolve => {
       release = resolve
     })
     // Update the entry's lock to our lock so the next operation waits on us
@@ -255,12 +220,8 @@ export class SubscriptionRegistry {
 
   /**
    * Replace items for a key and compute the delta, storing the new map.
-   *
-   * @param {string} key
-   * @param {Map<string, ItemMeta>} next_map
-   * @returns {{ added: string[], updated: string[], removed: string[] }}
    */
-  applyNextMap(key, next_map) {
+  applyNextMap(key: string, next_map: Map<string, ItemMeta>): Delta {
     let entry = this._entries.get(key)
     if (!entry) {
       entry = createEntry()
@@ -274,12 +235,8 @@ export class SubscriptionRegistry {
 
   /**
    * Convenience: update items from an array of objects with id/updated_at/closed_at.
-   *
-   * @param {string} key
-   * @param {Array<{ id: string, updated_at: number, closed_at?: number|null }>} items
-   * @returns {{ added: string[], updated: string[], removed: string[] }}
    */
-  applyItems(key, items) {
+  applyItems(key: string, items: ItemLike[]): Delta {
     const next_map = toItemsMap(items)
     return this.applyNextMap(key, next_map)
   }
@@ -288,7 +245,7 @@ export class SubscriptionRegistry {
    * Clear all entries from the registry. Used when switching workspaces.
    * Does not close WebSocket connections; they will re-subscribe on refresh.
    */
-  clear() {
+  clear(): void {
     this._entries.clear()
   }
 }

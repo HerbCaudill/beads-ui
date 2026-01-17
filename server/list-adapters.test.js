@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import { runBdJson } from "./bd.js"
-import { fetchListForSubscription, mapSubscriptionToBdArgs } from "./list-adapters.js"
+import { fetchListForSubscription, mapSubscriptionToBdArgs } from "./list-adapters.ts"
 
 vi.mock("./bd.js", () => ({ runBdJson: vi.fn() }))
 

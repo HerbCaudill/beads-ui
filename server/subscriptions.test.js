@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { SubscriptionRegistry, computeDelta, keyOf, toItemsMap } from "./subscriptions.js"
+import { SubscriptionRegistry, computeDelta, keyOf, toItemsMap } from "./subscriptions.ts"
 
 describe("subscriptions registry", () => {
   test("keyOf sorts params for stable keys", () => {

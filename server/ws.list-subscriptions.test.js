@@ -1,11 +1,11 @@
 import { createServer } from "node:http"
 import { describe, expect, test, vi } from "vitest"
-import { fetchListForSubscription } from "./list-adapters.js"
-import { keyOf, registry } from "./subscriptions.js"
+import { fetchListForSubscription } from "./list-adapters.ts"
+import { keyOf, registry } from "./subscriptions.ts"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
 // Mock adapters BEFORE importing ws.js to ensure the mock is applied
-vi.mock("./list-adapters.js", () => ({
+vi.mock("./list-adapters.ts", () => ({
   fetchListForSubscription: vi.fn(async () => {
     // Return a simple, deterministic list for any spec
     return {

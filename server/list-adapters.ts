@@ -1,16 +1,39 @@
 import { runBdJson } from "./bd.js"
-import { debug } from "./logging.ts"
+import { debug } from "./logging.js"
+import type { NormalizedIssue } from "../types/issues.js"
 
 const log = debug("list-adapters")
+
+export interface SubscriptionSpec {
+  type: string
+  params?: Record<string, string | number | boolean>
+}
+
+export interface FetchListResultSuccess {
+  ok: true
+  items: NormalizedIssue[]
+}
+
+export interface FetchListResultFailure {
+  ok: false
+  error: {
+    code: string
+    message: string
+    details?: Record<string, unknown>
+  }
+}
+
+export type FetchListResult = FetchListResultSuccess | FetchListResultFailure
+
+export interface FetchOptions {
+  cwd?: string
+}
 
 /**
  * Build concrete `bd` CLI args for a subscription type + params.
  * Always includes `--json` for parseable output.
- *
- * @param {{ type: string, params?: Record<string, string | number | boolean> }} spec
- * @returns {string[]}
  */
-export function mapSubscriptionToBdArgs(spec) {
+export function mapSubscriptionToBdArgs(spec: SubscriptionSpec): string[] {
   const t = String(spec.type)
   switch (t) {
     case "all-issues": {
@@ -45,31 +68,34 @@ export function mapSubscriptionToBdArgs(spec) {
   }
 }
 
+interface RawIssueItem {
+  id?: unknown
+  created_at?: unknown
+  updated_at?: unknown
+  closed_at?: unknown
+  [key: string]: unknown
+}
+
 /**
  * Normalize bd list output to minimal Issue shape used by the registry.
  * - Ensures `id` is a string.
  * - Coerces timestamps to numbers.
  * - `closed_at` defaults to null when missing or invalid.
- *
- * @param {unknown} value
- * @returns {Array<{ id: string, created_at: number, updated_at: number, closed_at: number | null } & Record<string, unknown>>}
  */
-export function normalizeIssueList(value) {
+export function normalizeIssueList(value: unknown): NormalizedIssue[] {
   if (!Array.isArray(value)) {
     return []
   }
-  /** @type {Array<{ id: string, created_at: number, updated_at: number, closed_at: number | null } & Record<string, unknown>>} */
-  const out = []
-  for (const it of value) {
+  const out: NormalizedIssue[] = []
+  for (const it of value as RawIssueItem[]) {
     const id = String(it.id ?? "")
     if (id.length === 0) {
       continue
     }
-    const created_at = parseTimestamp(/** @type {any} */ (it).created_at)
+    const created_at = parseTimestamp(it.created_at)
     const updated_at = parseTimestamp(it.updated_at)
     const closed_raw = it.closed_at
-    /** @type {number | null} */
-    let closed_at = null
+    let closed_at: number | null = null
     if (closed_raw !== undefined && closed_raw !== null) {
       const n = parseTimestamp(closed_raw)
       closed_at = Number.isFinite(n) ? n : null
@@ -85,29 +111,30 @@ export function normalizeIssueList(value) {
   return out
 }
 
-/**
- * @typedef {Object} FetchListResultSuccess
- * @property {true} ok
- * @property {Array<{ id: string, updated_at: number, closed_at: number | null } & Record<string, unknown>>} items
- */
-
-/**
- * @typedef {Object} FetchListResultFailure
- * @property {false} ok
- * @property {{ code: string, message: string, details?: Record<string, unknown> }} error
- */
+interface EpicEntry {
+  epic?: {
+    id?: unknown
+    title?: unknown
+    status?: unknown
+    issue_type?: unknown
+    created_at?: unknown
+    updated_at?: unknown
+    closed_at?: unknown
+  }
+  total_children?: unknown
+  closed_children?: unknown
+  eligible_for_close?: unknown
+}
 
 /**
  * Execute the mapped `bd` command for a subscription spec and return normalized items.
  * Errors do not throw; they are surfaced as a structured object.
- *
- * @param {{ type: string, params?: Record<string, string | number | boolean> }} spec
- * @param {{ cwd?: string }} [options] - Optional working directory for bd command
- * @returns {Promise<FetchListResultSuccess | FetchListResultFailure>}
  */
-export async function fetchListForSubscription(spec, options = {}) {
-  /** @type {string[]} */
-  let args
+export async function fetchListForSubscription(
+  spec: SubscriptionSpec,
+  options: FetchOptions = {},
+): Promise<FetchListResult> {
+  let args: string[]
   try {
     args = mapSubscriptionToBdArgs(spec)
   } catch (err) {
@@ -118,7 +145,8 @@ export async function fetchListForSubscription(spec, options = {}) {
   }
 
   try {
-    const res = await runBdJson(args, { cwd: options.cwd })
+    const bd_opts = options.cwd !== undefined ? { cwd: options.cwd } : {}
+    const res = await runBdJson(args, bd_opts)
     if (!res || res.code !== 0 || !("stdoutJson" in res)) {
       log("bd failed for %o (args=%o) code=%s stderr=%s", spec, args, res?.code, res?.stderr || "")
       return {
@@ -131,7 +159,7 @@ export async function fetchListForSubscription(spec, options = {}) {
       }
     }
     // bd show may return a single object; normalize to an array first
-    let raw =
+    let raw: unknown[] =
       Array.isArray(res.stdoutJson) ? res.stdoutJson
       : res.stdoutJson && typeof res.stdoutJson === "object" ? [res.stdoutJson]
       : []
@@ -141,10 +169,10 @@ export async function fetchListForSubscription(spec, options = {}) {
     // each entry has a top-level `id` and core fields expected by the registry.
     if (String(spec.type) === "epics") {
       raw = raw.map(it => {
-        if (it && typeof it === "object" && "epic" in it) {
-          const e = /** @type {any} */ (it).epic || {}
-          /** @type {Record<string, unknown>} */
-          const flat = {
+        const entry = it as EpicEntry
+        if (entry && typeof entry === "object" && "epic" in entry) {
+          const e = entry.epic || {}
+          const flat: Record<string, unknown> = {
             // Required minimal fields for registry + client rendering
             id: String(e.id ?? ""),
             title: e.title,
@@ -154,9 +182,9 @@ export async function fetchListForSubscription(spec, options = {}) {
             updated_at: e.updated_at,
             closed_at: e.closed_at ?? null,
             // Preserve useful counters from bd output
-            total_children: /** @type {any} */ (it).total_children,
-            closed_children: /** @type {any} */ (it).closed_children,
-            eligible_for_close: /** @type {any} */ (it).eligible_for_close,
+            total_children: entry.total_children,
+            closed_children: entry.closed_children,
+            eligible_for_close: entry.eligible_for_close,
           }
           return flat
         }
@@ -168,37 +196,39 @@ export async function fetchListForSubscription(spec, options = {}) {
     return { ok: true, items }
   } catch (err) {
     log("bd invocation failed for %o (args=%o): %o", spec, args, err)
+    const error_msg =
+      err && typeof err === "object" && "message" in err && typeof err.message === "string" ?
+        err.message
+      : "bd invocation failed"
     return {
       ok: false,
       error: {
         code: "bd_error",
-        message: (err && /** @type {any} */ (err).message) || "bd invocation failed",
+        message: error_msg,
       },
     }
   }
 }
 
+interface BadRequestError extends Error {
+  code: string
+}
+
 /**
  * Create a `bad_request` error object.
- *
- * @param {string} message
  */
-function badRequest(message) {
-  const e = new Error(message)
-  // @ts-expect-error add code
+function badRequest(message: string): BadRequestError {
+  const e = new Error(message) as BadRequestError
   e.code = "bad_request"
   return e
 }
 
 /**
  * Normalize arbitrary thrown values to a structured error object.
- *
- * @param {unknown} err
- * @returns {FetchListResultFailure['error']}
  */
-function toErrorObject(err) {
+function toErrorObject(err: unknown): FetchListResultFailure["error"] {
   if (err && typeof err === "object") {
-    const any = /** @type {{ code?: unknown, message?: unknown }} */ (err)
+    const any = err as { code?: unknown; message?: unknown }
     const code = typeof any.code === "string" ? any.code : "bad_request"
     const message = typeof any.message === "string" ? any.message : "Request error"
     return { code, message }
@@ -209,11 +239,8 @@ function toErrorObject(err) {
 /**
  * Parse a bd timestamp string to epoch ms using Date.parse.
  * Falls back to numeric coercion when parsing fails.
- *
- * @param {unknown} v
- * @returns {number}
  */
-function parseTimestamp(v) {
+function parseTimestamp(v: unknown): number {
   if (typeof v === "string") {
     const ms = Date.parse(v)
     if (Number.isFinite(ms)) {
