@@ -1,76 +1,64 @@
 import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.ts"
 import { createWsClient } from "./ws.ts"
+import type { MessageType } from "./protocol.js"
 
 /**
  * Helper to toggle a filter option in a dropdown.
- *
- * @param {number} dropdownIndex - 0 = status, 1 = types
- * @param {string} optionText - Text to match in the option label
  */
-function toggleFilter(dropdownIndex, optionText) {
+function toggleFilter(dropdownIndex: number, optionText: string) {
   const dropdowns = document.querySelectorAll(".filter-dropdown")
   const dropdown = dropdowns[dropdownIndex]
   // Open the dropdown
-  const trigger = /** @type {HTMLButtonElement} */ (
-    dropdown.querySelector(".filter-dropdown__trigger")
-  )
+  const trigger = dropdown?.querySelector(".filter-dropdown__trigger") as HTMLButtonElement
   trigger.click()
   // Find and click the checkbox
-  const option = Array.from(dropdown.querySelectorAll(".filter-dropdown__option")).find(opt =>
-    opt.textContent?.includes(optionText),
+  const option = Array.from(dropdown?.querySelectorAll(".filter-dropdown__option") || []).find(
+    opt => opt.textContent?.includes(optionText),
   )
-  const checkbox = /** @type {HTMLInputElement} */ (option?.querySelector('input[type="checkbox"]'))
+  const checkbox = option?.querySelector('input[type="checkbox"]') as HTMLInputElement
   checkbox.click()
 }
 
 // Mock WS client to drive push envelopes and record RPCs
-/** @type {{ type: string, payload: any }[]} */
-const calls = []
+const calls: { type: string; payload: unknown }[] = []
+
+interface MockWsClient {
+  send(type: MessageType, payload: unknown): Promise<unknown>
+  on(type: MessageType, handler: (p: unknown) => void): () => void
+  _trigger(type: MessageType, payload: unknown): void
+  onConnection(fn: (s: "connecting" | "open" | "closed" | "reconnecting") => void): () => void
+  _emitConn(s: "connecting" | "open" | "closed" | "reconnecting"): void
+  close(): void
+  getState(): string
+}
+
 vi.mock("./ws.ts", () => {
-  /** @type {Record<string, (p: any) => void>} */
-  const handlers = {}
-  /** @type {Set<(s: 'connecting'|'open'|'closed'|'reconnecting') => void>} */
-  const connHandlers = new Set()
-  const singleton = {
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    async send(type, payload) {
+  const handlers: Record<string, (p: unknown) => void> = {}
+  const connHandlers = new Set<(s: "connecting" | "open" | "closed" | "reconnecting") => void>()
+  const singleton: MockWsClient = {
+    async send(type: MessageType, payload: unknown) {
       calls.push({ type, payload })
       return null
     },
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {(p:any)=>void} handler
-     */
-    on(type, handler) {
+    on(type: MessageType, handler: (p: unknown) => void) {
       handlers[type] = handler
       return () => {
         delete handlers[type]
       }
     },
     /** Test helper: trigger a server event */
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    _trigger(type, payload) {
+    _trigger(type: MessageType, payload: unknown) {
       if (handlers[type]) {
         handlers[type](payload)
       }
     },
-    /**
-     * @param {(s:'connecting'|'open'|'closed'|'reconnecting')=>void} fn
-     */
-    onConnection(fn) {
+    onConnection(fn: (s: "connecting" | "open" | "closed" | "reconnecting") => void) {
       connHandlers.add(fn)
       return () => connHandlers.delete(fn)
     },
     /** Test helper: emit connection state */
-    /** @param {'connecting'|'open'|'closed'|'reconnecting'} s */
-    _emitConn(s) {
+    _emitConn(s: "connecting" | "open" | "closed" | "reconnecting") {
       for (const fn of Array.from(connHandlers)) {
         try {
           fn(s)
@@ -89,10 +77,10 @@ vi.mock("./ws.ts", () => {
 
 describe("issues view — fast filter switching", () => {
   test("ignores out-of-order snapshots during quick status toggles and renders from stores", async () => {
-    const client = /** @type {any} */ (createWsClient())
+    const client = createWsClient() as unknown as MockWsClient
     window.location.hash = "#/issues"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
     // Let router + subscriptions wire

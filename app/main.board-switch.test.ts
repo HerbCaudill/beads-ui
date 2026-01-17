@@ -3,10 +3,7 @@ import { bootstrap } from "./main.ts"
 
 // Mock the Board view to manipulate DOM content deterministically
 vi.mock("./views/board.js", () => ({
-  /**
-   * @param {HTMLElement} mount
-   */
-  createBoardView: mount => ({
+  createBoardView: (mount: HTMLElement) => ({
     async load() {
       // Simulate a rendered board shell
       mount.innerHTML = '<div class="panel__body board-root"></div>'
@@ -20,11 +17,7 @@ vi.mock("./views/board.js", () => ({
 // Mock WS client to avoid network and provide minimal data
 vi.mock("./ws.ts", () => ({
   createWsClient: () => ({
-    /**
-     * @param {string} type
-     */
-    async send(type) {
-      void type
+    async send(_type: string) {
       return null
     },
     on() {
@@ -42,7 +35,7 @@ describe("board visibility on view change", () => {
     // Start on issues, then go to board so subscribers are active
     window.location.hash = "#/issues"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
 
@@ -50,7 +43,7 @@ describe("board visibility on view change", () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    const boardRoot = /** @type {HTMLElement} */ (document.getElementById("board-root"))
+    const boardRoot = document.getElementById("board-root") as HTMLElement
 
     // Navigate to board
     window.location.hash = "#/board"

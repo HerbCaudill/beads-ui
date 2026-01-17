@@ -15,7 +15,7 @@ describe("theme toggle", () => {
       <main id="app"></main>`
 
     // Simulate the DOMContentLoaded logic from main.js
-    const themeSwitch = /** @type {HTMLInputElement} */ (document.getElementById("theme-switch"))
+    const themeSwitch = document.getElementById("theme-switch") as HTMLInputElement
     themeSwitch.checked = true
     themeSwitch.dispatchEvent(new Event("change"))
 

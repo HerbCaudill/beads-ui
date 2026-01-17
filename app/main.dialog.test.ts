@@ -3,12 +3,15 @@ import { bootstrap } from "./main.ts"
 
 // Provide a minimal dialog polyfill for jsdom environments
 if (typeof HTMLDialogElement !== "undefined") {
-  const proto = /** @type {any} */ (HTMLDialogElement.prototype)
+  const proto = HTMLDialogElement.prototype as HTMLDialogElement & {
+    showModal?: () => void
+    close?: () => void
+  }
   if (typeof proto.showModal !== "function") {
-    proto.showModal = function showModal() {
+    proto.showModal = function showModal(this: HTMLDialogElement) {
       this.setAttribute("open", "")
     }
-    proto.close = function close() {
+    proto.close = function close(this: HTMLDialogElement) {
       this.removeAttribute("open")
     }
   }
@@ -34,7 +37,7 @@ describe("UI-104 dialog opens on navigation", () => {
     // Start on issues
     window.location.hash = "#/issues"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
 
@@ -47,17 +50,17 @@ describe("UI-104 dialog opens on navigation", () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    const dlg = /** @type {HTMLDialogElement} */ (document.getElementById("issue-dialog"))
+    const dlg = document.getElementById("issue-dialog") as HTMLDialogElement
     expect(dlg).not.toBeNull()
-    const title = /** @type {HTMLElement} */ (document.getElementById("issue-dialog-title"))
+    const title = document.getElementById("issue-dialog-title") as HTMLElement
     expect(title.textContent).toBe("UI-1")
 
     // Underlying list remains visible
-    const issuesRoot = /** @type {HTMLElement} */ (document.getElementById("issues-root"))
+    const issuesRoot = document.getElementById("issues-root") as HTMLElement
     expect(issuesRoot.hidden).toBe(false)
 
     // Close via button
-    const btn = /** @type {HTMLButtonElement} */ (dlg.querySelector(".issue-dialog__close"))
+    const btn = dlg.querySelector(".issue-dialog__close") as HTMLButtonElement
     btn.click()
     await Promise.resolve()
 

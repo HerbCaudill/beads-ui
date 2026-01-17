@@ -1,54 +1,45 @@
 import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.ts"
 import { createWsClient } from "./ws.ts"
+import type { MessageType } from "./protocol.js"
+
+interface MockWsClient {
+  send(type: MessageType, payload: unknown): Promise<unknown>
+  on(type: MessageType, handler: (p: unknown) => void): () => void
+  _trigger(type: MessageType, payload: unknown): void
+  onConnection(fn: (s: "connecting" | "open" | "closed" | "reconnecting") => void): () => void
+  _emitConn(s: "connecting" | "open" | "closed" | "reconnecting"): void
+  close(): void
+  getState(): string
+}
 
 // Mock WS client to drive push envelopes and connection state
 vi.mock("./ws.ts", () => {
-  /** @type {Record<string, (p: any) => void>} */
-  const handlers = {}
-  /** @type {Set<(s: 'connecting'|'open'|'closed'|'reconnecting') => void>} */
-  const connHandlers = new Set()
-  const singleton = {
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    async send(type, payload) {
+  const handlers: Record<string, (p: unknown) => void> = {}
+  const connHandlers = new Set<(s: "connecting" | "open" | "closed" | "reconnecting") => void>()
+  const singleton: MockWsClient = {
+    async send(_type: MessageType, _payload: unknown) {
       // Subscriptions are fire-and-forget in tests
-      void type
-      void payload
       return null
     },
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {(p:any)=>void} handler
-     */
-    on(type, handler) {
+    on(type: MessageType, handler: (p: unknown) => void) {
       handlers[type] = handler
       return () => {
         delete handlers[type]
       }
     },
     /** Test helper: trigger a server event */
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    _trigger(type, payload) {
+    _trigger(type: MessageType, payload: unknown) {
       if (handlers[type]) {
         handlers[type](payload)
       }
     },
-    /**
-     * @param {(s:'connecting'|'open'|'closed'|'reconnecting')=>void} fn
-     */
-    onConnection(fn) {
+    onConnection(fn: (s: "connecting" | "open" | "closed" | "reconnecting") => void) {
       connHandlers.add(fn)
       return () => connHandlers.delete(fn)
     },
     /** Test helper: emit connection state */
-    /** @param {'connecting'|'open'|'closed'|'reconnecting'} s */
-    _emitConn(s) {
+    _emitConn(s: "connecting" | "open" | "closed" | "reconnecting") {
       for (const fn of Array.from(connHandlers)) {
         try {
           fn(s)
@@ -67,10 +58,10 @@ vi.mock("./ws.ts", () => {
 
 describe("push stores integration (board view)", () => {
   test("updates only the matching column on push events (multi-sub isolation)", async () => {
-    const client = /** @type {any} */ (createWsClient())
+    const client = createWsClient() as unknown as MockWsClient
     window.location.hash = "#/board"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
     // Allow router + subscriptions to wire
@@ -130,10 +121,10 @@ describe("push stores integration (board view)", () => {
   })
 
   test("reconnect replay does not duplicate entries", async () => {
-    const client = /** @type {any} */ (createWsClient())
+    const client = createWsClient() as unknown as MockWsClient
     window.location.hash = "#/board"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
     await Promise.resolve()

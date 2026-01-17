@@ -3,37 +3,33 @@ import { bootstrap } from "./main.ts"
 import { createWsClient } from "./ws.ts"
 
 // Mock WS client before importing the app
-const calls = []
+const calls: { type: string; payload: unknown }[] = []
 const issues = [
   { id: "UI-1", title: "One", status: "open", priority: 1 },
   { id: "UI-2", title: "Two", status: "open", priority: 2 },
 ]
+
+interface MockWsClient {
+  send(type: string, payload: unknown): Promise<unknown>
+  on(type: string, handler: (p: unknown) => void): () => void
+  _trigger(type: string, payload: unknown): void
+  close(): void
+  getState(): string
+}
+
 vi.mock("./ws.ts", () => {
-  /** @type {Record<string, (p:any)=>void>} */
-  const handlers = {}
-  const singleton = {
-    /**
-     * @param {string} type
-     * @param {any} payload
-     */
-    async send(type, payload) {
+  const handlers: Record<string, (p: unknown) => void> = {}
+  const singleton: MockWsClient = {
+    async send(type: string, payload: unknown) {
       calls.push({ type, payload })
       return null
     },
-    /**
-     * @param {string} type
-     * @param {(p:any)=>void} handler
-     */
-    on(type, handler) {
+    on(type: string, handler: (p: unknown) => void) {
       handlers[type] = handler
       return () => {}
     },
     // Test helper
-    /**
-     * @param {string} type
-     * @param {any} payload
-     */
-    _trigger(type, payload) {
+    _trigger(type: string, payload: unknown) {
       if (handlers[type]) handlers[type](payload)
     },
     close() {},
@@ -48,10 +44,10 @@ describe("deep link on initial load (UI-44)", () => {
   test("loads dialog and highlights list item when hash includes issue id", async () => {
     window.location.hash = "#/issue/UI-2"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     // Bootstrap app
-    const client = /** @type {any} */ (createWsClient())
+    const client = createWsClient() as unknown as MockWsClient
     bootstrap(root)
 
     // Allow initial subscriptions to wire
@@ -67,9 +63,9 @@ describe("deep link on initial load (UI-44)", () => {
     await Promise.resolve()
 
     // Dialog should be open and show raw id in header
-    const dlg = /** @type {HTMLDialogElement} */ (document.getElementById("issue-dialog"))
+    const dlg = document.getElementById("issue-dialog") as HTMLDialogElement
     expect(dlg).not.toBeNull()
-    const title = /** @type {HTMLElement} */ (document.getElementById("issue-dialog-title"))
+    const title = document.getElementById("issue-dialog-title") as HTMLElement
     expect(title && title.textContent).toBe("UI-2")
 
     // The list renders asynchronously from push-only stores; dialog is open

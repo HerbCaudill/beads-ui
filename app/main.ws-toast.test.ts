@@ -2,8 +2,18 @@ import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.ts"
 
 // Mock ws client factory to inject a controllable client
-/** @type {any} */
-let CLIENT = null
+interface MockWsClient {
+  send: ReturnType<typeof vi.fn>
+  on(type: string, handler: (p: unknown) => void): () => void
+  onConnection(handler: (s: "connecting" | "open" | "closed" | "reconnecting") => void): () => void
+  triggerConn(state: "connecting" | "open" | "closed" | "reconnecting"): void
+  close(): void
+  getState(): string
+  _handler?: (p: unknown) => void
+  _conn?: (s: "connecting" | "open" | "closed" | "reconnecting") => void
+}
+
+let CLIENT: MockWsClient | null = null
 vi.mock("./ws.ts", () => ({
   createWsClient: () => CLIENT,
 }))
@@ -14,26 +24,16 @@ describe("main websocket toast notifications", () => {
     CLIENT = {
       // Minimal send used during bootstrap (push-only tests avoid read RPCs)
       send: vi.fn(async () => []),
-      /**
-       * @param {string} type
-       * @param {(p:any)=>void} handler
-       */
-      on(type, handler) {
+      on(type: string, handler: (p: unknown) => void) {
         this._handler = handler
         void type
         return () => {}
       },
-      /**
-       * @param {(s: 'connecting'|'open'|'closed'|'reconnecting')=>void} handler
-       */
-      onConnection(handler) {
+      onConnection(handler: (s: "connecting" | "open" | "closed" | "reconnecting") => void) {
         this._conn = handler
         return () => {}
       },
-      /**
-       * @param {'connecting'|'open'|'closed'|'reconnecting'} state
-       */
-      triggerConn(state) {
+      triggerConn(state: "connecting" | "open" | "closed" | "reconnecting") {
         if (this._conn) {
           this._conn(state)
         }
@@ -45,7 +45,7 @@ describe("main websocket toast notifications", () => {
     }
 
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
     await Promise.resolve()
@@ -53,7 +53,7 @@ describe("main websocket toast notifications", () => {
     // Simulate reconnecting -> toast appears
     CLIENT.triggerConn("reconnecting")
     await Promise.resolve()
-    const lost = /** @type {HTMLElement} */ (document.querySelector(".toast"))
+    const lost = document.querySelector(".toast") as HTMLElement
     expect(lost).not.toBeNull()
     expect((lost.textContent || "").toLowerCase()).toContain("connection lost")
 

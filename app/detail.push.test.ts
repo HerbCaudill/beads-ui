@@ -5,7 +5,7 @@ import { createDetailView } from "./views/detail.js"
 describe("detail view via subscription push", () => {
   test("renders snapshot from detail:<id> store", async () => {
     document.body.innerHTML = '<section id="mount"></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issueStores = createSubscriptionIssueStores()
     const view = createDetailView(

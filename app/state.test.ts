@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest"
-import { createStore } from "./state.ts"
+import { createStore, type AppState } from "./state.ts"
 
 describe("state store", () => {
   test("get/set/subscribe works and dedupes unchanged", () => {
     const store = createStore()
-    const seen = []
+    const seen: Partial<AppState>[] = []
     const off = store.subscribe(s => seen.push(s))
 
     store.setState({ selected_id: "UI-1" })

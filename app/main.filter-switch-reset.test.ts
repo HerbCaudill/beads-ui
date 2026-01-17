@@ -1,59 +1,49 @@
 import { describe, expect, test, vi } from "vitest"
 import { bootstrap } from "./main.ts"
 import { createWsClient } from "./ws.ts"
+import type { MessageType } from "./protocol.js"
 
 /**
  * Helper to toggle a filter option in a dropdown.
- *
- * @param {number} dropdownIndex - 0 = status, 1 = types
- * @param {string} optionText - Text to match in the option label
  */
-function toggleFilter(dropdownIndex, optionText) {
+function toggleFilter(dropdownIndex: number, optionText: string) {
   const dropdowns = document.querySelectorAll(".filter-dropdown")
   const dropdown = dropdowns[dropdownIndex]
   // Open the dropdown
-  const trigger = /** @type {HTMLButtonElement} */ (
-    dropdown.querySelector(".filter-dropdown__trigger")
-  )
+  const trigger = dropdown?.querySelector(".filter-dropdown__trigger") as HTMLButtonElement
   trigger.click()
   // Find and click the checkbox
-  const option = Array.from(dropdown.querySelectorAll(".filter-dropdown__option")).find(opt =>
-    opt.textContent?.includes(optionText),
+  const option = Array.from(dropdown?.querySelectorAll(".filter-dropdown__option") || []).find(
+    opt => opt.textContent?.includes(optionText),
   )
-  const checkbox = /** @type {HTMLInputElement} */ (option?.querySelector('input[type="checkbox"]'))
+  const checkbox = option?.querySelector('input[type="checkbox"]') as HTMLInputElement
   checkbox.click()
+}
+
+interface MockWsClient {
+  send(type: MessageType, payload: unknown): Promise<unknown>
+  on(type: MessageType, handler: (p: unknown) => void): () => void
+  _trigger(type: MessageType, payload: unknown): void
+  onConnection(fn: (s: "connecting" | "open" | "closed" | "reconnecting") => void): () => void
+  close(): void
+  getState(): string
 }
 
 // Mock WS client to allow pushing server events and observing RPCs
 vi.mock("./ws.ts", () => {
-  /** @type {Record<string, (p: any) => void>} */
-  const handlers = {}
-  const singleton = {
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    async send(type, payload) {
-      void type
-      void payload
+  const handlers: Record<string, (p: unknown) => void> = {}
+  const singleton: MockWsClient = {
+    async send(_type: MessageType, _payload: unknown) {
       return null
     },
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {(p:any)=>void} handler
-     */
-    on(type, handler) {
+    on(type: MessageType, handler: (p: unknown) => void) {
       handlers[type] = handler
       return () => {
         delete handlers[type]
       }
     },
     /** Trigger a server push event in tests */
-    /**
-     * @param {import('./protocol.js').MessageType} type
-     * @param {any} payload
-     */
-    _trigger(type, payload) {
+    _trigger(type: MessageType, payload: unknown) {
       if (handlers[type]) {
         handlers[type](payload)
       }
@@ -71,10 +61,10 @@ vi.mock("./ws.ts", () => {
 
 describe("issues view — store resets on spec change", () => {
   test("accepts lower-revision snapshot for new list after filter change", async () => {
-    const client = /** @type {any} */ (createWsClient())
+    const client = createWsClient() as unknown as MockWsClient
     window.location.hash = "#/issues"
     document.body.innerHTML = '<main id="app"></main>'
-    const root = /** @type {HTMLElement} */ (document.getElementById("app"))
+    const root = document.getElementById("app") as HTMLElement
 
     bootstrap(root)
     await Promise.resolve()
