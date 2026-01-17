@@ -10,8 +10,8 @@
  *   const data = await ws.send('list-issues', { filters: {} });
  *   const off = ws.on('snapshot', (payload) => { <push event> });
  */
-import { MESSAGE_TYPES, makeRequest, nextId } from './protocol.js';
-import { debug } from './utils/logging.js';
+import { MESSAGE_TYPES, makeRequest, nextId } from "./protocol.js"
+import { debug } from "./utils/logging.js"
 
 /**
  * @typedef {'connecting'|'open'|'closed'|'reconnecting'} ConnectionState
@@ -31,50 +31,46 @@ import { debug } from './utils/logging.js';
  * @param {ClientOptions} [options]
  */
 export function createWsClient(options = {}) {
-  const log = debug('ws');
+  const log = debug("ws")
 
   /** @type {BackoffOptions} */
   const backoff = {
     initialMs: options.backoff?.initialMs ?? 1000,
     maxMs: options.backoff?.maxMs ?? 30000,
     factor: options.backoff?.factor ?? 2,
-    jitterRatio: options.backoff?.jitterRatio ?? 0.2
-  };
+    jitterRatio: options.backoff?.jitterRatio ?? 0.2,
+  }
 
   /** @type {() => string} */
   const resolveUrl = () => {
     if (options.url && options.url.length > 0) {
-      return options.url;
+      return options.url
     }
-    if (typeof location !== 'undefined') {
-      return (
-        (location.protocol === 'https:' ? 'wss://' : 'ws://') +
-        location.host +
-        '/ws'
-      );
+    if (typeof location !== "undefined") {
+      return (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws"
     }
-    return 'ws://localhost/ws';
-  };
+    return "ws://localhost/ws"
+  }
 
   /** @type {WebSocket | null} */
-  let ws = null;
+  let ws = null
   /** @type {ConnectionState} */
-  let state = 'closed';
+  let state = "closed"
   /** @type {number} */
-  let attempts = 0;
+  let attempts = 0
   /** @type {ReturnType<typeof setTimeout> | null} */
-  let reconnect_timer = null;
+  let reconnect_timer = null
   /** @type {boolean} */
-  let should_reconnect = true;
+  let should_reconnect = true
 
   /** @type {Map<string, { resolve: (v: any) => void, reject: (e: any) => void, type: string }>} */
-  const pending = new Map();
+  const pending = new Map()
   /** @type {Array<ReturnType<typeof makeRequest>>} */
-  const queue = [];
+  const queue = []
   /** @type {Map<string, Set<(payload: any) => void>>} */
-  const handlers = new Map();
+  const handlers = new Map()
   /** @type {Set<(s: ConnectionState) => void>} */
-  const connection_handlers = new Set();
+  const connection_handlers = new Set()
 
   /**
    * @param {ConnectionState} s
@@ -82,7 +78,7 @@ export function createWsClient(options = {}) {
   function notifyConnection(s) {
     for (const fn of Array.from(connection_handlers)) {
       try {
-        fn(s);
+        fn(s)
       } catch {
         // ignore listener errors
       }
@@ -91,46 +87,43 @@ export function createWsClient(options = {}) {
 
   function scheduleReconnect() {
     if (!should_reconnect || reconnect_timer) {
-      return;
+      return
     }
-    state = 'reconnecting';
-    log('ws reconnecting…');
-    notifyConnection(state);
+    state = "reconnecting"
+    log("ws reconnecting…")
+    notifyConnection(state)
     const base = Math.min(
       backoff.maxMs || 0,
-      (backoff.initialMs || 0) * Math.pow(backoff.factor || 1, attempts)
-    );
-    const jitter = (backoff.jitterRatio || 0) * base;
-    const delay = Math.max(
-      0,
-      Math.round(base + (Math.random() * 2 - 1) * jitter)
-    );
-    log('ws retry in %d ms (attempt %d)', delay, attempts + 1);
+      (backoff.initialMs || 0) * Math.pow(backoff.factor || 1, attempts),
+    )
+    const jitter = (backoff.jitterRatio || 0) * base
+    const delay = Math.max(0, Math.round(base + (Math.random() * 2 - 1) * jitter))
+    log("ws retry in %d ms (attempt %d)", delay, attempts + 1)
     reconnect_timer = setTimeout(() => {
-      reconnect_timer = null;
-      connect();
-    }, delay);
+      reconnect_timer = null
+      connect()
+    }, delay)
   }
 
   /** @param {ReturnType<typeof makeRequest>} req */
   function sendRaw(req) {
     try {
-      ws?.send(JSON.stringify(req));
+      ws?.send(JSON.stringify(req))
     } catch (err) {
-      log('ws send failed', err);
+      log("ws send failed", err)
     }
   }
 
   function onOpen() {
-    state = 'open';
-    log('ws open');
-    notifyConnection(state);
-    attempts = 0;
+    state = "open"
+    log("ws open")
+    notifyConnection(state)
+    attempts = 0
     // flush queue
     while (queue.length) {
-      const req = queue.shift();
+      const req = queue.shift()
       if (req) {
-        sendRaw(req);
+        sendRaw(req)
       }
     }
   }
@@ -138,80 +131,80 @@ export function createWsClient(options = {}) {
   /** @param {MessageEvent} ev */
   function onMessage(ev) {
     /** @type {any} */
-    let msg;
+    let msg
     try {
-      msg = JSON.parse(String(ev.data));
+      msg = JSON.parse(String(ev.data))
     } catch {
-      log('ws received non-JSON message');
-      return;
+      log("ws received non-JSON message")
+      return
     }
-    if (!msg || typeof msg.id !== 'string' || typeof msg.type !== 'string') {
-      log('ws received invalid envelope');
-      return;
+    if (!msg || typeof msg.id !== "string" || typeof msg.type !== "string") {
+      log("ws received invalid envelope")
+      return
     }
 
     if (pending.has(msg.id)) {
-      const entry = pending.get(msg.id);
-      pending.delete(msg.id);
+      const entry = pending.get(msg.id)
+      pending.delete(msg.id)
       if (msg.ok) {
-        entry?.resolve(msg.payload);
+        entry?.resolve(msg.payload)
       } else {
-        entry?.reject(msg.error || new Error('ws error'));
+        entry?.reject(msg.error || new Error("ws error"))
       }
-      return;
+      return
     }
 
     // Treat as server-initiated event
-    const set = handlers.get(msg.type);
+    const set = handlers.get(msg.type)
     if (set && set.size > 0) {
       for (const fn of Array.from(set)) {
         try {
-          fn(msg.payload);
+          fn(msg.payload)
         } catch (err) {
-          log('ws event handler error', err);
+          log("ws event handler error", err)
         }
       }
     } else {
-      log('ws received unhandled message type: %s', msg.type);
+      log("ws received unhandled message type: %s", msg.type)
     }
   }
 
   function onClose() {
-    state = 'closed';
-    log('ws closed');
-    notifyConnection(state);
+    state = "closed"
+    log("ws closed")
+    notifyConnection(state)
     // fail all pending
     for (const [id, p] of pending.entries()) {
-      p.reject(new Error('ws disconnected'));
-      pending.delete(id);
+      p.reject(new Error("ws disconnected"))
+      pending.delete(id)
     }
-    attempts += 1;
-    scheduleReconnect();
+    attempts += 1
+    scheduleReconnect()
   }
 
   function connect() {
     if (!should_reconnect) {
-      return;
+      return
     }
-    const url = resolveUrl();
+    const url = resolveUrl()
     try {
-      ws = new WebSocket(url);
-      log('ws connecting %s', url);
-      state = 'connecting';
-      notifyConnection(state);
-      ws.addEventListener('open', onOpen);
-      ws.addEventListener('message', onMessage);
-      ws.addEventListener('error', () => {
+      ws = new WebSocket(url)
+      log("ws connecting %s", url)
+      state = "connecting"
+      notifyConnection(state)
+      ws.addEventListener("open", onOpen)
+      ws.addEventListener("message", onMessage)
+      ws.addEventListener("error", () => {
         // let close handler handle reconnect
-      });
-      ws.addEventListener('close', onClose);
+      })
+      ws.addEventListener("close", onClose)
     } catch (err) {
-      log('ws connect failed %o', err);
-      scheduleReconnect();
+      log("ws connect failed %o", err)
+      scheduleReconnect()
     }
   }
 
-  connect();
+  connect()
 
   return {
     /**
@@ -223,20 +216,20 @@ export function createWsClient(options = {}) {
      */
     send(type, payload) {
       if (!MESSAGE_TYPES.includes(type)) {
-        return Promise.reject(new Error(`unknown message type: ${type}`));
+        return Promise.reject(new Error(`unknown message type: ${type}`))
       }
-      const id = nextId();
-      const req = makeRequest(type, payload, id);
-      log('send %s id=%s', type, id);
+      const id = nextId()
+      const req = makeRequest(type, payload, id)
+      log("send %s id=%s", type, id)
       return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject, type });
+        pending.set(id, { resolve, reject, type })
         if (ws && ws.readyState === ws.OPEN) {
-          sendRaw(req);
+          sendRaw(req)
         } else {
-          log('queue %s id=%s (state=%s)', type, id, state);
-          queue.push(req);
+          log("queue %s id=%s (state=%s)", type, id, state)
+          queue.push(req)
         }
-      });
+      })
     },
     /**
      * Register a handler for a server-initiated event type.
@@ -248,13 +241,13 @@ export function createWsClient(options = {}) {
      */
     on(type, handler) {
       if (!handlers.has(type)) {
-        handlers.set(type, new Set());
+        handlers.set(type, new Set())
       }
-      const set = handlers.get(type);
-      set?.add(handler);
+      const set = handlers.get(type)
+      set?.add(handler)
       return () => {
-        set?.delete(handler);
-      };
+        set?.delete(handler)
+      }
     },
     /**
      * Subscribe to connection state changes.
@@ -263,27 +256,27 @@ export function createWsClient(options = {}) {
      * @returns {() => void}
      */
     onConnection(handler) {
-      connection_handlers.add(handler);
+      connection_handlers.add(handler)
       return () => {
-        connection_handlers.delete(handler);
-      };
+        connection_handlers.delete(handler)
+      }
     },
     /** Close and stop reconnecting. */
     close() {
-      should_reconnect = false;
+      should_reconnect = false
       if (reconnect_timer) {
-        clearTimeout(reconnect_timer);
-        reconnect_timer = null;
+        clearTimeout(reconnect_timer)
+        reconnect_timer = null
       }
       try {
-        ws?.close();
+        ws?.close()
       } catch {
         /* ignore */
       }
     },
     /** For diagnostics in tests or UI. */
     getState() {
-      return state;
-    }
-  };
+      return state
+    },
+  }
 }

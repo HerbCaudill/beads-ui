@@ -1,179 +1,176 @@
-import { describe, expect, test, vi } from 'vitest';
-import { createDetailView } from './detail.js';
+import { describe, expect, test, vi } from "vitest"
+import { createDetailView } from "./detail.js"
 
 /** @type {(impl: (type: string, payload?: unknown) => Promise<any>) => (type: string, payload?: unknown) => Promise<any>} */
-const mockSend = (impl) => vi.fn(impl);
+const mockSend = impl => vi.fn(impl)
 
-describe('views/detail assignee edit', () => {
-  test('edits assignee via Properties control', async () => {
-    document.body.innerHTML =
-      '<section class="panel"><div id="mount"></div></section>';
-    const mount = /** @type {HTMLElement} */ (document.getElementById('mount'));
+describe("views/detail assignee edit", () => {
+  test("edits assignee via Properties control", async () => {
+    document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
+    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
 
     const issue = {
-      id: 'UI-57',
-      title: 'Detail screen',
-      description: '',
-      status: 'open',
+      id: "UI-57",
+      title: "Detail screen",
+      description: "",
+      status: "open",
       priority: 2,
-      assignee: 'alice',
+      assignee: "alice",
       dependencies: [],
-      dependents: []
-    };
+      dependents: [],
+    }
 
     const stores1 = {
       /** @param {string} id */
       snapshotFor(id) {
-        return id === 'detail:UI-57' ? [issue] : [];
+        return id === "detail:UI-57" ? [issue] : []
       },
       subscribe() {
-        return () => {};
-      }
-    };
+        return () => {}
+      },
+    }
     const send = mockSend(async (type, payload) => {
-      if (type === 'update-assignee') {
-        expect(payload).toEqual({ id: 'UI-57', assignee: 'max' });
-        const next = { ...issue, assignee: 'max' };
-        return next;
+      if (type === "update-assignee") {
+        expect(payload).toEqual({ id: "UI-57", assignee: "max" })
+        const next = { ...issue, assignee: "max" }
+        return next
       }
-      throw new Error('Unexpected');
-    });
+      throw new Error("Unexpected")
+    })
 
-    const view = createDetailView(mount, send, undefined, stores1);
-    await view.load('UI-57');
+    const view = createDetailView(mount, send, undefined, stores1)
+    await view.load("UI-57")
 
     const assigneeSpan = /** @type {HTMLSpanElement} */ (
-      mount.querySelector('#detail-root .prop.assignee .value .editable')
-    );
-    expect(assigneeSpan).toBeTruthy();
-    expect(assigneeSpan.textContent).toBe('alice');
+      mount.querySelector("#detail-root .prop.assignee .value .editable")
+    )
+    expect(assigneeSpan).toBeTruthy()
+    expect(assigneeSpan.textContent).toBe("alice")
 
-    assigneeSpan.click();
+    assigneeSpan.click()
     const input = /** @type {HTMLInputElement} */ (
-      mount.querySelector('#detail-root .prop.assignee input')
-    );
+      mount.querySelector("#detail-root .prop.assignee input")
+    )
     const saveBtn = /** @type {HTMLButtonElement} */ (
-      mount.querySelector('#detail-root .prop.assignee button')
-    );
-    input.value = 'max';
-    saveBtn.click();
+      mount.querySelector("#detail-root .prop.assignee button")
+    )
+    input.value = "max"
+    saveBtn.click()
 
-    await Promise.resolve();
+    await Promise.resolve()
 
     const assigneeSpan2 = /** @type {HTMLSpanElement} */ (
-      mount.querySelector('#detail-root .prop.assignee .value .editable')
-    );
-    expect(assigneeSpan2.textContent).toBe('max');
-  });
+      mount.querySelector("#detail-root .prop.assignee .value .editable")
+    )
+    expect(assigneeSpan2.textContent).toBe("max")
+  })
 
-  test('shows editable placeholder when unassigned', async () => {
-    document.body.innerHTML =
-      '<section class="panel"><div id="mount"></div></section>';
-    const mount = /** @type {HTMLElement} */ (document.getElementById('mount'));
+  test("shows editable placeholder when unassigned", async () => {
+    document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
+    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
 
     const issue = {
-      id: 'UI-88',
-      title: 'No assignee yet',
-      description: '',
-      status: 'open',
+      id: "UI-88",
+      title: "No assignee yet",
+      description: "",
+      status: "open",
       priority: 2,
       // no assignee field
       dependencies: [],
-      dependents: []
-    };
+      dependents: [],
+    }
 
     const stores2 = {
       /** @param {string} id */
       snapshotFor(id) {
-        return id === 'detail:UI-88' ? [issue] : [];
+        return id === "detail:UI-88" ? [issue] : []
       },
       subscribe() {
-        return () => {};
-      }
-    };
+        return () => {}
+      },
+    }
     const send = mockSend(async (type, payload) => {
-      if (type === 'update-assignee') {
+      if (type === "update-assignee") {
         const next = {
           ...issue,
-          assignee: /** @type {any} */ (payload).assignee
-        };
-        return next;
+          assignee: /** @type {any} */ (payload).assignee,
+        }
+        return next
       }
-      throw new Error('Unexpected');
-    });
+      throw new Error("Unexpected")
+    })
 
-    const view = createDetailView(mount, send, undefined, stores2);
-    await view.load('UI-88');
+    const view = createDetailView(mount, send, undefined, stores2)
+    await view.load("UI-88")
 
     const ph = /** @type {HTMLSpanElement} */ (
-      mount.querySelector('#detail-root .prop.assignee .value .editable')
-    );
-    expect(ph).toBeTruthy();
-    expect(ph.className).toContain('muted');
-    expect(ph.textContent).toBe('Unassigned');
+      mount.querySelector("#detail-root .prop.assignee .value .editable")
+    )
+    expect(ph).toBeTruthy()
+    expect(ph.className).toContain("muted")
+    expect(ph.textContent).toBe("Unassigned")
 
-    ph.click();
+    ph.click()
     const input = /** @type {HTMLInputElement} */ (
-      mount.querySelector('#detail-root .prop.assignee input')
-    );
-    expect(input).toBeTruthy();
-  });
+      mount.querySelector("#detail-root .prop.assignee input")
+    )
+    expect(input).toBeTruthy()
+  })
 
-  test('clears assignee to empty string and shows placeholder', async () => {
-    document.body.innerHTML =
-      '<section class="panel"><div id="mount"></div></section>';
-    const mount = /** @type {HTMLElement} */ (document.getElementById('mount'));
+  test("clears assignee to empty string and shows placeholder", async () => {
+    document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
+    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
 
     const issue = {
-      id: 'UI-31',
-      title: 'Clearable',
-      status: 'open',
+      id: "UI-31",
+      title: "Clearable",
+      status: "open",
       priority: 2,
-      assignee: 'bob',
+      assignee: "bob",
       dependencies: [],
-      dependents: []
-    };
+      dependents: [],
+    }
 
     const stores3 = {
       /** @param {string} id */
       snapshotFor(id) {
-        return id === 'detail:UI-31' ? [issue] : [];
+        return id === "detail:UI-31" ? [issue] : []
       },
       subscribe() {
-        return () => {};
-      }
-    };
+        return () => {}
+      },
+    }
     const send = mockSend(async (type, payload) => {
-      if (type === 'update-assignee') {
+      if (type === "update-assignee") {
         const next = {
           ...issue,
-          assignee: /** @type {any} */ (payload).assignee
-        };
-        return next;
+          assignee: /** @type {any} */ (payload).assignee,
+        }
+        return next
       }
-      throw new Error('Unexpected');
-    });
+      throw new Error("Unexpected")
+    })
 
-    const view = createDetailView(mount, send, undefined, stores3);
-    await view.load('UI-31');
+    const view = createDetailView(mount, send, undefined, stores3)
+    await view.load("UI-31")
 
     const span = /** @type {HTMLSpanElement} */ (
-      mount.querySelector('#detail-root .prop.assignee .value .editable')
-    );
-    span.click();
+      mount.querySelector("#detail-root .prop.assignee .value .editable")
+    )
+    span.click()
     const input = /** @type {HTMLInputElement} */ (
-      mount.querySelector('#detail-root .prop.assignee input')
-    );
+      mount.querySelector("#detail-root .prop.assignee input")
+    )
     const save = /** @type {HTMLButtonElement} */ (
-      mount.querySelector('#detail-root .prop.assignee button')
-    );
-    input.value = '';
-    save.click();
-    await Promise.resolve();
+      mount.querySelector("#detail-root .prop.assignee button")
+    )
+    input.value = ""
+    save.click()
+    await Promise.resolve()
     const span2 = /** @type {HTMLSpanElement} */ (
-      mount.querySelector('#detail-root .prop.assignee .value .editable')
-    );
-    expect(span2.textContent).toBe('Unassigned');
-    expect(span2.className).toContain('muted');
-  });
-});
+      mount.querySelector("#detail-root .prop.assignee .value .editable")
+    )
+    expect(span2.textContent).toBe("Unassigned")
+    expect(span2.className).toContain("muted")
+  })
+})

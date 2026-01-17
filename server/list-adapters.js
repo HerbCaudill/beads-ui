@@ -1,7 +1,7 @@
-import { runBdJson } from './bd.js';
-import { debug } from './logging.js';
+import { runBdJson } from "./bd.js"
+import { debug } from "./logging.js"
 
-const log = debug('list-adapters');
+const log = debug("list-adapters")
 
 /**
  * Build concrete `bd` CLI args for a subscription type + params.
@@ -11,36 +11,36 @@ const log = debug('list-adapters');
  * @returns {string[]}
  */
 export function mapSubscriptionToBdArgs(spec) {
-  const t = String(spec.type);
+  const t = String(spec.type)
   switch (t) {
-    case 'all-issues': {
-      return ['list', '--json'];
+    case "all-issues": {
+      return ["list", "--json"]
     }
-    case 'epics': {
-      return ['epic', 'status', '--json'];
+    case "epics": {
+      return ["epic", "status", "--json"]
     }
-    case 'blocked-issues': {
-      return ['blocked', '--json'];
+    case "blocked-issues": {
+      return ["blocked", "--json"]
     }
-    case 'ready-issues': {
-      return ['ready', '--limit', '1000', '--json'];
+    case "ready-issues": {
+      return ["ready", "--limit", "1000", "--json"]
     }
-    case 'in-progress-issues': {
-      return ['list', '--json', '--status', 'in_progress'];
+    case "in-progress-issues": {
+      return ["list", "--json", "--status", "in_progress"]
     }
-    case 'closed-issues': {
-      return ['list', '--json', '--status', 'closed'];
+    case "closed-issues": {
+      return ["list", "--json", "--status", "closed"]
     }
-    case 'issue-detail': {
-      const p = spec.params || {};
-      const id = String(p.id || '').trim();
+    case "issue-detail": {
+      const p = spec.params || {}
+      const id = String(p.id || "").trim()
       if (id.length === 0) {
-        throw badRequest('Missing param: params.id');
+        throw badRequest("Missing param: params.id")
       }
-      return ['show', id, '--json'];
+      return ["show", id, "--json"]
     }
     default: {
-      throw badRequest(`Unknown subscription type: ${t}`);
+      throw badRequest(`Unknown subscription type: ${t}`)
     }
   }
 }
@@ -56,33 +56,33 @@ export function mapSubscriptionToBdArgs(spec) {
  */
 export function normalizeIssueList(value) {
   if (!Array.isArray(value)) {
-    return [];
+    return []
   }
   /** @type {Array<{ id: string, created_at: number, updated_at: number, closed_at: number | null } & Record<string, unknown>>} */
-  const out = [];
+  const out = []
   for (const it of value) {
-    const id = String(it.id ?? '');
+    const id = String(it.id ?? "")
     if (id.length === 0) {
-      continue;
+      continue
     }
-    const created_at = parseTimestamp(/** @type {any} */ (it).created_at);
-    const updated_at = parseTimestamp(it.updated_at);
-    const closed_raw = it.closed_at;
+    const created_at = parseTimestamp(/** @type {any} */ (it).created_at)
+    const updated_at = parseTimestamp(it.updated_at)
+    const closed_raw = it.closed_at
     /** @type {number | null} */
-    let closed_at = null;
+    let closed_at = null
     if (closed_raw !== undefined && closed_raw !== null) {
-      const n = parseTimestamp(closed_raw);
-      closed_at = Number.isFinite(n) ? n : null;
+      const n = parseTimestamp(closed_raw)
+      closed_at = Number.isFinite(n) ? n : null
     }
     out.push({
       ...it,
       id,
       created_at: Number.isFinite(created_at) ? created_at : 0,
       updated_at: Number.isFinite(updated_at) ? updated_at : 0,
-      closed_at
-    });
+      closed_at,
+    })
   }
-  return out;
+  return out
 }
 
 /**
@@ -107,82 +107,74 @@ export function normalizeIssueList(value) {
  */
 export async function fetchListForSubscription(spec, options = {}) {
   /** @type {string[]} */
-  let args;
+  let args
   try {
-    args = mapSubscriptionToBdArgs(spec);
+    args = mapSubscriptionToBdArgs(spec)
   } catch (err) {
     // Surface bad requests (e.g., missing params)
-    log('mapSubscriptionToBdArgs failed for %o: %o', spec, err);
-    const e = toErrorObject(err);
-    return { ok: false, error: e };
+    log("mapSubscriptionToBdArgs failed for %o: %o", spec, err)
+    const e = toErrorObject(err)
+    return { ok: false, error: e }
   }
 
   try {
-    const res = await runBdJson(args, { cwd: options.cwd });
-    if (!res || res.code !== 0 || !('stdoutJson' in res)) {
-      log(
-        'bd failed for %o (args=%o) code=%s stderr=%s',
-        spec,
-        args,
-        res?.code,
-        res?.stderr || ''
-      );
+    const res = await runBdJson(args, { cwd: options.cwd })
+    if (!res || res.code !== 0 || !("stdoutJson" in res)) {
+      log("bd failed for %o (args=%o) code=%s stderr=%s", spec, args, res?.code, res?.stderr || "")
       return {
         ok: false,
         error: {
-          code: 'bd_error',
-          message: String(res?.stderr || 'bd failed'),
-          details: { exit_code: res?.code ?? -1 }
-        }
-      };
+          code: "bd_error",
+          message: String(res?.stderr || "bd failed"),
+          details: { exit_code: res?.code ?? -1 },
+        },
+      }
     }
     // bd show may return a single object; normalize to an array first
-    let raw = Array.isArray(res.stdoutJson)
-      ? res.stdoutJson
-      : res.stdoutJson && typeof res.stdoutJson === 'object'
-        ? [res.stdoutJson]
-        : [];
+    let raw =
+      Array.isArray(res.stdoutJson) ? res.stdoutJson
+      : res.stdoutJson && typeof res.stdoutJson === "object" ? [res.stdoutJson]
+      : []
 
     // Special-case mapping for `epics`: current bd output nests the epic under
     // an `epic` key and exposes counters at the top level. Flatten so that
     // each entry has a top-level `id` and core fields expected by the registry.
-    if (String(spec.type) === 'epics') {
-      raw = raw.map((it) => {
-        if (it && typeof it === 'object' && 'epic' in it) {
-          const e = /** @type {any} */ (it).epic || {};
+    if (String(spec.type) === "epics") {
+      raw = raw.map(it => {
+        if (it && typeof it === "object" && "epic" in it) {
+          const e = /** @type {any} */ (it).epic || {}
           /** @type {Record<string, unknown>} */
           const flat = {
             // Required minimal fields for registry + client rendering
-            id: String(e.id ?? ''),
+            id: String(e.id ?? ""),
             title: e.title,
             status: e.status,
-            issue_type: e.issue_type || 'epic',
+            issue_type: e.issue_type || "epic",
             created_at: e.created_at,
             updated_at: e.updated_at,
             closed_at: e.closed_at ?? null,
             // Preserve useful counters from bd output
             total_children: /** @type {any} */ (it).total_children,
             closed_children: /** @type {any} */ (it).closed_children,
-            eligible_for_close: /** @type {any} */ (it).eligible_for_close
-          };
-          return flat;
+            eligible_for_close: /** @type {any} */ (it).eligible_for_close,
+          }
+          return flat
         }
-        return it;
-      });
+        return it
+      })
     }
 
-    const items = normalizeIssueList(raw);
-    return { ok: true, items };
+    const items = normalizeIssueList(raw)
+    return { ok: true, items }
   } catch (err) {
-    log('bd invocation failed for %o (args=%o): %o', spec, args, err);
+    log("bd invocation failed for %o (args=%o): %o", spec, args, err)
     return {
       ok: false,
       error: {
-        code: 'bd_error',
-        message:
-          (err && /** @type {any} */ (err).message) || 'bd invocation failed'
-      }
-    };
+        code: "bd_error",
+        message: (err && /** @type {any} */ (err).message) || "bd invocation failed",
+      },
+    }
   }
 }
 
@@ -192,10 +184,10 @@ export async function fetchListForSubscription(spec, options = {}) {
  * @param {string} message
  */
 function badRequest(message) {
-  const e = new Error(message);
+  const e = new Error(message)
   // @ts-expect-error add code
-  e.code = 'bad_request';
-  return e;
+  e.code = "bad_request"
+  return e
 }
 
 /**
@@ -205,14 +197,13 @@ function badRequest(message) {
  * @returns {FetchListResultFailure['error']}
  */
 function toErrorObject(err) {
-  if (err && typeof err === 'object') {
-    const any = /** @type {{ code?: unknown, message?: unknown }} */ (err);
-    const code = typeof any.code === 'string' ? any.code : 'bad_request';
-    const message =
-      typeof any.message === 'string' ? any.message : 'Request error';
-    return { code, message };
+  if (err && typeof err === "object") {
+    const any = /** @type {{ code?: unknown, message?: unknown }} */ (err)
+    const code = typeof any.code === "string" ? any.code : "bad_request"
+    const message = typeof any.message === "string" ? any.message : "Request error"
+    return { code, message }
   }
-  return { code: 'bad_request', message: 'Request error' };
+  return { code: "bad_request", message: "Request error" }
 }
 
 /**
@@ -223,16 +214,16 @@ function toErrorObject(err) {
  * @returns {number}
  */
 function parseTimestamp(v) {
-  if (typeof v === 'string') {
-    const ms = Date.parse(v);
+  if (typeof v === "string") {
+    const ms = Date.parse(v)
     if (Number.isFinite(ms)) {
-      return ms;
+      return ms
     }
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 0
   }
-  if (typeof v === 'number') {
-    return Number.isFinite(v) ? v : 0;
+  if (typeof v === "number") {
+    return Number.isFinite(v) ? v : 0
   }
-  return 0;
+  return 0
 }

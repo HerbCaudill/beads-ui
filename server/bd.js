@@ -1,8 +1,8 @@
-import { spawn } from 'node:child_process';
-import { resolveDbPath } from './db.js';
-import { debug } from './logging.js';
+import { spawn } from "node:child_process"
+import { resolveDbPath } from "./db.js"
+import { debug } from "./logging.js"
 
-const log = debug('bd');
+const log = debug("bd")
 
 /**
  * Get the git user name from git config.
@@ -11,30 +11,30 @@ const log = debug('bd');
  * @returns {Promise<string>}
  */
 export async function getGitUserName(options = {}) {
-  return new Promise((resolve) => {
-    const child = spawn('git', ['config', 'user.name'], {
+  return new Promise(resolve => {
+    const child = spawn("git", ["config", "user.name"], {
       cwd: options.cwd || process.cwd(),
       shell: false,
-      windowsHide: true
-    });
+      windowsHide: true,
+    })
 
     /** @type {string[]} */
-    const chunks = [];
+    const chunks = []
 
     if (child.stdout) {
-      child.stdout.setEncoding('utf8');
-      child.stdout.on('data', (chunk) => chunks.push(String(chunk)));
+      child.stdout.setEncoding("utf8")
+      child.stdout.on("data", chunk => chunks.push(String(chunk)))
     }
 
-    child.on('error', () => resolve(''));
-    child.on('close', (code) => {
+    child.on("error", () => resolve(""))
+    child.on("close", code => {
       if (code !== 0) {
-        resolve('');
-        return;
+        resolve("")
+        return
       }
-      resolve(chunks.join('').trim());
-    });
-  });
+      resolve(chunks.join("").trim())
+    })
+  })
 }
 
 /**
@@ -43,11 +43,11 @@ export async function getGitUserName(options = {}) {
  * @returns {string}
  */
 export function getBdBin() {
-  const env_value = process.env.BD_BIN;
+  const env_value = process.env.BD_BIN
   if (env_value && env_value.length > 0) {
-    return env_value;
+    return env_value
   }
-  return 'bd';
+  return "bd"
 }
 
 /**
@@ -59,81 +59,81 @@ export function getBdBin() {
  * @returns {Promise<{ code: number, stdout: string, stderr: string }>}
  */
 export function runBd(args, options = {}) {
-  const bin = getBdBin();
+  const bin = getBdBin()
 
   // Ensure a consistent DB by setting BEADS_DB environment variable
   const db_path = resolveDbPath({
     cwd: options.cwd || process.cwd(),
-    env: options.env || process.env
-  });
+    env: options.env || process.env,
+  })
   const env_with_db = {
     ...(options.env || process.env),
-    BEADS_DB: db_path.path
-  };
+    BEADS_DB: db_path.path,
+  }
 
   const spawn_opts = {
     cwd: options.cwd || process.cwd(),
     env: env_with_db,
     shell: false,
-    windowsHide: true
-  };
+    windowsHide: true,
+  }
 
   /** @type {string[]} */
-  const final_args = args.slice();
+  const final_args = args.slice()
 
-  return new Promise((resolve) => {
-    const child = spawn(bin, final_args, spawn_opts);
+  return new Promise(resolve => {
+    const child = spawn(bin, final_args, spawn_opts)
 
     /** @type {string[]} */
-    const out_chunks = [];
+    const out_chunks = []
     /** @type {string[]} */
-    const err_chunks = [];
+    const err_chunks = []
 
     if (child.stdout) {
-      child.stdout.setEncoding('utf8');
-      child.stdout.on('data', (chunk) => {
-        out_chunks.push(String(chunk));
-      });
+      child.stdout.setEncoding("utf8")
+      child.stdout.on("data", chunk => {
+        out_chunks.push(String(chunk))
+      })
     }
     if (child.stderr) {
-      child.stderr.setEncoding('utf8');
-      child.stderr.on('data', (chunk) => {
-        err_chunks.push(String(chunk));
-      });
+      child.stderr.setEncoding("utf8")
+      child.stderr.on("data", chunk => {
+        err_chunks.push(String(chunk))
+      })
     }
 
     /** @type {ReturnType<typeof setTimeout> | undefined} */
-    let timer;
+    let timer
     if (options.timeout_ms && options.timeout_ms > 0) {
       timer = setTimeout(() => {
-        child.kill('SIGKILL');
-      }, options.timeout_ms);
-      timer.unref?.();
+        child.kill("SIGKILL")
+      }, options.timeout_ms)
+      timer.unref?.()
     }
 
     /**
      * @param {number | string | null} code
      */
-    const finish = (code) => {
+    const finish = code => {
       if (timer) {
-        clearTimeout(timer);
+        clearTimeout(timer)
       }
       resolve({
         code: Number(code || 0),
-        stdout: out_chunks.join(''),
-        stderr: err_chunks.join('')
-      });
-    };
+        stdout: out_chunks.join(""),
+        stderr: err_chunks.join(""),
+      })
+    }
 
-    child.on('error', (err) => {
+    child.on("error", err => {
       // Treat spawn error as an immediate non-zero exit; log for diagnostics.
-      log('spawn error running %s %o', bin, err);
-      finish(127);
-    });
-    child.on('close', (code) => {
-      finish(code);
-    });
-  });
+      log("spawn error running %s %o", bin, err)
+      finish(127)
+    })
+    child.on("close", code => {
+      finish(code)
+    })
+  })
 }
 
 /**
@@ -144,23 +144,18 @@ export function runBd(args, options = {}) {
  * @returns {Promise<{ code: number, stdoutJson?: unknown, stderr?: string }>}
  */
 export async function runBdJson(args, options = {}) {
-  const result = await runBd(args, options);
+  const result = await runBd(args, options)
   if (result.code !== 0) {
-    log(
-      'bd exited with code %d (args=%o) stderr=%s',
-      result.code,
-      args,
-      result.stderr
-    );
-    return { code: result.code, stderr: result.stderr };
+    log("bd exited with code %d (args=%o) stderr=%s", result.code, args, result.stderr)
+    return { code: result.code, stderr: result.stderr }
   }
   /** @type {unknown} */
-  let parsed;
+  let parsed
   try {
-    parsed = JSON.parse(result.stdout || 'null');
+    parsed = JSON.parse(result.stdout || "null")
   } catch (err) {
-    log('bd returned invalid JSON (args=%o): %o', args, err);
-    return { code: 0, stderr: 'Invalid JSON from bd' };
+    log("bd returned invalid JSON (args=%o): %o", args, err)
+    return { code: 0, stderr: "Invalid JSON from bd" }
   }
-  return { code: 0, stdoutJson: parsed };
+  return { code: 0, stdoutJson: parsed }
 }

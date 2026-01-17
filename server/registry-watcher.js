@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { debug } from './logging.js';
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { debug } from "./logging.js"
 
-const log = debug('registry-watcher');
+const log = debug("registry-watcher")
 
 /**
  * In-memory registry of workspaces registered dynamically via the API.
@@ -11,7 +11,7 @@ const log = debug('registry-watcher');
  *
  * @type {Map<string, { path: string, database: string, pid: number, version: string }>}
  */
-const inMemoryWorkspaces = new Map();
+const inMemoryWorkspaces = new Map()
 
 /**
  * Register a workspace dynamically (in-memory).
@@ -20,14 +20,14 @@ const inMemoryWorkspaces = new Map();
  * @param {{ path: string, database: string }} workspace
  */
 export function registerWorkspace(workspace) {
-  const normalized = path.resolve(workspace.path);
-  log('registering workspace: %s (db: %s)', normalized, workspace.database);
+  const normalized = path.resolve(workspace.path)
+  log("registering workspace: %s (db: %s)", normalized, workspace.database)
   inMemoryWorkspaces.set(normalized, {
     path: normalized,
     database: workspace.database,
     pid: process.pid,
-    version: 'dynamic'
-  });
+    version: "dynamic",
+  })
 }
 
 /**
@@ -36,7 +36,7 @@ export function registerWorkspace(workspace) {
  * @returns {Array<{ path: string, database: string, pid: number, version: string }>}
  */
 export function getInMemoryWorkspaces() {
-  return Array.from(inMemoryWorkspaces.values());
+  return Array.from(inMemoryWorkspaces.values())
 }
 
 /**
@@ -55,7 +55,7 @@ export function getInMemoryWorkspaces() {
  * @returns {string}
  */
 export function getRegistryPath() {
-  return path.join(os.homedir(), '.beads', 'registry.json');
+  return path.join(os.homedir(), ".beads", "registry.json")
 }
 
 /**
@@ -64,16 +64,16 @@ export function getRegistryPath() {
  * @returns {RegistryEntry[]}
  */
 export function readRegistry() {
-  const registry_path = getRegistryPath();
+  const registry_path = getRegistryPath()
   try {
-    const content = fs.readFileSync(registry_path, 'utf8');
-    const data = JSON.parse(content);
+    const content = fs.readFileSync(registry_path, "utf8")
+    const data = JSON.parse(content)
     if (Array.isArray(data)) {
-      return data;
+      return data
     }
-    return [];
+    return []
   } catch {
-    return [];
+    return []
   }
 }
 
@@ -85,25 +85,25 @@ export function readRegistry() {
  * @returns {RegistryEntry | null}
  */
 export function findWorkspaceEntry(root_dir) {
-  const entries = readRegistry();
-  const normalized = path.resolve(root_dir);
+  const entries = readRegistry()
+  const normalized = path.resolve(root_dir)
 
   // First, try exact match
   for (const entry of entries) {
     if (path.resolve(entry.workspace_path) === normalized) {
-      return entry;
+      return entry
     }
   }
 
   // Then try to find if root_dir is inside a workspace
   for (const entry of entries) {
-    const workspace = path.resolve(entry.workspace_path);
+    const workspace = path.resolve(entry.workspace_path)
     if (normalized.startsWith(workspace + path.sep)) {
-      return entry;
+      return entry
     }
   }
 
-  return null;
+  return null
 }
 
 /**
@@ -113,21 +113,19 @@ export function findWorkspaceEntry(root_dir) {
  * @returns {Array<{ path: string, database: string, pid: number, version: string }>}
  */
 export function getAvailableWorkspaces() {
-  const entries = readRegistry();
-  const fileWorkspaces = entries.map((entry) => ({
+  const entries = readRegistry()
+  const fileWorkspaces = entries.map(entry => ({
     path: entry.workspace_path,
     database: entry.database_path,
     pid: entry.pid,
-    version: entry.version
-  }));
+    version: entry.version,
+  }))
 
   // Merge in-memory workspaces, avoiding duplicates by path
-  const seen = new Set(fileWorkspaces.map((w) => path.resolve(w.path)));
-  const inMemory = getInMemoryWorkspaces().filter(
-    (w) => !seen.has(path.resolve(w.path))
-  );
+  const seen = new Set(fileWorkspaces.map(w => path.resolve(w.path)))
+  const inMemory = getInMemoryWorkspaces().filter(w => !seen.has(path.resolve(w.path)))
 
-  return [...fileWorkspaces, ...inMemory];
+  return [...fileWorkspaces, ...inMemory]
 }
 
 /**
@@ -138,63 +136,59 @@ export function getAvailableWorkspaces() {
  * @returns {{ close: () => void }}
  */
 export function watchRegistry(onChange, options = {}) {
-  const debounce_ms = options.debounce_ms ?? 500;
-  const registry_path = getRegistryPath();
-  const registry_dir = path.dirname(registry_path);
-  const registry_file = path.basename(registry_path);
+  const debounce_ms = options.debounce_ms ?? 500
+  const registry_path = getRegistryPath()
+  const registry_dir = path.dirname(registry_path)
+  const registry_file = path.basename(registry_path)
 
   /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let timer;
+  let timer
   /** @type {fs.FSWatcher | undefined} */
-  let watcher;
+  let watcher
 
   const schedule = () => {
     if (timer) {
-      clearTimeout(timer);
+      clearTimeout(timer)
     }
     timer = setTimeout(() => {
       try {
-        const entries = readRegistry();
-        onChange(entries);
+        const entries = readRegistry()
+        onChange(entries)
       } catch (err) {
-        log('error reading registry on change: %o', err);
+        log("error reading registry on change: %o", err)
       }
-    }, debounce_ms);
-    timer.unref?.();
-  };
+    }, debounce_ms)
+    timer.unref?.()
+  }
 
   try {
     // Ensure the directory exists before watching
     if (!fs.existsSync(registry_dir)) {
-      log('registry directory does not exist: %s', registry_dir);
-      return { close: () => {} };
+      log("registry directory does not exist: %s", registry_dir)
+      return { close: () => {} }
     }
 
-    watcher = fs.watch(
-      registry_dir,
-      { persistent: true },
-      (event_type, filename) => {
-        if (filename && String(filename) !== registry_file) {
-          return;
-        }
-        if (event_type === 'change' || event_type === 'rename') {
-          log('registry %s %s', event_type, filename || '');
-          schedule();
-        }
+    watcher = fs.watch(registry_dir, { persistent: true }, (event_type, filename) => {
+      if (filename && String(filename) !== registry_file) {
+        return
       }
-    );
+      if (event_type === "change" || event_type === "rename") {
+        log("registry %s %s", event_type, filename || "")
+        schedule()
+      }
+    })
   } catch (err) {
-    log('unable to watch registry directory: %o', err);
-    return { close: () => {} };
+    log("unable to watch registry directory: %o", err)
+    return { close: () => {} }
   }
 
   return {
     close() {
       if (timer) {
-        clearTimeout(timer);
-        timer = undefined;
+        clearTimeout(timer)
+        timer = undefined
       }
-      watcher?.close();
-    }
-  };
+      watcher?.close()
+    },
+  }
 }

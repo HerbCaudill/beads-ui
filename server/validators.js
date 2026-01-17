@@ -10,14 +10,14 @@
  * @type {Set<string>}
  */
 const SUBSCRIPTION_TYPES = new Set([
-  'all-issues',
-  'epics',
-  'blocked-issues',
-  'ready-issues',
-  'in-progress-issues',
-  'closed-issues',
-  'issue-detail'
-]);
+  "all-issues",
+  "epics",
+  "blocked-issues",
+  "ready-issues",
+  "in-progress-issues",
+  "closed-issues",
+  "issue-detail",
+])
 
 /**
  * Validate a subscribe-list payload and normalize to a SubscriptionSpec.
@@ -26,88 +26,83 @@ const SUBSCRIPTION_TYPES = new Set([
  * @returns {{ ok: true, id: string, spec: { type: string, params?: Record<string, string|number|boolean> } } | { ok: false, code: 'bad_request', message: string }}
  */
 export function validateSubscribeListPayload(payload) {
-  if (!payload || typeof payload !== 'object') {
+  if (!payload || typeof payload !== "object") {
     return {
       ok: false,
-      code: 'bad_request',
-      message: 'payload must be an object'
-    };
+      code: "bad_request",
+      message: "payload must be an object",
+    }
   }
-  const any =
-    /** @type {{ id?: unknown, type?: unknown, params?: unknown }} */ (payload);
+  const any = /** @type {{ id?: unknown, type?: unknown, params?: unknown }} */ (payload)
 
-  const id = typeof any.id === 'string' ? any.id : '';
+  const id = typeof any.id === "string" ? any.id : ""
   if (id.length === 0) {
     return {
       ok: false,
-      code: 'bad_request',
-      message: 'payload.id must be a non-empty string'
-    };
+      code: "bad_request",
+      message: "payload.id must be a non-empty string",
+    }
   }
 
-  const type = typeof any.type === 'string' ? any.type : '';
+  const type = typeof any.type === "string" ? any.type : ""
   if (type.length === 0 || !SUBSCRIPTION_TYPES.has(type)) {
     return {
       ok: false,
-      code: 'bad_request',
-      message: `payload.type must be one of: ${Array.from(SUBSCRIPTION_TYPES).join(', ')}`
-    };
+      code: "bad_request",
+      message: `payload.type must be one of: ${Array.from(SUBSCRIPTION_TYPES).join(", ")}`,
+    }
   }
 
   /** @type {Record<string, string|number|boolean> | undefined} */
-  let params;
+  let params
   if (any.params !== undefined) {
-    if (
-      !any.params ||
-      typeof any.params !== 'object' ||
-      Array.isArray(any.params)
-    ) {
+    if (!any.params || typeof any.params !== "object" || Array.isArray(any.params)) {
       return {
         ok: false,
-        code: 'bad_request',
-        message: 'payload.params must be an object when provided'
-      };
+        code: "bad_request",
+        message: "payload.params must be an object when provided",
+      }
     }
-    params = /** @type {Record<string, string|number|boolean>} */ (any.params);
+    params = /** @type {Record<string, string|number|boolean>} */ (any.params)
   }
 
   // Per-type param schemas
-  if (type === 'issue-detail') {
-    const id = String(params?.id ?? '').trim();
+  if (type === "issue-detail") {
+    const id = String(params?.id ?? "").trim()
     if (id.length === 0) {
       return {
         ok: false,
-        code: 'bad_request',
-        message: 'params.id must be a non-empty string'
-      };
+        code: "bad_request",
+        message: "params.id must be a non-empty string",
+      }
     }
-    params = { id };
-  } else if (type === 'closed-issues') {
-    if (params && 'since' in params) {
-      const since = params.since;
-      const n = typeof since === 'number' ? since : Number.NaN;
+    params = { id }
+  } else if (type === "closed-issues") {
+    if (params && "since" in params) {
+      const since = params.since
+      const n = typeof since === "number" ? since : Number.NaN
       if (!Number.isFinite(n) || n < 0) {
         return {
           ok: false,
-          code: 'bad_request',
-          message: 'params.since must be a non-negative number (epoch ms)'
-        };
+          code: "bad_request",
+          message: "params.since must be a non-negative number (epoch ms)",
+        }
       }
-      params = { since: n };
+      params = { since: n }
     } else {
-      params = undefined;
+      params = undefined
     }
   } else {
     // Other types do not accept params
     if (params && Object.keys(params).length > 0) {
       return {
         ok: false,
-        code: 'bad_request',
-        message: `type ${type} does not accept params`
-      };
+        code: "bad_request",
+        message: `type ${type} does not accept params`,
+      }
     }
-    params = undefined;
+    params = undefined
   }
 
-  return { ok: true, id, spec: { type, params } };
+  return { ok: true, id, spec: { type, params } }
 }

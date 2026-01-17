@@ -70,8 +70,8 @@ export function createListSelectors(issueStores) {
     selectIssuesFor(client_id) {},
     selectBoardColumn(client_id, mode) {},
     selectEpicChildren(epic_id) {},
-    subscribe(fn) {}
-  };
+    subscribe(fn) {},
+  }
 }
 ```
 

@@ -96,11 +96,11 @@ Never update `CHANGES.md`.
   with a blank line for readability.
 
   ```js
-  const store = createStore();
+  const store = createStore()
 
-  const result = store.addItem('x');
+  const result = store.addItem("x")
 
-  expect(result).toEqual('x');
+  expect(result).toEqual("x")
   ```
 
 - Do not modify implementation code to make tests pass; adjust the test or fix
@@ -134,6 +134,7 @@ Never update `CHANGES.md`.
 7. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
+
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push

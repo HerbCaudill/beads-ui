@@ -1,5 +1,5 @@
 // Lightweight wrapper around the native <dialog> for issue details
-import { createIssueIdRenderer } from '../utils/issue-id-renderer.js';
+import { createIssueIdRenderer } from "../utils/issue-id-renderer.js"
 
 // Provides: open(id), close(), getMount()
 // Ensures accessibility, backdrop click to close, and Esc handling.
@@ -17,10 +17,10 @@ import { createIssueIdRenderer } from '../utils/issue-id-renderer.js';
  * @returns {{ open: (id: string) => void, close: () => void, getMount: () => HTMLElement }}
  */
 export function createIssueDialog(mount_element, store, onClose) {
-  const dialog = document.createElement('dialog');
-  dialog.id = 'issue-dialog';
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
+  const dialog = document.createElement("dialog")
+  dialog.id = "issue-dialog"
+  dialog.setAttribute("role", "dialog")
+  dialog.setAttribute("aria-modal", "true")
 
   // Shell: header (id + close) + body mount
   dialog.innerHTML = `
@@ -33,64 +33,58 @@ export function createIssueDialog(mount_element, store, onClose) {
       </header>
       <div class="issue-dialog__body" id="issue-dialog-body"></div>
     </div>
-  `;
+  `
 
-  mount_element.appendChild(dialog);
+  mount_element.appendChild(dialog)
 
-  const body_mount = /** @type {HTMLElement} */ (
-    dialog.querySelector('#issue-dialog-body')
-  );
-  const title_el = /** @type {HTMLElement} */ (
-    dialog.querySelector('#issue-dialog-title')
-  );
-  const btn_close = /** @type {HTMLButtonElement} */ (
-    dialog.querySelector('.issue-dialog__close')
-  );
+  const body_mount = /** @type {HTMLElement} */ (dialog.querySelector("#issue-dialog-body"))
+  const title_el = /** @type {HTMLElement} */ (dialog.querySelector("#issue-dialog-title"))
+  const btn_close = /** @type {HTMLButtonElement} */ (dialog.querySelector(".issue-dialog__close"))
 
   /**
    * @param {string} id
    */
   function setTitle(id) {
     // Use copyable ID renderer but keep visible text as raw id for tests/clarity
-    title_el.replaceChildren();
-    title_el.appendChild(createIssueIdRenderer(id));
+    title_el.replaceChildren()
+    title_el.appendChild(createIssueIdRenderer(id))
   }
 
   // Backdrop click: when clicking the dialog itself (outside container), close
-  dialog.addEventListener('mousedown', (ev) => {
+  dialog.addEventListener("mousedown", ev => {
     if (ev.target === dialog) {
-      ev.preventDefault();
-      requestClose();
+      ev.preventDefault()
+      requestClose()
     }
-  });
+  })
   // Esc key produces a cancel event on <dialog>
-  dialog.addEventListener('cancel', (ev) => {
-    ev.preventDefault();
-    requestClose();
-  });
+  dialog.addEventListener("cancel", ev => {
+    ev.preventDefault()
+    requestClose()
+  })
   // Close button
-  btn_close.addEventListener('click', () => requestClose());
+  btn_close.addEventListener("click", () => requestClose())
 
   /** @type {HTMLElement | null} */
-  let last_focus = null;
+  let last_focus = null
 
   function requestClose() {
     try {
-      if (typeof dialog.close === 'function') {
-        dialog.close();
+      if (typeof dialog.close === "function") {
+        dialog.close()
       } else {
-        dialog.removeAttribute('open');
+        dialog.removeAttribute("open")
       }
     } catch {
-      dialog.removeAttribute('open');
+      dialog.removeAttribute("open")
     }
     try {
-      onClose();
+      onClose()
     } catch {
       // ignore consumer errors
     }
     // Restore focus to the element that had focus before opening
-    restoreFocus();
+    restoreFocus()
   }
 
   /**
@@ -99,58 +93,58 @@ export function createIssueDialog(mount_element, store, onClose) {
   function open(id) {
     // Capture currently focused element to restore after closing
     try {
-      const ae = document.activeElement;
+      const ae = document.activeElement
       if (ae && ae instanceof HTMLElement) {
-        last_focus = ae;
+        last_focus = ae
       } else {
-        last_focus = null;
+        last_focus = null
       }
     } catch {
-      last_focus = null;
+      last_focus = null
     }
-    setTitle(id);
+    setTitle(id)
     try {
-      if ('showModal' in dialog && typeof dialog.showModal === 'function') {
-        dialog.showModal();
+      if ("showModal" in dialog && typeof dialog.showModal === "function") {
+        dialog.showModal()
       } else {
-        dialog.setAttribute('open', '');
+        dialog.setAttribute("open", "")
       }
       // Focus the dialog container for keyboard users
       setTimeout(() => {
         try {
-          btn_close.focus();
+          btn_close.focus()
         } catch {
           // ignore
         }
-      }, 0);
+      }, 0)
     } catch {
       // Fallback for environments without <dialog>
-      dialog.setAttribute('open', '');
+      dialog.setAttribute("open", "")
     }
   }
 
   function close() {
     try {
-      if (typeof dialog.close === 'function') {
-        dialog.close();
+      if (typeof dialog.close === "function") {
+        dialog.close()
       } else {
-        dialog.removeAttribute('open');
+        dialog.removeAttribute("open")
       }
     } catch {
-      dialog.removeAttribute('open');
+      dialog.removeAttribute("open")
     }
-    restoreFocus();
+    restoreFocus()
   }
 
   function restoreFocus() {
     try {
       if (last_focus && document.contains(last_focus)) {
-        last_focus.focus();
+        last_focus.focus()
       }
     } catch {
       // ignore focus errors
     } finally {
-      last_focus = null;
+      last_focus = null
     }
   }
 
@@ -158,7 +152,7 @@ export function createIssueDialog(mount_element, store, onClose) {
     open,
     close,
     getMount() {
-      return body_mount;
-    }
-  };
+      return body_mount
+    },
+  }
 }

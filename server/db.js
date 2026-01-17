@@ -1,6 +1,6 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
 
 /**
  * Resolve the SQLite DB path used by beads according to precedence:
@@ -16,34 +16,34 @@ import path from 'node:path';
  * @returns {{ path: string, source: 'flag'|'env'|'nearest'|'home-default', exists: boolean }}
  */
 export function resolveDbPath(options = {}) {
-  const cwd = options.cwd ? path.resolve(options.cwd) : process.cwd();
-  const env = options.env || process.env;
+  const cwd = options.cwd ? path.resolve(options.cwd) : process.cwd()
+  const env = options.env || process.env
 
   // 1) explicit flag
   if (options.explicit_db && options.explicit_db.length > 0) {
-    const p = absFrom(options.explicit_db, cwd);
-    return { path: p, source: 'flag', exists: fileExists(p) };
+    const p = absFrom(options.explicit_db, cwd)
+    return { path: p, source: "flag", exists: fileExists(p) }
   }
 
   // 2) BEADS_DB env
   if (env.BEADS_DB && String(env.BEADS_DB).length > 0) {
-    const p = absFrom(String(env.BEADS_DB), cwd);
-    return { path: p, source: 'env', exists: fileExists(p) };
+    const p = absFrom(String(env.BEADS_DB), cwd)
+    return { path: p, source: "env", exists: fileExists(p) }
   }
 
   // 3) nearest .beads/*.db walking up
-  const nearest = findNearestBeadsDb(cwd);
+  const nearest = findNearestBeadsDb(cwd)
   if (nearest) {
-    return { path: nearest, source: 'nearest', exists: fileExists(nearest) };
+    return { path: nearest, source: "nearest", exists: fileExists(nearest) }
   }
 
   // 4) ~/.beads/default.db
-  const home_default = path.join(os.homedir(), '.beads', 'default.db');
+  const home_default = path.join(os.homedir(), ".beads", "default.db")
   return {
     path: home_default,
-    source: 'home-default',
-    exists: fileExists(home_default)
-  };
+    source: "home-default",
+    exists: fileExists(home_default),
+  }
 }
 
 /**
@@ -54,29 +54,29 @@ export function resolveDbPath(options = {}) {
  * @returns {string | null}
  */
 export function findNearestBeadsDb(start) {
-  let dir = path.resolve(start);
+  let dir = path.resolve(start)
   // Cap iterations to avoid infinite loop in degenerate cases
   for (let i = 0; i < 100; i++) {
-    const beads_dir = path.join(dir, '.beads');
+    const beads_dir = path.join(dir, ".beads")
     try {
-      const entries = fs.readdirSync(beads_dir, { withFileTypes: true });
+      const entries = fs.readdirSync(beads_dir, { withFileTypes: true })
       const dbs = entries
-        .filter((e) => e.isFile() && e.name.endsWith('.db'))
-        .map((e) => e.name)
-        .sort();
+        .filter(e => e.isFile() && e.name.endsWith(".db"))
+        .map(e => e.name)
+        .sort()
       if (dbs.length > 0) {
-        return path.join(beads_dir, dbs[0]);
+        return path.join(beads_dir, dbs[0])
       }
     } catch {
       // ignore and walk up
     }
-    const parent = path.dirname(dir);
+    const parent = path.dirname(dir)
     if (parent === dir) {
-      break;
+      break
     }
-    dir = parent;
+    dir = parent
   }
-  return null;
+  return null
 }
 
 /**
@@ -86,7 +86,7 @@ export function findNearestBeadsDb(start) {
  * @param {string} cwd
  */
 function absFrom(p, cwd) {
-  return path.isAbsolute(p) ? path.normalize(p) : path.join(cwd, p);
+  return path.isAbsolute(p) ? path.normalize(p) : path.join(cwd, p)
 }
 
 /**
@@ -94,9 +94,9 @@ function absFrom(p, cwd) {
  */
 function fileExists(p) {
   try {
-    fs.accessSync(p, fs.constants.F_OK);
-    return true;
+    fs.accessSync(p, fs.constants.F_OK)
+    return true
   } catch {
-    return false;
+    return false
   }
 }

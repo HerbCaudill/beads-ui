@@ -5,15 +5,15 @@
  * @returns {HTMLSpanElement}
  */
 export function createStatusBadge(status) {
-  const el = document.createElement('span');
-  el.className = 'status-badge';
-  const s = String(status || 'open');
-  el.classList.add(`is-${s}`);
-  el.setAttribute('role', 'img');
-  el.setAttribute('title', labelForStatus(s));
-  el.setAttribute('aria-label', `Status: ${labelForStatus(s)}`);
-  el.textContent = labelForStatus(s);
-  return el;
+  const el = document.createElement("span")
+  el.className = "status-badge"
+  const s = String(status || "open")
+  el.classList.add(`is-${s}`)
+  el.setAttribute("role", "img")
+  el.setAttribute("title", labelForStatus(s))
+  el.setAttribute("aria-label", `Status: ${labelForStatus(s)}`)
+  el.textContent = labelForStatus(s)
+  return el
 }
 
 /**
@@ -21,13 +21,13 @@ export function createStatusBadge(status) {
  */
 function labelForStatus(s) {
   switch (s) {
-    case 'open':
-      return 'Open';
-    case 'in_progress':
-      return 'In progress';
-    case 'closed':
-      return 'Closed';
+    case "open":
+      return "Open"
+    case "in_progress":
+      return "In progress"
+    case "closed":
+      return "Closed"
     default:
-      return 'Unknown';
+      return "Unknown"
   }
 }

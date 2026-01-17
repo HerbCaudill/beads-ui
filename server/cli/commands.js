@@ -1,14 +1,14 @@
-import { getConfig } from '../config.js';
-import { resolveDbPath } from '../db.js';
+import { getConfig } from "../config.js"
+import { resolveDbPath } from "../db.js"
 import {
   isProcessRunning,
   printServerUrl,
   readPidFile,
   removePidFile,
   startDaemon,
-  terminateProcess
-} from './daemon.js';
-import { openUrl, registerWorkspaceWithServer, waitForServer } from './open.js';
+  terminateProcess,
+} from "./daemon.js"
+import { openUrl, registerWorkspaceWithServer, waitForServer } from "./open.js"
 
 /**
  * Handle `start` command. Idempotent when already running.
@@ -20,61 +20,61 @@ import { openUrl, registerWorkspaceWithServer, waitForServer } from './open.js';
  */
 export async function handleStart(options) {
   // Default: do not open a browser unless explicitly requested via `open: true`.
-  const should_open = options?.open === true;
-  const existing_pid = readPidFile();
+  const should_open = options?.open === true
+  const existing_pid = readPidFile()
   if (existing_pid && isProcessRunning(existing_pid)) {
     // Server is already running - register this workspace dynamically
-    const cwd = process.cwd();
-    const db_info = resolveDbPath({ cwd });
+    const cwd = process.cwd()
+    const db_info = resolveDbPath({ cwd })
     if (db_info.exists) {
-      const { url } = getConfig();
+      const { url } = getConfig()
       const registered = await registerWorkspaceWithServer(url, {
         path: cwd,
-        database: db_info.path
-      });
+        database: db_info.path,
+      })
       if (registered) {
-        console.log('Workspace registered: %s', cwd);
+        console.log("Workspace registered: %s", cwd)
       }
     }
-    console.warn('Server is already running.');
+    console.warn("Server is already running.")
     if (should_open) {
-      const { url } = getConfig();
-      await openUrl(url);
+      const { url } = getConfig()
+      await openUrl(url)
     }
-    return 0;
+    return 0
   }
   if (existing_pid && !isProcessRunning(existing_pid)) {
     // stale PID file
-    removePidFile();
+    removePidFile()
   }
 
   // Set env vars in current process so getConfig() reflects the overrides
   if (options?.host) {
-    process.env.HOST = options.host;
+    process.env.HOST = options.host
   }
   if (options?.port) {
-    process.env.PORT = String(options.port);
+    process.env.PORT = String(options.port)
   }
 
   const started = startDaemon({
     is_debug: options?.is_debug,
     host: options?.host,
-    port: options?.port
-  });
+    port: options?.port,
+  })
   if (started && started.pid > 0) {
-    printServerUrl();
+    printServerUrl()
     // Auto-open the browser once for a fresh daemon start
     if (should_open) {
-      const { url } = getConfig();
+      const { url } = getConfig()
       // Wait briefly for the server to accept connections (single retry window)
-      await waitForServer(url, 600);
+      await waitForServer(url, 600)
       // Best-effort open; ignore result
-      await openUrl(url);
+      await openUrl(url)
     }
-    return 0;
+    return 0
   }
 
-  return 1;
+  return 1
 }
 
 /**
@@ -85,25 +85,25 @@ export async function handleStart(options) {
  * @returns {Promise<number>} Exit code
  */
 export async function handleStop() {
-  const existing_pid = readPidFile();
+  const existing_pid = readPidFile()
   if (!existing_pid) {
-    return 2;
+    return 2
   }
 
   if (!isProcessRunning(existing_pid)) {
     // stale PID file
-    removePidFile();
-    return 2;
+    removePidFile()
+    return 2
   }
 
-  const terminated = await terminateProcess(existing_pid, 5000);
+  const terminated = await terminateProcess(existing_pid, 5000)
   if (terminated) {
-    removePidFile();
-    return 0;
+    removePidFile()
+    return 0
   }
 
   // Not terminated within timeout
-  return 1;
+  return 1
 }
 
 /**
@@ -120,11 +120,11 @@ export async function handleStop() {
  * @returns {Promise<number>}
  */
 export async function handleRestart(options) {
-  const stop_code = await handleStop();
+  const stop_code = await handleStop()
   // 0 = stopped, 2 = not running; both are acceptable to proceed
   if (stop_code !== 0 && stop_code !== 2) {
-    return 1;
+    return 1
   }
-  const start_code = await handleStart(options);
-  return start_code === 0 ? 0 : 1;
+  const start_code = await handleStart(options)
+  return start_code === 0 ? 0 : 1
 }

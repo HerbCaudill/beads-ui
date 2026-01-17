@@ -61,45 +61,45 @@ The UI manages one store per active subscription. Minimal API surface:
 // types only — see types/subscription-issue-store.ts
 export interface SubscriptionIssueStore {
   /** Client subscription id this store belongs to. */
-  readonly id: string;
+  readonly id: string
 
   /** Attach a listener that is called after each applied message. */
-  subscribe(listener: () => void): () => void;
+  subscribe(listener: () => void): () => void
 
   /** Apply a push message: snapshot, upsert, or delete. */
-  applyPush(msg: SnapshotMsg | UpsertMsg | DeleteMsg): void;
+  applyPush(msg: SnapshotMsg | UpsertMsg | DeleteMsg): void
 
   /** Read-only, stable snapshot for rendering (deterministic sort). */
-  snapshot(): readonly Issue[];
+  snapshot(): readonly Issue[]
 
   /** Lookup helpers used by views/tests. */
-  size(): number;
-  getById(id: string): Issue | undefined;
+  size(): number
+  getById(id: string): Issue | undefined
 
   /** Release references and listeners when the view unmounts. */
-  dispose(): void;
+  dispose(): void
 }
 
 export type SnapshotMsg = {
-  type: 'snapshot';
-  id: string;
-  revision: number;
-  issues: Issue[];
-};
+  type: "snapshot"
+  id: string
+  revision: number
+  issues: Issue[]
+}
 
 export type UpsertMsg = {
-  type: 'upsert';
-  id: string;
-  revision: number;
-  issue: Issue;
-};
+  type: "upsert"
+  id: string
+  revision: number
+  issue: Issue
+}
 
 export type DeleteMsg = {
-  type: 'delete';
-  id: string;
-  revision: number;
-  issue_id: string;
-};
+  type: "delete"
+  id: string
+  revision: number
+  issue_id: string
+}
 ```
 
 ### Sorting and identity

@@ -18,32 +18,32 @@ See also: `docs/protocol/issues-push-v2.md` for the wire protocol.
 Factory: `app/data/subscription-issue-store.js`
 
 ```js
-import { createSubscriptionIssueStore } from '../app/data/subscription-issue-store.js';
+import { createSubscriptionIssueStore } from "../app/data/subscription-issue-store.js"
 
 // Create at view mount (id is client-chosen)
-const store = createSubscriptionIssueStore('ready');
+const store = createSubscriptionIssueStore("ready")
 
 // Listen for changes
 const unsubscribe = store.subscribe(() => {
-  render(store.snapshot());
-});
+  render(store.snapshot())
+})
 
 // Apply push envelopes from the WebSocket client
-ws.on('message', (evt) => {
-  const msg = JSON.parse(evt.data);
-  if (msg && msg.ok === true && msg.payload && msg.payload.id === 'ready') {
+ws.on("message", evt => {
+  const msg = JSON.parse(evt.data)
+  if (msg && msg.ok === true && msg.payload && msg.payload.id === "ready") {
     // payload has { type, id, schema, revision, ... }
-    store.applyPush(msg.payload);
+    store.applyPush(msg.payload)
   }
-});
+})
 
 // Read helpers
-store.size(); // number of issues
-store.getById('UI-1'); // lookup by id
+store.size() // number of issues
+store.getById("UI-1") // lookup by id
 
 // Dispose on unmount
-unsubscribe();
-store.dispose();
+unsubscribe()
+store.dispose()
 ```
 
 Options: deterministic sort can be customized per list via the optional
@@ -58,24 +58,24 @@ Pair store creation with the subscribe‑list handshake. The server will send a
 // Request a subscription
 socket.send(
   JSON.stringify({
-    id: 'req-1',
-    type: 'subscribe-list',
-    payload: { id: 'ready', type: 'ready-issues' }
-  })
-);
+    id: "req-1",
+    type: "subscribe-list",
+    payload: { id: "ready", type: "ready-issues" },
+  }),
+)
 
-socket.addEventListener('message', (ev) => {
-  const frame = JSON.parse(ev.data);
-  if (frame.ok && frame.type === 'snapshot' && frame.payload.id === 'ready') {
-    store.applyPush(frame.payload);
+socket.addEventListener("message", ev => {
+  const frame = JSON.parse(ev.data)
+  if (frame.ok && frame.type === "snapshot" && frame.payload.id === "ready") {
+    store.applyPush(frame.payload)
   }
-  if (frame.ok && frame.type === 'upsert' && frame.payload.id === 'ready') {
-    store.applyPush(frame.payload);
+  if (frame.ok && frame.type === "upsert" && frame.payload.id === "ready") {
+    store.applyPush(frame.payload)
   }
-  if (frame.ok && frame.type === 'delete' && frame.payload.id === 'ready') {
-    store.applyPush(frame.payload);
+  if (frame.ok && frame.type === "delete" && frame.payload.id === "ready") {
+    store.applyPush(frame.payload)
   }
-});
+})
 ```
 
 ## Rendering Pattern (List component)
@@ -83,19 +83,19 @@ socket.addEventListener('message', (ev) => {
 ```js
 /** @param {{ store: ReturnType<typeof createSubscriptionIssueStore> }} props */
 export function ListView({ store }) {
-  let items = store.snapshot();
+  let items = store.snapshot()
 
   const un = store.subscribe(() => {
-    items = store.snapshot();
-    requestRender();
-  });
+    items = store.snapshot()
+    requestRender()
+  })
 
   // framework-specific teardown
-  onUnmount(() => un());
+  onUnmount(() => un())
 
   return html`<ul>
-    ${items.map((it) => html`<li data-id=${it.id}>${it.title}</li>`)}
-  </ul>`;
+    ${items.map(it => html`<li data-id=${it.id}>${it.title}</li>`)}
+  </ul>`
 }
 ```
 

@@ -1,5 +1,5 @@
-import { html, render } from 'lit-html';
-import { debug } from '../utils/logging.js';
+import { html, render } from "lit-html"
+import { debug } from "../utils/logging.js"
 
 /**
  * @typedef {import('../state.js').WorkspaceInfo} WorkspaceInfo
@@ -13,9 +13,9 @@ import { debug } from '../utils/logging.js';
  * @returns {string}
  */
 function getProjectName(workspace_path) {
-  if (!workspace_path) return 'Unknown';
-  const parts = workspace_path.split('/').filter(Boolean);
-  return parts.length > 0 ? parts[parts.length - 1] : 'Unknown';
+  if (!workspace_path) return "Unknown"
+  const parts = workspace_path.split("/").filter(Boolean)
+  return parts.length > 0 ? parts[parts.length - 1] : "Unknown"
 }
 
 /**
@@ -26,11 +26,11 @@ function getProjectName(workspace_path) {
  * @param {(workspace_path: string) => Promise<void>} onWorkspaceChange
  */
 export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
-  const log = debug('views:workspace-picker');
+  const log = debug("views:workspace-picker")
   /** @type {(() => void) | null} */
-  let unsubscribe = null;
+  let unsubscribe = null
   /** @type {boolean} */
-  let is_switching = false;
+  let is_switching = false
 
   /**
    * Handle workspace selection change.
@@ -38,50 +38,48 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
    * @param {Event} ev
    */
   async function onChange(ev) {
-    const select = /** @type {HTMLSelectElement} */ (ev.target);
-    const new_path = select.value;
-    const s = store.getState();
-    const current_path = s.workspace?.current?.path || '';
+    const select = /** @type {HTMLSelectElement} */ (ev.target)
+    const new_path = select.value
+    const s = store.getState()
+    const current_path = s.workspace?.current?.path || ""
 
     if (new_path && new_path !== current_path) {
-      log('switching workspace to %s', new_path);
-      is_switching = true;
-      doRender();
+      log("switching workspace to %s", new_path)
+      is_switching = true
+      doRender()
       try {
-        await onWorkspaceChange(new_path);
+        await onWorkspaceChange(new_path)
       } catch (err) {
-        log('workspace switch failed: %o', err);
+        log("workspace switch failed: %o", err)
       } finally {
-        is_switching = false;
-        doRender();
+        is_switching = false
+        doRender()
       }
     }
   }
 
   function template() {
-    const s = store.getState();
-    const current = s.workspace?.current;
-    const available = s.workspace?.available || [];
+    const s = store.getState()
+    const current = s.workspace?.current
+    const available = s.workspace?.available || []
 
     // Don't render if no workspaces available
     if (available.length === 0) {
-      return html``;
+      return html``
     }
 
     // If only one workspace, show it as a simple label
     if (available.length === 1) {
-      const name = getProjectName(available[0].path);
+      const name = getProjectName(available[0].path)
       return html`
         <div class="workspace-picker workspace-picker--single">
-          <span class="workspace-picker__label" title="${available[0].path}"
-            >${name}</span
-          >
+          <span class="workspace-picker__label" title="${available[0].path}">${name}</span>
         </div>
-      `;
+      `
     }
 
     // Multiple workspaces: show dropdown
-    const current_path = current?.path || '';
+    const current_path = current?.path || ""
     return html`
       <div class="workspace-picker">
         <select
@@ -92,40 +90,33 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
         >
           ${available.map(
             (/** @type {WorkspaceInfo} */ ws) => html`
-              <option
-                value="${ws.path}"
-                ?selected=${ws.path === current_path}
-                title="${ws.path}"
-              >
+              <option value="${ws.path}" ?selected=${ws.path === current_path} title="${ws.path}">
                 ${getProjectName(ws.path)}
               </option>
-            `
+            `,
           )}
         </select>
-        ${is_switching
-          ? html`<span
-              class="workspace-picker__loading"
-              aria-hidden="true"
-            ></span>`
-          : ''}
+        ${is_switching ?
+          html`<span class="workspace-picker__loading" aria-hidden="true"></span>`
+        : ""}
       </div>
-    `;
+    `
   }
 
   function doRender() {
-    render(template(), mount_element);
+    render(template(), mount_element)
   }
 
-  doRender();
-  unsubscribe = store.subscribe(() => doRender());
+  doRender()
+  unsubscribe = store.subscribe(() => doRender())
 
   return {
     destroy() {
       if (unsubscribe) {
-        unsubscribe();
-        unsubscribe = null;
+        unsubscribe()
+        unsubscribe = null
       }
-      render(html``, mount_element);
-    }
-  };
+      render(html``, mount_element)
+    },
+  }
 }

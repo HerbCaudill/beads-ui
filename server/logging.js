@@ -1,7 +1,7 @@
 /**
  * Debug logger helper for Node server/CLI.
  */
-import createDebug from 'debug';
+import createDebug from "debug"
 
 /**
  * Create a namespaced logger for Node runtime.
@@ -9,7 +9,7 @@ import createDebug from 'debug';
  * @param {string} ns - Module namespace suffix (e.g., 'ws', 'watcher').
  */
 export function debug(ns) {
-  return createDebug(`beads-ui:${ns}`);
+  return createDebug(`beads-ui:${ns}`)
 }
 
 /**
@@ -19,5 +19,5 @@ export function debug(ns) {
 export function enableAllDebug() {
   // `debug` exposes a global enable/disable API.
   // Enabling after loggers are created updates their `.enabled` state.
-  createDebug.enable(process.env.DEBUG || 'beads-ui:*');
+  createDebug.enable(process.env.DEBUG || "beads-ui:*")
 }

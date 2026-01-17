@@ -1,7 +1,7 @@
 /**
  * @import { MessageType } from '../protocol.js'
  */
-import { debug } from '../utils/logging.js';
+import { debug } from "../utils/logging.js"
 
 /**
  * Client-side list subscription store.
@@ -23,18 +23,18 @@ import { debug } from '../utils/logging.js';
  * @returns {string}
  */
 export function subKeyOf(spec) {
-  const type = String(spec.type || '').trim();
+  const type = String(spec.type || "").trim()
   /** @type {Record<string, string>} */
-  const flat = {};
-  if (spec.params && typeof spec.params === 'object') {
-    const keys = Object.keys(spec.params).sort();
+  const flat = {}
+  if (spec.params && typeof spec.params === "object") {
+    const keys = Object.keys(spec.params).sort()
     for (const k of keys) {
-      const v = spec.params[k];
-      flat[k] = String(v);
+      const v = spec.params[k]
+      flat[k] = String(v)
     }
   }
-  const enc = new URLSearchParams(flat).toString();
-  return enc.length > 0 ? `${type}?${enc}` : type;
+  const enc = new URLSearchParams(flat).toString()
+  return enc.length > 0 ? `${type}?${enc}` : type
 }
 
 /**
@@ -48,11 +48,11 @@ export function subKeyOf(spec) {
  * @param {(type: MessageType, payload?: unknown) => Promise<unknown>} send - ws send.
  */
 export function createSubscriptionStore(send) {
-  const log = debug('subs');
+  const log = debug("subs")
   /** @type {Map<string, { key: string, itemsById: Map<string, true> }>} */
-  const subs_by_id = new Map();
+  const subs_by_id = new Map()
   /** @type {Map<string, Set<string>>} */
-  const ids_by_key = new Map();
+  const ids_by_key = new Map()
 
   /**
    * Apply a delta to all client ids mapped to a given key.
@@ -62,39 +62,39 @@ export function createSubscriptionStore(send) {
    */
   function applyDelta(key, delta) {
     log(
-      'applyDelta %s +%d ~%d -%d',
+      "applyDelta %s +%d ~%d -%d",
       key,
       (delta.added || []).length,
       (delta.updated || []).length,
-      (delta.removed || []).length
-    );
-    const id_set = ids_by_key.get(key);
+      (delta.removed || []).length,
+    )
+    const id_set = ids_by_key.get(key)
     if (!id_set || id_set.size === 0) {
-      return;
+      return
     }
-    const added = Array.isArray(delta.added) ? delta.added : [];
-    const updated = Array.isArray(delta.updated) ? delta.updated : [];
-    const removed = Array.isArray(delta.removed) ? delta.removed : [];
+    const added = Array.isArray(delta.added) ? delta.added : []
+    const updated = Array.isArray(delta.updated) ? delta.updated : []
+    const removed = Array.isArray(delta.removed) ? delta.removed : []
 
     for (const client_id of Array.from(id_set)) {
-      const entry = subs_by_id.get(client_id);
+      const entry = subs_by_id.get(client_id)
       if (!entry) {
-        continue;
+        continue
       }
-      const items = entry.itemsById;
+      const items = entry.itemsById
       for (const id of added) {
-        if (typeof id === 'string' && id.length > 0) {
-          items.set(id, true);
+        if (typeof id === "string" && id.length > 0) {
+          items.set(id, true)
         }
       }
       for (const id of updated) {
-        if (typeof id === 'string' && id.length > 0) {
-          items.set(id, true);
+        if (typeof id === "string" && id.length > 0) {
+          items.set(id, true)
         }
       }
       for (const id of removed) {
-        if (typeof id === 'string' && id.length > 0) {
-          items.delete(id);
+        if (typeof id === "string" && id.length > 0) {
+          items.delete(id)
         }
       }
     }
@@ -110,73 +110,73 @@ export function createSubscriptionStore(send) {
    * @returns {Promise<() => Promise<void>>}
    */
   async function subscribeList(client_id, spec) {
-    const key = subKeyOf(spec);
-    log('subscribe %s key=%s', client_id, key);
+    const key = subKeyOf(spec)
+    log("subscribe %s key=%s", client_id, key)
     // Initialize local entry immediately to capture early deltas
     if (!subs_by_id.has(client_id)) {
-      subs_by_id.set(client_id, { key, itemsById: new Map() });
+      subs_by_id.set(client_id, { key, itemsById: new Map() })
     } else {
       // Update key mapping if client id is reused for a different spec
-      const prev = subs_by_id.get(client_id);
+      const prev = subs_by_id.get(client_id)
       if (prev && prev.key !== key) {
-        const prev_ids = ids_by_key.get(prev.key);
+        const prev_ids = ids_by_key.get(prev.key)
         if (prev_ids) {
-          prev_ids.delete(client_id);
+          prev_ids.delete(client_id)
           if (prev_ids.size === 0) {
-            ids_by_key.delete(prev.key);
+            ids_by_key.delete(prev.key)
           }
         }
-        subs_by_id.set(client_id, { key, itemsById: new Map() });
+        subs_by_id.set(client_id, { key, itemsById: new Map() })
       }
     }
     if (!ids_by_key.has(key)) {
-      ids_by_key.set(key, new Set());
+      ids_by_key.set(key, new Set())
     }
-    const set = ids_by_key.get(key);
+    const set = ids_by_key.get(key)
     if (set) {
-      set.add(client_id);
+      set.add(client_id)
     }
     try {
-      await send('subscribe-list', {
+      await send("subscribe-list", {
         id: client_id,
         type: spec.type,
-        params: spec.params
-      });
+        params: spec.params,
+      })
     } catch (err) {
-      const entry = subs_by_id.get(client_id) || null;
+      const entry = subs_by_id.get(client_id) || null
       if (entry) {
-        const subscribers = ids_by_key.get(entry.key);
+        const subscribers = ids_by_key.get(entry.key)
         if (subscribers) {
-          subscribers.delete(client_id);
+          subscribers.delete(client_id)
           if (subscribers.size === 0) {
-            ids_by_key.delete(entry.key);
+            ids_by_key.delete(entry.key)
           }
         }
       }
-      subs_by_id.delete(client_id);
-      throw err;
+      subs_by_id.delete(client_id)
+      throw err
     }
 
     return async () => {
-      log('unsubscribe %s key=%s', client_id, key);
+      log("unsubscribe %s key=%s", client_id, key)
       try {
-        await send('unsubscribe-list', { id: client_id });
+        await send("unsubscribe-list", { id: client_id })
       } catch {
         // ignore transport errors on unsubscribe
       }
       // Cleanup local mappings
-      const entry = subs_by_id.get(client_id) || null;
+      const entry = subs_by_id.get(client_id) || null
       if (entry) {
-        const s = ids_by_key.get(entry.key);
+        const s = ids_by_key.get(entry.key)
         if (s) {
-          s.delete(client_id);
+          s.delete(client_id)
           if (s.size === 0) {
-            ids_by_key.delete(entry.key);
+            ids_by_key.delete(entry.key)
           }
         }
       }
-      subs_by_id.delete(client_id);
-    };
+      subs_by_id.delete(client_id)
+    }
   }
 
   /**
@@ -190,11 +190,11 @@ export function createSubscriptionStore(send) {
      * @returns {string[]}
      */
     getIds(client_id) {
-      const entry = subs_by_id.get(client_id);
+      const entry = subs_by_id.get(client_id)
       if (!entry) {
-        return [];
+        return []
       }
-      return Array.from(entry.itemsById.keys());
+      return Array.from(entry.itemsById.keys())
     },
     /**
      * Check if an id exists in a subscription.
@@ -204,11 +204,11 @@ export function createSubscriptionStore(send) {
      * @returns {boolean}
      */
     has(client_id, id) {
-      const entry = subs_by_id.get(client_id);
+      const entry = subs_by_id.get(client_id)
       if (!entry) {
-        return false;
+        return false
       }
-      return entry.itemsById.has(id);
+      return entry.itemsById.has(id)
     },
     /**
      * Count items for a subscription.
@@ -217,8 +217,8 @@ export function createSubscriptionStore(send) {
      * @returns {number}
      */
     count(client_id) {
-      const entry = subs_by_id.get(client_id);
-      return entry ? entry.itemsById.size : 0;
+      const entry = subs_by_id.get(client_id)
+      return entry ? entry.itemsById.size : 0
     },
     /**
      * Return a shallow object copy `{ [id]: true }` for rendering helpers.
@@ -227,24 +227,24 @@ export function createSubscriptionStore(send) {
      * @returns {Record<string, true>}
      */
     getItemsById(client_id) {
-      const entry = subs_by_id.get(client_id);
+      const entry = subs_by_id.get(client_id)
       /** @type {Record<string, true>} */
-      const out = {};
+      const out = {}
       if (!entry) {
-        return out;
+        return out
       }
       for (const id of entry.itemsById.keys()) {
-        out[id] = true;
+        out[id] = true
       }
-      return out;
-    }
-  };
+      return out
+    },
+  }
 
   return {
     subscribeList,
     // test/diagnostics helpers
     _applyDelta: applyDelta,
     _subKeyOf: subKeyOf,
-    selectors
-  };
+    selectors,
+  }
 }

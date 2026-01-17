@@ -1,13 +1,13 @@
 /**
  * @import { SpawnOptions } from 'node:child_process'
  */
-import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { getConfig } from '../config.js';
-import { resolveDbPath } from '../db.js';
+import { spawn } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { getConfig } from "../config.js"
+import { resolveDbPath } from "../db.js"
 
 /**
  * Resolve the runtime directory used for PID and log files.
@@ -17,17 +17,17 @@ import { resolveDbPath } from '../db.js';
  * @returns {string}
  */
 export function getRuntimeDir() {
-  const override_dir = process.env.BDUI_RUNTIME_DIR;
+  const override_dir = process.env.BDUI_RUNTIME_DIR
   if (override_dir && override_dir.length > 0) {
-    return ensureDir(override_dir);
+    return ensureDir(override_dir)
   }
 
-  const xdg_dir = process.env.XDG_RUNTIME_DIR;
+  const xdg_dir = process.env.XDG_RUNTIME_DIR
   if (xdg_dir && xdg_dir.length > 0) {
-    return ensureDir(path.join(xdg_dir, 'beads-ui'));
+    return ensureDir(path.join(xdg_dir, "beads-ui"))
   }
 
-  return ensureDir(path.join(os.tmpdir(), 'beads-ui'));
+  return ensureDir(path.join(os.tmpdir(), "beads-ui"))
 }
 
 /**
@@ -38,27 +38,27 @@ export function getRuntimeDir() {
  */
 function ensureDir(dir_path) {
   try {
-    fs.mkdirSync(dir_path, { recursive: true, mode: 0o700 });
+    fs.mkdirSync(dir_path, { recursive: true, mode: 0o700 })
   } catch {
     // Best-effort; permission errors will surface on file ops later.
   }
-  return dir_path;
+  return dir_path
 }
 
 /**
  * @returns {string}
  */
 export function getPidFilePath() {
-  const runtime_dir = getRuntimeDir();
-  return path.join(runtime_dir, 'server.pid');
+  const runtime_dir = getRuntimeDir()
+  return path.join(runtime_dir, "server.pid")
 }
 
 /**
  * @returns {string}
  */
 export function getLogFilePath() {
-  const runtime_dir = getRuntimeDir();
-  return path.join(runtime_dir, 'daemon.log');
+  const runtime_dir = getRuntimeDir()
+  return path.join(runtime_dir, "daemon.log")
 }
 
 /**
@@ -67,35 +67,35 @@ export function getLogFilePath() {
  * @returns {number | null}
  */
 export function readPidFile() {
-  const pid_file = getPidFilePath();
+  const pid_file = getPidFilePath()
   try {
-    const text = fs.readFileSync(pid_file, 'utf8');
-    const pid_value = Number.parseInt(text.trim(), 10);
+    const text = fs.readFileSync(pid_file, "utf8")
+    const pid_value = Number.parseInt(text.trim(), 10)
     if (Number.isFinite(pid_value) && pid_value > 0) {
-      return pid_value;
+      return pid_value
     }
   } catch {
     // ignore missing or unreadable
   }
-  return null;
+  return null
 }
 
 /**
  * @param {number} pid
  */
 export function writePidFile(pid) {
-  const pid_file = getPidFilePath();
+  const pid_file = getPidFilePath()
   try {
-    fs.writeFileSync(pid_file, String(pid) + '\n', { encoding: 'utf8' });
+    fs.writeFileSync(pid_file, String(pid) + "\n", { encoding: "utf8" })
   } catch {
     // ignore write errors; daemon still runs but management degrades
   }
 }
 
 export function removePidFile() {
-  const pid_file = getPidFilePath();
+  const pid_file = getPidFilePath()
   try {
-    fs.unlinkSync(pid_file);
+    fs.unlinkSync(pid_file)
   } catch {
     // ignore
   }
@@ -110,17 +110,17 @@ export function removePidFile() {
 export function isProcessRunning(pid) {
   try {
     if (pid <= 0) {
-      return false;
+      return false
     }
-    process.kill(pid, 0);
-    return true;
+    process.kill(pid, 0)
+    return true
   } catch (err) {
-    const code = /** @type {{ code?: string }} */ (err).code;
-    if (code === 'ESRCH') {
-      return false;
+    const code = /** @type {{ code?: string }} */ (err).code
+    if (code === "ESRCH") {
+      return false
     }
     // EPERM or other errors imply the process likely exists but is not killable
-    return true;
+    return true
   }
 }
 
@@ -130,10 +130,10 @@ export function isProcessRunning(pid) {
  * @returns {string}
  */
 export function getServerEntryPath() {
-  const here = fileURLToPath(new URL(import.meta.url));
-  const cli_dir = path.dirname(here);
-  const server_entry = path.resolve(cli_dir, '..', 'index.js');
-  return server_entry;
+  const here = fileURLToPath(new URL(import.meta.url))
+  const cli_dir = path.dirname(here)
+  const server_entry = path.resolve(cli_dir, "..", "index.js")
+  return server_entry
 }
 
 /**
@@ -144,63 +144,62 @@ export function getServerEntryPath() {
  * @returns {{ pid: number } | null} Returns child PID on success; null on failure.
  */
 export function startDaemon(options = {}) {
-  const server_entry = getServerEntryPath();
-  const log_file = getLogFilePath();
+  const server_entry = getServerEntryPath()
+  const log_file = getLogFilePath()
 
   // Open the log file for appending; reuse for both stdout and stderr
   /** @type {number} */
-  let log_fd;
+  let log_fd
   try {
-    log_fd = fs.openSync(log_file, 'a');
+    log_fd = fs.openSync(log_file, "a")
     if (options.is_debug) {
-      console.debug('log file  ', log_file);
+      console.debug("log file  ", log_file)
     }
   } catch {
     // If log cannot be opened, fallback to ignoring stdio
-    log_fd = -1;
+    log_fd = -1
   }
 
   /** @type {Record<string, string | undefined>} */
-  const spawn_env = { ...process.env };
+  const spawn_env = { ...process.env }
   if (options.host) {
-    spawn_env.HOST = options.host;
+    spawn_env.HOST = options.host
   }
   if (options.port) {
-    spawn_env.PORT = String(options.port);
+    spawn_env.PORT = String(options.port)
   }
 
   /** @type {SpawnOptions} */
   const opts = {
     detached: true,
     env: spawn_env,
-    stdio: log_fd >= 0 ? ['ignore', log_fd, log_fd] : 'ignore',
-    windowsHide: true
-  };
+    stdio: log_fd >= 0 ? ["ignore", log_fd, log_fd] : "ignore",
+    windowsHide: true,
+  }
 
   try {
-    const child = spawn(process.execPath, [server_entry], opts);
+    const child = spawn(process.execPath, [server_entry], opts)
     // Detach fully from the parent
-    child.unref();
-    const child_pid = typeof child.pid === 'number' ? child.pid : -1;
+    child.unref()
+    const child_pid = typeof child.pid === "number" ? child.pid : -1
     if (child_pid > 0) {
       if (options.is_debug) {
-        console.debug('starting  ', child_pid);
+        console.debug("starting  ", child_pid)
       }
-      writePidFile(child_pid);
-      return { pid: child_pid };
+      writePidFile(child_pid)
+      return { pid: child_pid }
     }
-    return null;
+    return null
   } catch (err) {
-    console.error('start error', err);
+    console.error("start error", err)
     // Log startup error to log file for traceability
     try {
-      const message =
-        new Date().toISOString() + ' start error: ' + String(err) + '\n';
-      fs.appendFileSync(log_file, message, 'utf8');
+      const message = new Date().toISOString() + " start error: " + String(err) + "\n"
+      fs.appendFileSync(log_file, message, "utf8")
     } catch {
       // ignore
     }
-    return null;
+    return null
   }
 }
 
@@ -213,34 +212,34 @@ export function startDaemon(options = {}) {
  */
 export async function terminateProcess(pid, timeout_ms) {
   try {
-    process.kill(pid, 'SIGTERM');
+    process.kill(pid, "SIGTERM")
   } catch (err) {
-    const code = /** @type {{ code?: string }} */ (err).code;
-    if (code === 'ESRCH') {
-      return true;
+    const code = /** @type {{ code?: string }} */ (err).code
+    if (code === "ESRCH") {
+      return true
     }
     // On EPERM or others, continue to wait/poll
   }
 
-  const start_time = Date.now();
+  const start_time = Date.now()
   // Poll until process no longer exists or timeout
   while (Date.now() - start_time < timeout_ms) {
     if (!isProcessRunning(pid)) {
-      return true;
+      return true
     }
-    await sleep(100);
+    await sleep(100)
   }
 
   // Fallback to SIGKILL
   try {
-    process.kill(pid, 'SIGKILL');
+    process.kill(pid, "SIGKILL")
   } catch {
     // ignore
   }
 
   // Give a brief moment after SIGKILL
-  await sleep(50);
-  return !isProcessRunning(pid);
+  await sleep(50)
+  return !isProcessRunning(pid)
 }
 
 /**
@@ -248,11 +247,11 @@ export async function terminateProcess(pid, timeout_ms) {
  * @returns {Promise<void>}
  */
 function sleep(ms) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
-      resolve();
-    }, ms);
-  });
+      resolve()
+    }, ms)
+  })
 }
 
 /**
@@ -260,11 +259,11 @@ function sleep(ms) {
  */
 export function printServerUrl() {
   // Resolve from the caller's working directory by default
-  const resolved_db = resolveDbPath();
+  const resolved_db = resolveDbPath()
   console.log(
-    `beads db   ${resolved_db.path} (${resolved_db.source}${resolved_db.exists ? '' : ', missing'})`
-  );
+    `beads db   ${resolved_db.path} (${resolved_db.source}${resolved_db.exists ? "" : ", missing"})`,
+  )
 
-  const { url } = getConfig();
-  console.log(`beads ui   listening on ${url}`);
+  const { url } = getConfig()
+  console.log(`beads ui   listening on ${url}`)
 }

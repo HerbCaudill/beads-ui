@@ -119,26 +119,26 @@ Rationale
 
 ```ts
 interface Issue {
-  id: string;
-  title?: string;
-  description?: string;
-  acceptance?: string;
-  status?: 'open' | 'in_progress' | 'closed';
-  priority?: 0 | 1 | 2 | 3 | 4;
+  id: string
+  title?: string
+  description?: string
+  acceptance?: string
+  status?: "open" | "in_progress" | "closed"
+  priority?: 0 | 1 | 2 | 3 | 4
   dependencies?: Array<{
-    id: string;
-    title?: string;
-    status?: string;
-    priority?: number;
-    issue_type?: string;
-  }>;
+    id: string
+    title?: string
+    status?: string
+    priority?: number
+    issue_type?: string
+  }>
   dependents?: Array<{
-    id: string;
-    title?: string;
-    status?: string;
-    priority?: number;
-    issue_type?: string;
-  }>;
+    id: string
+    title?: string
+    status?: string
+    priority?: number
+    issue_type?: string
+  }>
 }
 ```
 

@@ -1,4 +1,4 @@
-import { priority_levels } from './priority.js';
+import { priority_levels } from "./priority.js"
 
 /**
  * Create a colored badge for a priority value (0..4).
@@ -7,24 +7,24 @@ import { priority_levels } from './priority.js';
  * @returns {HTMLSpanElement}
  */
 export function createPriorityBadge(priority) {
-  const p = typeof priority === 'number' ? priority : 2;
-  const el = document.createElement('span');
-  el.className = 'priority-badge';
-  el.classList.add(`is-p${Math.max(0, Math.min(4, p))}`);
-  el.setAttribute('role', 'img');
-  const label = labelForPriority(p);
-  el.setAttribute('title', label);
-  el.setAttribute('aria-label', `Priority: ${label}`);
-  el.textContent = emojiForPriority(p) + ' ' + label;
-  return el;
+  const p = typeof priority === "number" ? priority : 2
+  const el = document.createElement("span")
+  el.className = "priority-badge"
+  el.classList.add(`is-p${Math.max(0, Math.min(4, p))}`)
+  el.setAttribute("role", "img")
+  const label = labelForPriority(p)
+  el.setAttribute("title", label)
+  el.setAttribute("aria-label", `Priority: ${label}`)
+  el.textContent = emojiForPriority(p) + " " + label
+  return el
 }
 
 /**
  * @param {number} p
  */
 function labelForPriority(p) {
-  const i = Math.max(0, Math.min(4, p));
-  return priority_levels[i] || 'Medium';
+  const i = Math.max(0, Math.min(4, p))
+  return priority_levels[i] || "Medium"
 }
 
 /**
@@ -33,16 +33,16 @@ function labelForPriority(p) {
 export function emojiForPriority(p) {
   switch (p) {
     case 0:
-      return '🔥';
+      return "🔥"
     case 1:
-      return '⚡️';
+      return "⚡️"
     case 2:
-      return '🔧';
+      return "🔧"
     case 3:
-      return '🪶';
+      return "🪶"
     case 4:
-      return '💤';
+      return "💤"
     default:
-      return '🔧';
+      return "🔧"
   }
 }

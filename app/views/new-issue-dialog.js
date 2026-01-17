@@ -1,5 +1,5 @@
-import { ISSUE_TYPES, typeLabel } from '../utils/issue-type.js';
-import { priority_levels } from '../utils/priority.js';
+import { ISSUE_TYPES, typeLabel } from "../utils/issue-type.js"
+import { priority_levels } from "../utils/priority.js"
 
 /**
  * Create and manage the New Issue dialog (native <dialog>).
@@ -11,12 +11,10 @@ import { priority_levels } from '../utils/priority.js';
  * @returns {{ open: () => void, close: () => void }}
  */
 export function createNewIssueDialog(mount_element, sendFn, router, store) {
-  const dialog = /** @type {HTMLDialogElement} */ (
-    document.createElement('dialog')
-  );
-  dialog.id = 'new-issue-dialog';
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
+  const dialog = /** @type {HTMLDialogElement} */ (document.createElement("dialog"))
+  dialog.id = "new-issue-dialog"
+  dialog.setAttribute("role", "dialog")
+  dialog.setAttribute("aria-modal", "true")
 
   dialog.innerHTML = `
     <div class="new-issue__container" part="container">
@@ -50,76 +48,58 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
         </form>
       </div>
     </div>
-  `;
+  `
 
-  mount_element.appendChild(dialog);
+  mount_element.appendChild(dialog)
 
-  const form = /** @type {HTMLFormElement} */ (
-    dialog.querySelector('#new-issue-form')
-  );
-  const input_title = /** @type {HTMLInputElement} */ (
-    dialog.querySelector('#new-title')
-  );
-  const sel_type = /** @type {HTMLSelectElement} */ (
-    dialog.querySelector('#new-type')
-  );
-  const sel_priority = /** @type {HTMLSelectElement} */ (
-    dialog.querySelector('#new-priority')
-  );
-  const input_labels = /** @type {HTMLInputElement} */ (
-    dialog.querySelector('#new-labels')
-  );
+  const form = /** @type {HTMLFormElement} */ (dialog.querySelector("#new-issue-form"))
+  const input_title = /** @type {HTMLInputElement} */ (dialog.querySelector("#new-title"))
+  const sel_type = /** @type {HTMLSelectElement} */ (dialog.querySelector("#new-type"))
+  const sel_priority = /** @type {HTMLSelectElement} */ (dialog.querySelector("#new-priority"))
+  const input_labels = /** @type {HTMLInputElement} */ (dialog.querySelector("#new-labels"))
   const input_description = /** @type {HTMLTextAreaElement} */ (
-    dialog.querySelector('#new-description')
-  );
-  const error_box = /** @type {HTMLDivElement} */ (
-    dialog.querySelector('#new-issue-error')
-  );
-  const btn_cancel = /** @type {HTMLButtonElement} */ (
-    dialog.querySelector('#btn-cancel')
-  );
-  const btn_create = /** @type {HTMLButtonElement} */ (
-    dialog.querySelector('#btn-create')
-  );
-  const btn_close = /** @type {HTMLButtonElement} */ (
-    dialog.querySelector('.new-issue__close')
-  );
+    dialog.querySelector("#new-description")
+  )
+  const error_box = /** @type {HTMLDivElement} */ (dialog.querySelector("#new-issue-error"))
+  const btn_cancel = /** @type {HTMLButtonElement} */ (dialog.querySelector("#btn-cancel"))
+  const btn_create = /** @type {HTMLButtonElement} */ (dialog.querySelector("#btn-create"))
+  const btn_close = /** @type {HTMLButtonElement} */ (dialog.querySelector(".new-issue__close"))
 
   // Populate selects
   function populateSelects() {
-    sel_type.replaceChildren();
+    sel_type.replaceChildren()
     // Empty option to allow leaving type unspecified
-    const optEmpty = document.createElement('option');
-    optEmpty.value = '';
-    optEmpty.textContent = '— Select —';
-    sel_type.appendChild(optEmpty);
+    const optEmpty = document.createElement("option")
+    optEmpty.value = ""
+    optEmpty.textContent = "— Select —"
+    sel_type.appendChild(optEmpty)
     for (const t of ISSUE_TYPES) {
-      const o = document.createElement('option');
-      o.value = t;
-      o.textContent = typeLabel(t);
-      sel_type.appendChild(o);
+      const o = document.createElement("option")
+      o.value = t
+      o.textContent = typeLabel(t)
+      sel_type.appendChild(o)
     }
 
-    sel_priority.replaceChildren();
+    sel_priority.replaceChildren()
     for (let i = 0; i <= 4; i += 1) {
-      const o = document.createElement('option');
-      o.value = String(i);
-      const label = priority_levels[i] || 'Medium';
-      o.textContent = `${i} – ${label}`;
-      sel_priority.appendChild(o);
+      const o = document.createElement("option")
+      o.value = String(i)
+      const label = priority_levels[i] || "Medium"
+      o.textContent = `${i} – ${label}`
+      sel_priority.appendChild(o)
     }
   }
-  populateSelects();
+  populateSelects()
 
   function requestClose() {
     try {
-      if (typeof dialog.close === 'function') {
-        dialog.close();
+      if (typeof dialog.close === "function") {
+        dialog.close()
       } else {
-        dialog.removeAttribute('open');
+        dialog.removeAttribute("open")
       }
     } catch {
-      dialog.removeAttribute('open');
+      dialog.removeAttribute("open")
     }
   }
 
@@ -127,55 +107,55 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
    * @param {boolean} is_busy
    */
   function setBusy(is_busy) {
-    input_title.disabled = is_busy;
-    sel_type.disabled = is_busy;
-    sel_priority.disabled = is_busy;
-    input_labels.disabled = is_busy;
-    input_description.disabled = is_busy;
-    btn_cancel.disabled = is_busy;
-    btn_create.disabled = is_busy;
-    btn_create.textContent = is_busy ? 'Creating…' : 'Create';
+    input_title.disabled = is_busy
+    sel_type.disabled = is_busy
+    sel_priority.disabled = is_busy
+    input_labels.disabled = is_busy
+    input_description.disabled = is_busy
+    btn_cancel.disabled = is_busy
+    btn_create.disabled = is_busy
+    btn_create.textContent = is_busy ? "Creating…" : "Create"
   }
 
   function clearError() {
-    error_box.textContent = '';
+    error_box.textContent = ""
   }
 
   /**
    * @param {string} msg
    */
   function setError(msg) {
-    error_box.textContent = msg;
+    error_box.textContent = msg
   }
 
   function loadDefaults() {
     try {
-      const t = window.localStorage.getItem('beads-ui.new.type');
+      const t = window.localStorage.getItem("beads-ui.new.type")
       if (t) {
-        sel_type.value = t;
+        sel_type.value = t
       } else {
-        sel_type.value = '';
+        sel_type.value = ""
       }
-      const p = window.localStorage.getItem('beads-ui.new.priority');
+      const p = window.localStorage.getItem("beads-ui.new.priority")
       if (p && /^\d$/.test(p)) {
-        sel_priority.value = p;
+        sel_priority.value = p
       } else {
-        sel_priority.value = '2';
+        sel_priority.value = "2"
       }
     } catch {
-      sel_type.value = '';
-      sel_priority.value = '2';
+      sel_type.value = ""
+      sel_priority.value = "2"
     }
   }
 
   function saveDefaults() {
-    const t = sel_type.value || '';
-    const p = sel_priority.value || '';
+    const t = sel_type.value || ""
+    const p = sel_priority.value || ""
     if (t.length > 0) {
-      window.localStorage.setItem('beads-ui.new.type', t);
+      window.localStorage.setItem("beads-ui.new.type", t)
     }
     if (p.length > 0) {
-      window.localStorage.setItem('beads-ui.new.priority', p);
+      window.localStorage.setItem("beads-ui.new.priority", p)
     }
   }
 
@@ -185,8 +165,8 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
    * @param {string} id
    */
   function idNumeric(id) {
-    const m = /-(\d+)$/.exec(String(id || ''));
-    return m && m[1] ? Number(m[1]) : -1;
+    const m = /-(\d+)$/.exec(String(id || ""))
+    return m && m[1] ? Number(m[1]) : -1
   }
 
   /**
@@ -195,72 +175,72 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
    * @returns {Promise<void>}
    */
   async function createNow() {
-    clearError();
-    const title = String(input_title.value || '').trim();
+    clearError()
+    const title = String(input_title.value || "").trim()
     if (title.length === 0) {
-      setError('Title is required');
-      input_title.focus();
-      return;
+      setError("Title is required")
+      input_title.focus()
+      return
     }
-    const prio = Number(sel_priority.value || '2');
+    const prio = Number(sel_priority.value || "2")
     if (!(prio >= 0 && prio <= 4)) {
-      setError('Priority must be 0..4');
-      sel_priority.focus();
-      return;
+      setError("Priority must be 0..4")
+      sel_priority.focus()
+      return
     }
-    const type = String(sel_type.value || '');
-    const desc = String(input_description.value || '');
-    const labels = String(input_labels.value || '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    const type = String(sel_type.value || "")
+    const desc = String(input_description.value || "")
+    const labels = String(input_labels.value || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
 
     /** @type {{ title: string, type?: string, priority?: number, description?: string }} */
-    const payload = { title };
+    const payload = { title }
     if (type.length > 0) {
-      payload.type = type;
+      payload.type = type
     }
     if (String(prio).length > 0) {
-      payload.priority = prio;
+      payload.priority = prio
     }
     if (desc.length > 0) {
-      payload.description = desc;
+      payload.description = desc
     }
 
-    setBusy(true);
+    setBusy(true)
     try {
-      await sendFn('create-issue', payload);
+      await sendFn("create-issue", payload)
     } catch {
-      setBusy(false);
-      setError('Failed to create issue');
-      return;
+      setBusy(false)
+      setError("Failed to create issue")
+      return
     }
 
-    saveDefaults();
+    saveDefaults()
 
     // Best-effort: find the created id by matching title among open issues and picking the highest numeric id
     /** @type {any} */
-    let list = null;
+    let list = null
     try {
-      list = await sendFn('list-issues', {
-        filters: { status: 'open', limit: 50 }
-      });
+      list = await sendFn("list-issues", {
+        filters: { status: "open", limit: 50 },
+      })
     } catch {
-      list = null;
+      list = null
     }
-    let created_id = '';
+    let created_id = ""
     if (Array.isArray(list)) {
-      const matches = list.filter((it) => String(it.title || '') === title);
+      const matches = list.filter(it => String(it.title || "") === title)
       if (matches.length > 0) {
-        let best = matches[0];
+        let best = matches[0]
         for (const it of matches) {
-          const ai = idNumeric(best.id || '');
-          const bi = idNumeric(it.id || '');
+          const ai = idNumeric(best.id || "")
+          const bi = idNumeric(it.id || "")
           if (bi > ai) {
-            best = it;
+            best = it
           }
         }
-        created_id = String(best.id || '');
+        created_id = String(best.id || "")
       }
     }
 
@@ -268,7 +248,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     if (created_id && labels.length > 0) {
       for (const label of labels) {
         try {
-          await sendFn('label-add', { id: created_id, label });
+          await sendFn("label-add", { id: created_id, label })
         } catch {
           // ignore label failures
         }
@@ -278,66 +258,66 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     // Navigate to created issue if found
     if (created_id) {
       try {
-        router.gotoIssue(created_id);
+        router.gotoIssue(created_id)
       } catch {
         // ignore routing errors
       }
       // Also set state directly to ensure dialog opens even if hash routing is suppressed in tests
       try {
         if (store) {
-          store.setState({ selected_id: created_id });
+          store.setState({ selected_id: created_id })
         }
       } catch {
         // ignore
       }
     }
 
-    setBusy(false);
-    requestClose();
+    setBusy(false)
+    requestClose()
   }
 
   // Events
-  dialog.addEventListener('cancel', (ev) => {
-    ev.preventDefault();
-    requestClose();
-  });
-  btn_close.addEventListener('click', () => requestClose());
-  btn_cancel.addEventListener('click', () => requestClose());
-  dialog.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
-      ev.preventDefault();
-      void createNow();
+  dialog.addEventListener("cancel", ev => {
+    ev.preventDefault()
+    requestClose()
+  })
+  btn_close.addEventListener("click", () => requestClose())
+  btn_cancel.addEventListener("click", () => requestClose())
+  dialog.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+      ev.preventDefault()
+      void createNow()
     }
-  });
-  form.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    void createNow();
-  });
+  })
+  form.addEventListener("submit", ev => {
+    ev.preventDefault()
+    void createNow()
+  })
 
   return {
     open() {
-      form.reset();
-      clearError();
-      loadDefaults();
+      form.reset()
+      clearError()
+      loadDefaults()
       try {
-        if ('showModal' in dialog && typeof dialog.showModal === 'function') {
-          dialog.showModal();
+        if ("showModal" in dialog && typeof dialog.showModal === "function") {
+          dialog.showModal()
         } else {
-          dialog.setAttribute('open', '');
+          dialog.setAttribute("open", "")
         }
       } catch {
-        dialog.setAttribute('open', '');
+        dialog.setAttribute("open", "")
       }
       setTimeout(() => {
         try {
-          input_title.focus();
+          input_title.focus()
         } catch {
           // ignore
         }
-      }, 0);
+      }, 0)
     },
     close() {
-      requestClose();
-    }
-  };
+      requestClose()
+    },
+  }
 }

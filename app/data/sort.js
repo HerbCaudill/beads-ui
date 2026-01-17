@@ -14,19 +14,23 @@
  * @param {IssueLite} b
  */
 export function cmpPriorityThenCreated(a, b) {
-  const pa = a.priority ?? 2;
-  const pb = b.priority ?? 2;
+  const pa = a.priority ?? 2
+  const pb = b.priority ?? 2
   if (pa !== pb) {
-    return pa - pb;
+    return pa - pb
   }
-  const ca = a.created_at ?? 0;
-  const cb = b.created_at ?? 0;
+  const ca = a.created_at ?? 0
+  const cb = b.created_at ?? 0
   if (ca !== cb) {
-    return ca < cb ? -1 : 1;
+    return ca < cb ? -1 : 1
   }
-  const ida = a.id;
-  const idb = b.id;
-  return ida < idb ? -1 : ida > idb ? 1 : 0;
+  const ida = a.id
+  const idb = b.id
+  return (
+    ida < idb ? -1
+    : ida > idb ? 1
+    : 0
+  )
 }
 
 /**
@@ -36,12 +40,16 @@ export function cmpPriorityThenCreated(a, b) {
  * @param {IssueLite} b
  */
 export function cmpClosedDesc(a, b) {
-  const ca = a.closed_at ?? 0;
-  const cb = b.closed_at ?? 0;
+  const ca = a.closed_at ?? 0
+  const cb = b.closed_at ?? 0
   if (ca !== cb) {
-    return ca < cb ? 1 : -1;
+    return ca < cb ? 1 : -1
   }
-  const ida = a?.id;
-  const idb = b?.id;
-  return ida < idb ? -1 : ida > idb ? 1 : 0;
+  const ida = a?.id
+  const idb = b?.id
+  return (
+    ida < idb ? -1
+    : ida > idb ? 1
+    : 0
+  )
 }

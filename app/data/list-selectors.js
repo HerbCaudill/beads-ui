@@ -6,7 +6,7 @@
 /**
  * @typedef {{ id: string, title?: string, status?: 'open'|'in_progress'|'closed', priority?: number, issue_type?: string, created_at?: number, updated_at?: number, closed_at?: number }} IssueLite
  */
-import { cmpClosedDesc, cmpPriorityThenCreated } from './sort.js';
+import { cmpClosedDesc, cmpPriorityThenCreated } from "./sort.js"
 
 /**
  * Factory for list selectors.
@@ -26,13 +26,10 @@ export function createListSelectors(issue_stores = undefined) {
    * @returns {IssueLite[]}
    */
   function selectIssuesFor(client_id) {
-    if (!issue_stores || typeof issue_stores.snapshotFor !== 'function') {
-      return [];
+    if (!issue_stores || typeof issue_stores.snapshotFor !== "function") {
+      return []
     }
-    return issue_stores
-      .snapshotFor(client_id)
-      .slice()
-      .sort(cmpPriorityThenCreated);
+    return issue_stores.snapshotFor(client_id).slice().sort(cmpPriorityThenCreated)
   }
 
   /**
@@ -44,18 +41,16 @@ export function createListSelectors(issue_stores = undefined) {
    */
   function selectBoardColumn(client_id, mode) {
     const arr =
-      issue_stores && issue_stores.snapshotFor
-        ? issue_stores.snapshotFor(client_id).slice()
-        : [];
-    if (mode === 'in_progress') {
-      arr.sort(cmpPriorityThenCreated);
-    } else if (mode === 'closed') {
-      arr.sort(cmpClosedDesc);
+      issue_stores && issue_stores.snapshotFor ? issue_stores.snapshotFor(client_id).slice() : []
+    if (mode === "in_progress") {
+      arr.sort(cmpPriorityThenCreated)
+    } else if (mode === "closed") {
+      arr.sort(cmpClosedDesc)
     } else {
       // ready/blocked share the same sort
-      arr.sort(cmpPriorityThenCreated);
+      arr.sort(cmpPriorityThenCreated)
     }
-    return arr;
+    return arr
   }
 
   /**
@@ -66,19 +61,15 @@ export function createListSelectors(issue_stores = undefined) {
    * @returns {IssueLite[]}
    */
   function selectEpicChildren(epic_id) {
-    if (!issue_stores || typeof issue_stores.snapshotFor !== 'function') {
-      return [];
+    if (!issue_stores || typeof issue_stores.snapshotFor !== "function") {
+      return []
     }
     // Epic detail subscription uses client id `detail:<id>` and contains the
     // epic entity with a `dependents` array. Render children from that list.
-    const arr = /** @type {any[]} */ (
-      issue_stores.snapshotFor(`detail:${epic_id}`) || []
-    );
-    const epic = arr.find((it) => String(it?.id || '') === String(epic_id));
-    const dependents = Array.isArray(epic?.dependents) ? epic.dependents : [];
-    return /** @type {IssueLite[]} */ (
-      dependents.slice().sort(cmpPriorityThenCreated)
-    );
+    const arr = /** @type {any[]} */ (issue_stores.snapshotFor(`detail:${epic_id}`) || [])
+    const epic = arr.find(it => String(it?.id || "") === String(epic_id))
+    const dependents = Array.isArray(epic?.dependents) ? epic.dependents : []
+    return /** @type {IssueLite[]} */ (dependents.slice().sort(cmpPriorityThenCreated))
   }
 
   /**
@@ -88,16 +79,16 @@ export function createListSelectors(issue_stores = undefined) {
    * @returns {() => void}
    */
   function subscribe(fn) {
-    if (issue_stores && typeof issue_stores.subscribe === 'function') {
-      return issue_stores.subscribe(fn);
+    if (issue_stores && typeof issue_stores.subscribe === "function") {
+      return issue_stores.subscribe(fn)
     }
-    return () => {};
+    return () => {}
   }
 
   return {
     selectIssuesFor,
     selectBoardColumn,
     selectEpicChildren,
-    subscribe
-  };
+    subscribe,
+  }
 }

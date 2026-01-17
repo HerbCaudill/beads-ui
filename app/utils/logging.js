@@ -1,7 +1,7 @@
 /**
  * Debug logger helper for the browser app.
  */
-import createDebug from 'debug';
+import createDebug from "debug"
 
 /**
  * Create a namespaced logger.
@@ -9,5 +9,5 @@ import createDebug from 'debug';
  * @param {string} ns - Module namespace suffix (e.g., 'ws', 'views:list').
  */
 export function debug(ns) {
-  return createDebug(`beads-ui:${ns}`);
+  return createDebug(`beads-ui:${ns}`)
 }

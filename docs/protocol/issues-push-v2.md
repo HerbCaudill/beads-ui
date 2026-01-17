@@ -23,25 +23,25 @@ notify‑then‑fetch model. There is no version negotiation or fallback.
 
 ```ts
 export type SnapshotEnvelope = {
-  type: 'snapshot';
-  id: string; // client subscription id
-  revision: number; // starts at 1 and increments per envelope
-  issues: Issue[]; // full list for this subscription
-};
+  type: "snapshot"
+  id: string // client subscription id
+  revision: number // starts at 1 and increments per envelope
+  issues: Issue[] // full list for this subscription
+}
 
 export type UpsertEnvelope = {
-  type: 'upsert';
-  id: string;
-  revision: number;
-  issue: Issue; // full issue payload
-};
+  type: "upsert"
+  id: string
+  revision: number
+  issue: Issue // full issue payload
+}
 
 export type DeleteEnvelope = {
-  type: 'delete';
-  id: string;
-  revision: number;
-  issue_id: string; // id only
-};
+  type: "delete"
+  id: string
+  revision: number
+  issue_id: string // id only
+}
 ```
 
 Notes

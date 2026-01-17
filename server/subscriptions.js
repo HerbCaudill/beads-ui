@@ -42,8 +42,8 @@ function createEntry() {
   return {
     itemsById: new Map(),
     subscribers: new Set(),
-    lock: Promise.resolve()
-  };
+    lock: Promise.resolve(),
+  }
 }
 
 /**
@@ -53,18 +53,18 @@ function createEntry() {
  * @returns {string}
  */
 export function keyOf(spec) {
-  const type = String(spec.type || '').trim();
+  const type = String(spec.type || "").trim()
   /** @type {Record<string, string>} */
-  const flat = {};
-  if (spec.params && typeof spec.params === 'object') {
-    const keys = Object.keys(spec.params).sort();
+  const flat = {}
+  if (spec.params && typeof spec.params === "object") {
+    const keys = Object.keys(spec.params).sort()
     for (const k of keys) {
-      const v = spec.params[k];
-      flat[k] = String(v);
+      const v = spec.params[k]
+      flat[k] = String(v)
     }
   }
-  const enc = new URLSearchParams(flat).toString();
-  return enc.length > 0 ? `${type}?${enc}` : type;
+  const enc = new URLSearchParams(flat).toString()
+  return enc.length > 0 ? `${type}?${enc}` : type
 }
 
 /**
@@ -76,28 +76,28 @@ export function keyOf(spec) {
  */
 export function computeDelta(prev, next) {
   /** @type {string[]} */
-  const added = [];
+  const added = []
   /** @type {string[]} */
-  const updated = [];
+  const updated = []
   /** @type {string[]} */
-  const removed = [];
+  const removed = []
 
   for (const [id, meta] of next) {
-    const p = prev.get(id);
+    const p = prev.get(id)
     if (!p) {
-      added.push(id);
-      continue;
+      added.push(id)
+      continue
     }
     if (p.updated_at !== meta.updated_at || p.closed_at !== meta.closed_at) {
-      updated.push(id);
+      updated.push(id)
     }
   }
   for (const id of prev.keys()) {
     if (!next.has(id)) {
-      removed.push(id);
+      removed.push(id)
     }
   }
-  return { added, updated, removed };
+  return { added, updated, removed }
 }
 
 /**
@@ -108,23 +108,23 @@ export function computeDelta(prev, next) {
  */
 export function toItemsMap(items) {
   /** @type {Map<string, ItemMeta>} */
-  const map = new Map();
+  const map = new Map()
   for (const it of items) {
-    if (!it || typeof it.id !== 'string') {
-      continue;
+    if (!it || typeof it.id !== "string") {
+      continue
     }
-    const updated_at = Number(it.updated_at) || 0;
+    const updated_at = Number(it.updated_at) || 0
     /** @type {number|null} */
-    let closed_at = null;
+    let closed_at = null
     if (it.closed_at === null || it.closed_at === undefined) {
-      closed_at = null;
+      closed_at = null
     } else {
-      const n = Number(it.closed_at);
-      closed_at = Number.isFinite(n) ? n : null;
+      const n = Number(it.closed_at)
+      closed_at = Number.isFinite(n) ? n : null
     }
-    map.set(it.id, { updated_at, closed_at });
+    map.set(it.id, { updated_at, closed_at })
   }
-  return map;
+  return map
 }
 
 /**
@@ -133,7 +133,7 @@ export function toItemsMap(items) {
 export class SubscriptionRegistry {
   constructor() {
     /** @type {Map<string, Entry>} */
-    this._entries = new Map();
+    this._entries = new Map()
   }
 
   /**
@@ -143,7 +143,7 @@ export class SubscriptionRegistry {
    * @returns {Entry | null}
    */
   get(key) {
-    return this._entries.get(key) || null;
+    return this._entries.get(key) || null
   }
 
   /**
@@ -153,13 +153,13 @@ export class SubscriptionRegistry {
    * @returns {{ key: string, entry: Entry }}
    */
   ensure(spec) {
-    const key = keyOf(spec);
-    let entry = this._entries.get(key);
+    const key = keyOf(spec)
+    let entry = this._entries.get(key)
     if (!entry) {
-      entry = createEntry();
-      this._entries.set(key, entry);
+      entry = createEntry()
+      this._entries.set(key, entry)
     }
-    return { key, entry };
+    return { key, entry }
   }
 
   /**
@@ -170,9 +170,9 @@ export class SubscriptionRegistry {
    * @returns {{ key: string, subscribed: true }}
    */
   attach(spec, ws) {
-    const { key, entry } = this.ensure(spec);
-    entry.subscribers.add(ws);
-    return { key, subscribed: true };
+    const { key, entry } = this.ensure(spec)
+    entry.subscribers.add(ws)
+    return { key, subscribed: true }
   }
 
   /**
@@ -184,12 +184,12 @@ export class SubscriptionRegistry {
    * @returns {boolean} true when the subscriber was removed
    */
   detach(spec, ws) {
-    const key = keyOf(spec);
-    const entry = this._entries.get(key);
+    const key = keyOf(spec)
+    const entry = this._entries.get(key)
     if (!entry) {
-      return false;
+      return false
     }
-    return entry.subscribers.delete(ws);
+    return entry.subscribers.delete(ws)
   }
 
   /**
@@ -200,15 +200,15 @@ export class SubscriptionRegistry {
    */
   onDisconnect(ws) {
     /** @type {string[]} */
-    const empties = [];
+    const empties = []
     for (const [key, entry] of this._entries) {
-      entry.subscribers.delete(ws);
+      entry.subscribers.delete(ws)
       if (entry.subscribers.size === 0) {
-        empties.push(key);
+        empties.push(key)
       }
     }
     for (const key of empties) {
-      this._entries.delete(key);
+      this._entries.delete(key)
     }
   }
 
@@ -221,32 +221,32 @@ export class SubscriptionRegistry {
    * @returns {Promise<T>}
    */
   async withKeyLock(key, fn) {
-    let entry = this._entries.get(key);
+    let entry = this._entries.get(key)
     if (!entry) {
-      entry = createEntry();
-      this._entries.set(key, entry);
+      entry = createEntry()
+      this._entries.set(key, entry)
     }
     // Chain onto the existing lock
-    const prev = entry.lock;
+    const prev = entry.lock
     // Create our own release function and store it locally (not in shared state)
     // to avoid race conditions when multiple operations queue concurrently
     /** @type {(v?: void) => void} */
-    let release = () => {};
-    const our_lock = new Promise((resolve) => {
-      release = resolve;
-    });
+    let release = () => {}
+    const our_lock = new Promise(resolve => {
+      release = resolve
+    })
     // Update the entry's lock to our lock so the next operation waits on us
-    entry.lock = our_lock;
+    entry.lock = our_lock
     // Wait for previous operations to finish
-    await prev.catch(() => {});
+    await prev.catch(() => {})
     try {
-      const result = await fn();
-      return result;
+      const result = await fn()
+      return result
     } finally {
       // Release our lock for the next queued operation
       // Use the locally-captured release function, not entry.lockTail
       try {
-        release();
+        release()
       } catch {
         // ignore
       }
@@ -261,15 +261,15 @@ export class SubscriptionRegistry {
    * @returns {{ added: string[], updated: string[], removed: string[] }}
    */
   applyNextMap(key, next_map) {
-    let entry = this._entries.get(key);
+    let entry = this._entries.get(key)
     if (!entry) {
-      entry = createEntry();
-      this._entries.set(key, entry);
+      entry = createEntry()
+      this._entries.set(key, entry)
     }
-    const prev = entry.itemsById;
-    const delta = computeDelta(prev, next_map);
-    entry.itemsById = new Map(next_map);
-    return delta;
+    const prev = entry.itemsById
+    const delta = computeDelta(prev, next_map)
+    entry.itemsById = new Map(next_map)
+    return delta
   }
 
   /**
@@ -280,8 +280,8 @@ export class SubscriptionRegistry {
    * @returns {{ added: string[], updated: string[], removed: string[] }}
    */
   applyItems(key, items) {
-    const next_map = toItemsMap(items);
-    return this.applyNextMap(key, next_map);
+    const next_map = toItemsMap(items)
+    return this.applyNextMap(key, next_map)
   }
 
   /**
@@ -289,11 +289,11 @@ export class SubscriptionRegistry {
    * Does not close WebSocket connections; they will re-subscribe on refresh.
    */
   clear() {
-    this._entries.clear();
+    this._entries.clear()
   }
 }
 
 /**
  * Default singleton registry used by the ws server.
  */
-export const registry = new SubscriptionRegistry();
+export const registry = new SubscriptionRegistry()

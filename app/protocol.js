@@ -36,35 +36,35 @@
 
 /** @type {MessageType[]} */
 export const MESSAGE_TYPES = /** @type {const} */ ([
-  'list-issues',
-  'update-status',
-  'edit-text',
-  'update-priority',
-  'create-issue',
-  'list-ready',
-  'dep-add',
-  'dep-remove',
-  'epic-status',
-  'update-assignee',
-  'label-add',
-  'label-remove',
-  'subscribe-list',
-  'unsubscribe-list',
+  "list-issues",
+  "update-status",
+  "edit-text",
+  "update-priority",
+  "create-issue",
+  "list-ready",
+  "dep-add",
+  "dep-remove",
+  "epic-status",
+  "update-assignee",
+  "label-add",
+  "label-remove",
+  "subscribe-list",
+  "unsubscribe-list",
   // vNext per-subscription full-issue push events
-  'snapshot',
-  'upsert',
-  'delete',
+  "snapshot",
+  "upsert",
+  "delete",
   // Comments
-  'get-comments',
-  'add-comment',
+  "get-comments",
+  "add-comment",
   // Delete issue
-  'delete-issue',
+  "delete-issue",
   // Workspace management
-  'list-workspaces',
-  'set-workspace',
-  'get-workspace',
-  'workspace-changed'
-]);
+  "list-workspaces",
+  "set-workspace",
+  "get-workspace",
+  "workspace-changed",
+])
 
 /**
  * Generate a lexically sortable request id.
@@ -72,9 +72,9 @@ export const MESSAGE_TYPES = /** @type {const} */ ([
  * @returns {string}
  */
 export function nextId() {
-  const now = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 8);
-  return `${now}-${rand}`;
+  const now = Date.now().toString(36)
+  const rand = Math.random().toString(36).slice(2, 8)
+  return `${now}-${rand}`
 }
 
 /**
@@ -86,7 +86,7 @@ export function nextId() {
  * @returns {RequestEnvelope}
  */
 export function makeRequest(type, payload, id = nextId()) {
-  return { id, type, payload };
+  return { id, type, payload }
 }
 
 /**
@@ -97,7 +97,7 @@ export function makeRequest(type, payload, id = nextId()) {
  * @returns {ReplyEnvelope}
  */
 export function makeOk(req, payload) {
-  return { id: req.id, ok: true, type: req.type, payload };
+  return { id: req.id, ok: true, type: req.type, payload }
 }
 
 /**
@@ -114,8 +114,8 @@ export function makeError(req, code, message, details) {
     id: req.id,
     ok: false,
     type: req.type,
-    error: { code, message, details }
-  };
+    error: { code, message, details },
+  }
 }
 
 /**
@@ -125,7 +125,7 @@ export function makeError(req, code, message, details) {
  * @returns {value is Record<string, unknown>}
  */
 function isRecord(value) {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value)
 }
 
 /**
@@ -135,10 +135,7 @@ function isRecord(value) {
  * @returns {value is MessageType}
  */
 export function isMessageType(value) {
-  return (
-    typeof value === 'string' &&
-    MESSAGE_TYPES.includes(/** @type {MessageType} */ (value))
-  );
+  return typeof value === "string" && MESSAGE_TYPES.includes(/** @type {MessageType} */ (value))
 }
 
 /**
@@ -149,13 +146,13 @@ export function isMessageType(value) {
  */
 export function isRequest(value) {
   if (!isRecord(value)) {
-    return false;
+    return false
   }
   return (
-    typeof value.id === 'string' &&
-    typeof value.type === 'string' &&
-    (value.payload === undefined || 'payload' in value)
-  );
+    typeof value.id === "string" &&
+    typeof value.type === "string" &&
+    (value.payload === undefined || "payload" in value)
+  )
 }
 
 /**
@@ -166,26 +163,18 @@ export function isRequest(value) {
  */
 export function isReply(value) {
   if (!isRecord(value)) {
-    return false;
+    return false
   }
-  if (
-    typeof value.id !== 'string' ||
-    typeof value.ok !== 'boolean' ||
-    !isMessageType(value.type)
-  ) {
-    return false;
+  if (typeof value.id !== "string" || typeof value.ok !== "boolean" || !isMessageType(value.type)) {
+    return false
   }
   if (value.ok === false) {
-    const err = value.error;
-    if (
-      !isRecord(err) ||
-      typeof err.code !== 'string' ||
-      typeof err.message !== 'string'
-    ) {
-      return false;
+    const err = value.error
+    if (!isRecord(err) || typeof err.code !== "string" || typeof err.message !== "string") {
+      return false
     }
   }
-  return true;
+  return true
 }
 
 /**
@@ -197,9 +186,9 @@ export function isReply(value) {
  */
 export function decodeRequest(json) {
   if (!isRequest(json)) {
-    throw new Error('Invalid request envelope');
+    throw new Error("Invalid request envelope")
   }
-  return json;
+  return json
 }
 
 /**
@@ -210,7 +199,7 @@ export function decodeRequest(json) {
  */
 export function decodeReply(json) {
   if (!isReply(json)) {
-    throw new Error('Invalid reply envelope');
+    throw new Error("Invalid reply envelope")
   }
-  return json;
+  return json
 }
