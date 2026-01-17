@@ -4,7 +4,7 @@
  */
 
 /**
- * @typedef {{ id: string, title?: string, status?: 'open'|'in_progress'|'closed', priority?: number, issue_type?: string, created_at?: number, updated_at?: number, closed_at?: number }} IssueLite
+ * @import { IssueLite } from '../../types/index.js'
  */
 
 /**
@@ -45,8 +45,8 @@ export function cmpClosedDesc(a, b) {
   if (ca !== cb) {
     return ca < cb ? 1 : -1
   }
-  const ida = a?.id
-  const idb = b?.id
+  const ida = a.id
+  const idb = b.id
   return (
     ida < idb ? -1
     : ida > idb ? 1

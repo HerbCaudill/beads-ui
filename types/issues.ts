@@ -5,6 +5,26 @@
  */
 
 /**
+ * Minimal issue shape for sorting operations.
+ * Contains only the fields used by sort comparators.
+ */
+export interface IssueLite {
+  id: string
+  title?: string
+  status?: "open" | "in_progress" | "closed"
+  priority?: number
+  issue_type?: string
+  created_at?: number
+  updated_at?: number
+  closed_at?: number | null
+}
+
+/**
+ * Comparator function for sorting IssueLite objects.
+ */
+export type IssueLiteComparator = (a: IssueLite, b: IssueLite) => number
+
+/**
  * Minimal reference to another issue (used in dependencies).
  */
 export interface DependencyRef {

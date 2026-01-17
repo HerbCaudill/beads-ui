@@ -13,6 +13,8 @@ export type {
   DependencyRef,
   Issue,
   IssueDetail,
+  IssueLite,
+  IssueLiteComparator,
   IssueRef,
   NormalizedIssue,
 } from "./issues.js"
