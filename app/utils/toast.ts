@@ -1,11 +1,18 @@
+/** Toast visual variant. */
+export type ToastVariant = "info" | "success" | "error"
+
 /**
  * Show a transient global toast message anchored to the viewport.
  *
- * @param {string} text - Message text.
- * @param {'info'|'success'|'error'} [variant] - Visual variant.
- * @param {number} [duration_ms] - Auto-dismiss delay in milliseconds.
+ * @param text - Message text.
+ * @param variant - Visual variant.
+ * @param duration_ms - Auto-dismiss delay in milliseconds.
  */
-export function showToast(text, variant = "info", duration_ms = 2800) {
+export function showToast(
+  text: string,
+  variant: ToastVariant = "info",
+  duration_ms: number = 2800,
+): void {
   const el = document.createElement("div")
   el.className = "toast"
   el.textContent = text

@@ -3,7 +3,7 @@ import { createTypeBadge } from "./type-badge.js"
 
 describe("utils/type-badge", () => {
   test("renders known types with modifier class and accessible labels", () => {
-    const types = [
+    const types: [string, string][] = [
       ["bug", "Bug"],
       ["feature", "Feature"],
       ["task", "Task"],
@@ -15,7 +15,7 @@ describe("utils/type-badge", () => {
       expect(el.classList.contains("type-badge")).toBe(true)
       expect(el.classList.contains(`type-badge--${t}`)).toBe(true)
       expect(el.getAttribute("role")).toBe("img")
-      const aria = el.getAttribute("aria-label") || ""
+      const aria = el.getAttribute("aria-label") ?? ""
       expect(aria.toLowerCase()).toContain("issue type")
       expect(aria).toContain(label)
       expect(el.textContent).toBe(label)
@@ -25,6 +25,6 @@ describe("utils/type-badge", () => {
   test("falls back to neutral for unknown types", () => {
     const el = createTypeBadge("unknown")
     expect(el.classList.contains("type-badge--neutral")).toBe(true)
-    expect(el.textContent).toBe("—")
+    expect(el.textContent).toBe("\u2014") // em-dash
   })
 })

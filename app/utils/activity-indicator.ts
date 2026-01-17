@@ -1,24 +1,41 @@
-/**
- * @import { MessageType } from '../protocol.ts'
- */
+import type { MessageType } from "../protocol.js"
 import { debug } from "./logging.js"
+
+/** Information about an active request for debugging. */
+export interface ActiveRequestInfo {
+  id: number
+  type: string
+  elapsed_ms: number
+}
+
+/** The activity indicator API returned by createActivityIndicator. */
+export interface ActivityIndicator {
+  /**
+   * Wrap a transport-style send function to track activity.
+   */
+  wrapSend: <T>(
+    fn: (type: MessageType, payload?: unknown) => Promise<T>,
+  ) => (type: MessageType, payload?: unknown) => Promise<T>
+  /** Manually increment the pending count. */
+  start: () => void
+  /** Manually decrement the pending count. */
+  done: () => void
+  /** Get current pending count. */
+  getCount: () => number
+  /** Get details about active requests (for debugging stuck indicators). */
+  getActiveRequests: () => ActiveRequestInfo[]
+}
 
 /**
  * Track in-flight UI actions and toggle a bound indicator element.
- *
- * @param {HTMLElement | null} mount_element
- * @returns {{ wrapSend: (fn: (type: MessageType, payload?: unknown) => Promise<unknown>) => (type: MessageType, payload?: unknown) => Promise<unknown>, start: () => void, done: () => void, getCount: () => number, getActiveRequests: () => Array<{ id: number, type: string, elapsed_ms: number }> }}
  */
-export function createActivityIndicator(mount_element) {
+export function createActivityIndicator(mount_element: HTMLElement | null): ActivityIndicator {
   const log = debug("activity")
-  /** @type {number} */
   let pending_count = 0
-  /** @type {Map<number, { type: string, start_ts: number }>} */
-  const active_requests = new Map()
-  /** @type {number} */
+  const active_requests = new Map<number, { type: string; start_ts: number }>()
   let next_request_id = 1
 
-  function render() {
+  function render(): void {
     if (!mount_element) {
       return
     }
@@ -27,13 +44,13 @@ export function createActivityIndicator(mount_element) {
     mount_element.setAttribute("aria-busy", is_active ? "true" : "false")
   }
 
-  function start() {
+  function start(): void {
     pending_count += 1
     log("start count=%d", pending_count)
     render()
   }
 
-  function done() {
+  function done(): void {
     const prev = pending_count
     pending_count = Math.max(0, pending_count - 1)
     if (prev <= 0) {
@@ -48,15 +65,14 @@ export function createActivityIndicator(mount_element) {
    * Wrap a transport-style send function to track activity.
    * Includes a safety timeout to prevent the loading indicator from getting stuck
    * if a request hangs due to network issues or server problems.
-   *
-   * @param {(type: MessageType, payload?: unknown) => Promise<unknown>} send_fn
-   * @returns {(type: MessageType, payload?: unknown) => Promise<unknown>}
    */
-  function wrapSend(send_fn) {
+  function wrapSend<T>(
+    send_fn: (type: MessageType, payload?: unknown) => Promise<T>,
+  ): (type: MessageType, payload?: unknown) => Promise<T> {
     // Safety timeout: if a request takes longer than this, force decrement the counter
     const SAFETY_TIMEOUT_MS = 30000 // 30 seconds
 
-    return async (type, payload) => {
+    return async (type: MessageType, payload?: unknown): Promise<T> => {
       const req_id = next_request_id++
       const start_ts = Date.now()
       active_requests.set(req_id, { type, start_ts })
@@ -65,7 +81,7 @@ export function createActivityIndicator(mount_element) {
 
       // Track if we've already called done() for this request
       let completed = false
-      const markComplete = () => {
+      const markComplete = (): void => {
         if (!completed) {
           completed = true
           active_requests.delete(req_id)
@@ -104,12 +120,7 @@ export function createActivityIndicator(mount_element) {
     start,
     done,
     getCount: () => pending_count,
-    /**
-     * Get details about active requests (for debugging stuck indicators).
-     *
-     * @returns {Array<{ id: number, type: string, elapsed_ms: number }>}
-     */
-    getActiveRequests: () => {
+    getActiveRequests: (): ActiveRequestInfo[] => {
       const now = Date.now()
       return Array.from(active_requests.entries()).map(([id, info]) => ({
         id,

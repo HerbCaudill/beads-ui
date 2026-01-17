@@ -1,17 +1,24 @@
+export interface IssueIdRendererOptions {
+  /** Additional CSS class name to apply. */
+  class_name?: string
+  /** Duration in milliseconds to show "Copied" feedback. */
+  duration_ms?: number
+}
+
 /**
  * Create a reusable, copy-to-clipboard issue ID renderer.
  * Looks like the current inline ID (monospace `#123`) but acts as a button
  * that copies the full, prefixed ID (e.g., `UI-123`) when activated.
  * Shows transient "Copied" feedback and then restores the ID.
  *
- * @param {string} id - Full issue id including the prefix (e.g., "UI-123").
- * @param {{ class_name?: string, duration_ms?: number }} [opts]
- * @returns {HTMLButtonElement}
+ * @param id - Full issue id including the prefix (e.g., "UI-123").
+ * @param opts - Optional configuration.
  */
-export function createIssueIdRenderer(id, opts) {
-  /** @type {number} */
+export function createIssueIdRenderer(
+  id: string,
+  opts?: IssueIdRendererOptions,
+): HTMLButtonElement {
   const duration = typeof opts?.duration_ms === "number" ? opts.duration_ms : 1200
-  /** @type {HTMLButtonElement} */
   const btn = document.createElement("button")
   // Visual: match inline ID look; keep it neutral and text-like
   btn.className = (opts?.class_name ? opts.class_name + " " : "") + "mono id-copy"
@@ -22,7 +29,7 @@ export function createIssueIdRenderer(id, opts) {
   btn.textContent = id
 
   /** Copy handler with feedback. */
-  async function doCopy() {
+  async function doCopy(): Promise<void> {
     // Prevent accidental row navigation and parent handlers
     // (click/key handlers call this inside an event context)
     try {
@@ -31,7 +38,7 @@ export function createIssueIdRenderer(id, opts) {
       }
       btn.textContent = "Copied"
       // Keep accessible label consistent with feedback
-      const oldAria = btn.getAttribute("aria-label") || ""
+      const oldAria = btn.getAttribute("aria-label") ?? ""
       btn.setAttribute("aria-label", "Copied")
       setTimeout(
         () => {

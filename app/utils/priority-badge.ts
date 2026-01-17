@@ -1,12 +1,9 @@
-import { priority_levels } from "./priority.js"
+import { priority_levels, type PriorityLevel } from "./priority.js"
 
 /**
  * Create a colored badge for a priority value (0..4).
- *
- * @param {number | null | undefined} priority
- * @returns {HTMLSpanElement}
  */
-export function createPriorityBadge(priority) {
+export function createPriorityBadge(priority: number | null | undefined): HTMLSpanElement {
   const p = typeof priority === "number" ? priority : 2
   const el = document.createElement("span")
   el.className = "priority-badge"
@@ -19,30 +16,24 @@ export function createPriorityBadge(priority) {
   return el
 }
 
-/**
- * @param {number} p
- */
-function labelForPriority(p) {
-  const i = Math.max(0, Math.min(4, p))
-  return priority_levels[i] || "Medium"
+function labelForPriority(p: number): string {
+  const i = Math.max(0, Math.min(4, p)) as PriorityLevel
+  return priority_levels[i] ?? "Medium"
 }
 
-/**
- * @param {number} p
- */
-export function emojiForPriority(p) {
+export function emojiForPriority(p: number): string {
   switch (p) {
     case 0:
-      return "🔥"
+      return "\u{1F525}" // 🔥
     case 1:
-      return "⚡️"
+      return "\u26A1\uFE0F" // ⚡️
     case 2:
-      return "🔧"
+      return "\u{1F527}" // 🔧
     case 3:
-      return "🪶"
+      return "\u{1FAB6}" // 🪶
     case 4:
-      return "💤"
+      return "\u{1F4A4}" // 💤
     default:
-      return "🔧"
+      return "\u{1F527}" // 🔧
   }
 }

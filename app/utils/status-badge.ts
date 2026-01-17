@@ -1,13 +1,12 @@
+import type { Status } from "./status.js"
+
 /**
  * Create a colored badge for a status value.
- *
- * @param {string | null | undefined} status - 'open' | 'in_progress' | 'closed'
- * @returns {HTMLSpanElement}
  */
-export function createStatusBadge(status) {
+export function createStatusBadge(status: string | null | undefined): HTMLSpanElement {
   const el = document.createElement("span")
   el.className = "status-badge"
-  const s = String(status || "open")
+  const s = String(status ?? "open")
   el.classList.add(`is-${s}`)
   el.setAttribute("role", "img")
   el.setAttribute("title", labelForStatus(s))
@@ -16,11 +15,8 @@ export function createStatusBadge(status) {
   return el
 }
 
-/**
- * @param {string} s
- */
-function labelForStatus(s) {
-  switch (s) {
+function labelForStatus(s: string): string {
+  switch (s as Status) {
     case "open":
       return "Open"
     case "in_progress":

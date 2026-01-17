@@ -77,6 +77,18 @@ Never update `CHANGES.md`.
   - `app/state.ts` - Global app state store with subscription support
   - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation
   - `app/main.ts` - Main app bootstrap/orchestration module
+  - `app/utils/logging.ts` - Debug logger helper for the browser app
+  - `app/utils/priority.ts` - Priority level constants and types
+  - `app/utils/status.ts` - Status constants and label function
+  - `app/utils/issue-type.ts` - Issue type constants and label function
+  - `app/utils/issue-url.ts` - Issue URL hash builder
+  - `app/utils/toast.ts` - Global toast notification display
+  - `app/utils/markdown.ts` - Markdown renderer with DOMPurify sanitization
+  - `app/utils/priority-badge.ts` - Priority badge DOM element factory
+  - `app/utils/status-badge.ts` - Status badge DOM element factory
+  - `app/utils/type-badge.ts` - Type badge DOM element factory
+  - `app/utils/issue-id-renderer.ts` - Copy-to-clipboard issue ID button
+  - `app/utils/activity-indicator.ts` - In-flight request activity tracker
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)

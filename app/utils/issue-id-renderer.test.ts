@@ -2,13 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import { createIssueIdRenderer } from "./issue-id-renderer.js"
 
 describe("utils/issue-id-renderer", () => {
-  /** @type {any} */
-  let origClipboard
+  let origClipboard: Clipboard | undefined
 
   beforeEach(() => {
     vi.useFakeTimers()
     origClipboard = navigator.clipboard
-    // @ts-ignore
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -16,7 +14,6 @@ describe("utils/issue-id-renderer", () => {
   })
 
   afterEach(() => {
-    // @ts-ignore
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: origClipboard,

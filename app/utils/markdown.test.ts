@@ -8,7 +8,7 @@ describe("utils/markdown", () => {
 
     render(html`<div id="root">${renderMarkdown("")}</div>`, host)
 
-    const root = /** @type {HTMLDivElement} */ (host.querySelector("#root"))
+    const root = host.querySelector("#root") as HTMLDivElement
     expect(root.textContent).toBe("")
   })
 
@@ -30,8 +30,8 @@ describe("utils/markdown", () => {
 
     const ps = host.querySelectorAll("p")
     expect(ps.length).toBe(2)
-    expect(ps[0].textContent).toBe("First line\ncontinues")
-    expect(ps[1].textContent).toBe("Second para")
+    expect(ps[0]?.textContent).toBe("First line\ncontinues")
+    expect(ps[1]?.textContent).toBe("Second para")
   })
 
   test("renders unordered list items", () => {
@@ -41,8 +41,8 @@ describe("utils/markdown", () => {
 
     const items = host.querySelectorAll("ul li")
     expect(items.length).toBe(2)
-    expect(items[0].textContent).toBe("a")
-    expect(items[1].textContent).toBe("b")
+    expect(items[0]?.textContent).toBe("a")
+    expect(items[1]?.textContent).toBe("b")
   })
 
   test("renders ordered list items", () => {
@@ -52,8 +52,8 @@ describe("utils/markdown", () => {
 
     const items = host.querySelectorAll("ol li")
     expect(items.length).toBe(2)
-    expect(items[0].textContent).toBe("a")
-    expect(items[1].textContent).toBe("b")
+    expect(items[0]?.textContent).toBe("a")
+    expect(items[1]?.textContent).toBe("b")
   })
 
   test("renders fenced code block", () => {
@@ -61,8 +61,8 @@ describe("utils/markdown", () => {
 
     render(html`<div>${renderMarkdown("```\nline1\nline2\n```")}</div>`, host)
 
-    const code = /** @type {HTMLElement} */ (host.querySelector("pre > code"))
-    expect((code.textContent || "").trimEnd()).toBe("line1\nline2")
+    const code = host.querySelector("pre > code") as HTMLElement
+    expect((code.textContent ?? "").trimEnd()).toBe("line1\nline2")
   })
 
   test("renders inline code", () => {
@@ -70,7 +70,7 @@ describe("utils/markdown", () => {
 
     render(html`<div>${renderMarkdown("text `code` end")}</div>`, host)
 
-    const code = /** @type {HTMLElement} */ (host.querySelector("p code"))
+    const code = host.querySelector("p code") as HTMLElement
     expect(code.textContent).toBe("code")
   })
 
@@ -93,7 +93,7 @@ describe("utils/markdown", () => {
 
     render(html`<div>${renderMarkdown("x [danger](javascript:alert(1)) y")}</div>`, host)
 
-    const hrefs = Array.from(host.querySelectorAll("a")).map(a => a.getAttribute("href") || "")
+    const hrefs = Array.from(host.querySelectorAll("a")).map(a => a.getAttribute("href") ?? "")
     // DOMPurify removes/neutralizes javascript: links
     expect(hrefs.some(h => h.startsWith("javascript:"))).toBe(false)
   })
