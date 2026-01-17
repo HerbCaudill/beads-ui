@@ -57,7 +57,7 @@ These can also be set via CLI options: `bdui start --host 0.0.0.0 --port 8080`
   - `localStorage.debug = 'beads-ui:*'` then reload the page
 - Enable logs for Node/CLI (server, build scripts) by setting `DEBUG`:
   - `DEBUG=beads-ui:* bdui start`
-  - `DEBUG=beads-ui:* node scripts/build-frontend.js`
+  - `DEBUG=beads-ui:* node scripts/build-frontend.ts`
 
 ## License
 
