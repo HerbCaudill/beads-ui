@@ -5,9 +5,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
-    // Enable gradual TypeScript migration
-    "allowJs": true,
-    "checkJs": false,
+    // TypeScript-only (migration complete)
     "noEmit": true,
     "allowImportingTsExtensions": true,
 
@@ -32,15 +30,10 @@
     "types": ["vitest/globals", "node"]
   },
   "include": [
-    "app/**/*.js",
     "app/**/*.ts",
-    "bin/**/*.js",
     "bin/**/*.ts",
-    "server/**/*.js",
     "server/**/*.ts",
-    "scripts/**/*.js",
     "scripts/**/*.ts",
-    "test/**/*.js",
     "test/**/*.ts",
     "types/**/*.ts",
     "vitest.config.mjs"

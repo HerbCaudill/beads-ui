@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, vi } from "vitest"
 import { createTopNav } from "./nav.ts"
 
@@ -14,7 +13,7 @@ function setup() {
     getState() {
       return this.state
     },
-    set(v: Partial<TestState>) {
+    setState(v: Partial<TestState>) {
       this.state = { ...this.state, ...v }
     },
     subscribe(fn: (s: TestState) => void) {
@@ -33,14 +32,14 @@ describe("views/nav", () => {
     const { mount, store, router } = setup()
     createTopNav(
       mount,
-      store as Parameters<typeof createTopNav>[1],
+      store as unknown as Parameters<typeof createTopNav>[1],
       router as Parameters<typeof createTopNav>[2],
     )
     const links = mount.querySelectorAll("a.tab")
     expect(links.length).toBe(3)
-    links[1].dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    links[1]!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     expect(router.gotoView).toHaveBeenCalledWith("epics")
-    links[2].dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    links[2]!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     expect(router.gotoView).toHaveBeenCalledWith("board")
   })
 })

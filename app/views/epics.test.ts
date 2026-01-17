@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, vi } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.ts"
 import { createSubscriptionStore } from "../data/subscriptions-store.ts"
@@ -102,7 +101,7 @@ describe("views/epics", () => {
     // After expansion, only non-closed child should be present
     const rows = mount.querySelectorAll("tr.epic-row")
     expect(rows.length).toBe(2)
-    rows[0].dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    rows[0]!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     expect(navCalls[0]).toBe("UI-2")
   })
 
@@ -183,8 +182,8 @@ describe("views/epics", () => {
               status: "open",
               priority: 1,
               issue_type: "task",
-              created_at: "2025-10-22T10:00:00.000Z",
-              updated_at: "2025-10-22T10:00:00.000Z",
+              created_at: new Date("2025-10-22T10:00:00.000Z").getTime(),
+              updated_at: new Date("2025-10-22T10:00:00.000Z").getTime(),
             },
             {
               id: "UI-12",
@@ -192,8 +191,8 @@ describe("views/epics", () => {
               status: "open",
               priority: 1,
               issue_type: "task",
-              created_at: "2025-10-20T10:00:00.000Z",
-              updated_at: "2025-10-20T10:00:00.000Z",
+              created_at: new Date("2025-10-20T10:00:00.000Z").getTime(),
+              updated_at: new Date("2025-10-20T10:00:00.000Z").getTime(),
             },
             {
               id: "UI-13",
@@ -201,8 +200,8 @@ describe("views/epics", () => {
               status: "open",
               priority: 2,
               issue_type: "task",
-              created_at: "2025-10-23T10:00:00.000Z",
-              updated_at: "2025-10-23T10:00:00.000Z",
+              created_at: new Date("2025-10-23T10:00:00.000Z").getTime(),
+              updated_at: new Date("2025-10-23T10:00:00.000Z").getTime(),
             },
           ],
         },
