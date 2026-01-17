@@ -71,6 +71,7 @@ Never update `CHANGES.md`.
   - `app/data/providers.ts` - Data layer for issue mutations
   - `app/data/subscriptions-store.ts` - Client-side list subscription store
   - `app/data/subscription-issue-store.ts` - Per-subscription issue store with sorted snapshots
+  - `app/data/list-selectors.ts` - List selectors for subscription-scoped issue queries with view-specific sorting
   - `app/router.ts` - Hash-based URL router for views and issue deep-linking
   - `app/state.ts` - Global app state store with subscription support
   - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation

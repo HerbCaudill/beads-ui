@@ -1,6 +1,6 @@
 /**
  * @import { SubscriptionIssueStoreOptions } from '../../types/subscription-issue-store.js'
- * @import { IssueLite } from './list-selectors.js'
+ * @import { IssueLite } from '../../types/index.js'
  */
 import { debug } from "../utils/logging.js"
 import { createSubscriptionIssueStore } from "./subscription-issue-store.js"
