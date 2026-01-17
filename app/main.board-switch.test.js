@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.js"
+import { bootstrap } from "./main.ts"
 
 // Mock the Board view to manipulate DOM content deterministically
 vi.mock("./views/board.js", () => ({
@@ -18,7 +18,7 @@ vi.mock("./views/board.js", () => ({
 }))
 
 // Mock WS client to avoid network and provide minimal data
-vi.mock("./ws.js", () => ({
+vi.mock("./ws.ts", () => ({
   createWsClient: () => ({
     /**
      * @param {string} type

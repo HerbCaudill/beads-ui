@@ -73,6 +73,7 @@ Never update `CHANGES.md`.
   - `app/router.ts` - Hash-based URL router for views and issue deep-linking
   - `app/state.ts` - Global app state store with subscription support
   - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation
+  - `app/main.ts` - Main app bootstrap/orchestration module
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

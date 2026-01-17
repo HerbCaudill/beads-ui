@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.js"
+import { bootstrap } from "./main.ts"
 
 // Provide a minimal dialog polyfill for jsdom environments
 if (typeof HTMLDialogElement !== "undefined") {
@@ -14,7 +14,7 @@ if (typeof HTMLDialogElement !== "undefined") {
   }
 }
 
-vi.mock("./ws.js", () => ({
+vi.mock("./ws.ts", () => ({
   createWsClient: () => ({
     async send() {
       return null

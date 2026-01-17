@@ -1,10 +1,10 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.js"
+import { bootstrap } from "./main.ts"
 
 // Mock ws client factory to inject a controllable client
 /** @type {any} */
 let CLIENT = null
-vi.mock("./ws.js", () => ({
+vi.mock("./ws.ts", () => ({
   createWsClient: () => CLIENT,
 }))
 

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.js"
+import { bootstrap } from "./main.ts"
 
 // Polyfill <dialog> for jsdom
 if (typeof HTMLDialogElement !== "undefined") {
@@ -20,7 +20,7 @@ const issues = [
   { id: "UI-10", title: "Existing", status: "open", priority: 2 },
   { id: "UI-200", title: "Create me", status: "open", priority: 1 },
 ]
-vi.mock("./ws.js", () => ({
+vi.mock("./ws.ts", () => ({
   createWsClient: () => ({
     /**
      * @param {string} type

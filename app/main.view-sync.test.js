@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.js"
+import { bootstrap } from "./main.ts"
 
 // Mock WS client before importing the app
-vi.mock("./ws.js", () => ({
+vi.mock("./ws.ts", () => ({
   createWsClient: () => ({
     /**
      * @param {string} type
