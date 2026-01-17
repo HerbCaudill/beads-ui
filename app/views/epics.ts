@@ -1,11 +1,77 @@
-import { html, render } from "lit-html"
-import { createListSelectors } from "../data/list-selectors.js"
+import { html, render, TemplateResult } from "lit-html"
+import { createListSelectors, IssueStores, ListSelectors } from "../data/list-selectors.js"
 import { createIssueIdRenderer } from "../utils/issue-id-renderer.js"
 import { createIssueRowRenderer } from "./issue-row.js"
+import type { IssueLite } from "../../types/issues.js"
 
 /**
- * @typedef {{ id: string, title?: string, status?: string, priority?: number, issue_type?: string, assignee?: string, created_at?: number, updated_at?: number }} IssueLite
+ * Issue row data for rendering in the epics view.
+ * Matches the IssueRowData typedef in issue-row.js.
  */
+interface IssueRowData {
+  id: string
+  title?: string
+  status?: string
+  priority?: number
+  issue_type?: string
+  assignee?: string
+  dependency_count?: number
+  dependent_count?: number
+}
+
+/**
+ * Epic entity with total/closed children counters and dependents.
+ */
+interface EpicEntity extends IssueLite {
+  dependents?: IssueLite[]
+  total_children?: number
+  closed_children?: number
+}
+
+/**
+ * Group of epic data for rendering.
+ */
+interface EpicGroup {
+  epic: EpicEntity
+  total_children: number
+  closed_children: number
+}
+
+/**
+ * Data interface for updating issues.
+ */
+interface EpicsData {
+  updateIssue: (input: { id: string; [key: string]: unknown }) => Promise<unknown>
+}
+
+/**
+ * Subscriptions interface for epics view.
+ */
+interface EpicsSubscriptions {
+  subscribeList: (
+    client_id: string,
+    spec: { type: string; params?: Record<string, string | number | boolean> },
+  ) => Promise<() => Promise<void>>
+  selectors: {
+    getIds: (client_id: string) => string[]
+    count?: (client_id: string) => number
+  }
+}
+
+/**
+ * Extended issue stores interface with register/unregister methods.
+ */
+interface EpicsIssueStores extends IssueStores {
+  register?: (client_id: string, spec: { type: string; params: Record<string, string> }) => void
+  unregister?: (client_id: string) => void
+}
+
+/**
+ * View API returned by createEpicsView.
+ */
+export interface EpicsViewAPI {
+  load: () => Promise<void>
+}
 
 /**
  * Epics view (push-only):
@@ -15,29 +81,26 @@ import { createIssueRowRenderer } from "./issue-row.js"
  * - Renders children from the epic detail's `dependents` list.
  * - Provides inline edits via mutations; UI re-renders on push.
  *
- * @param {HTMLElement} mount_element
- * @param {{ updateIssue: (input: any) => Promise<any> }} data
- * @param {(id: string) => void} goto_issue - Navigate to issue detail.
- * @param {{ subscribeList: (client_id: string, spec: { type: string, params?: Record<string, string|number|boolean> }) => Promise<() => Promise<void>>, selectors: { getIds: (client_id: string) => string[], count?: (client_id: string) => number } }} [subscriptions]
- * @param {{ snapshotFor?: (client_id: string) => any[], subscribe?: (fn: () => void) => () => void }} [issue_stores]
+ * @param mount_element - Element to render into.
+ * @param data - Data interface for updating issues.
+ * @param goto_issue - Navigate to issue detail.
+ * @param subscriptions - Optional subscriptions interface.
+ * @param issue_stores - Optional issue stores for snapshots.
+ * @returns View API.
  */
 export function createEpicsView(
-  mount_element,
-  data,
-  goto_issue,
-  subscriptions = undefined,
-  issue_stores = undefined,
-) {
-  /** @type {any[]} */
-  let groups = []
-  /** @type {Set<string>} */
-  const expanded = new Set()
-  /** @type {Set<string>} */
-  const loading = new Set()
-  /** @type {Map<string, () => Promise<void>>} */
-  const epic_unsubs = new Map()
+  mount_element: HTMLElement,
+  data: EpicsData,
+  goto_issue: (id: string) => void,
+  subscriptions?: EpicsSubscriptions,
+  issue_stores?: EpicsIssueStores,
+): EpicsViewAPI {
+  let groups: EpicGroup[] = []
+  const expanded: Set<string> = new Set()
+  const loading: Set<string> = new Set()
+  const epic_unsubs: Map<string, () => Promise<void>> = new Map()
   // Centralized selection helpers
-  const selectors = issue_stores ? createListSelectors(issue_stores) : null
+  const selectors: ListSelectors | null = issue_stores ? createListSelectors(issue_stores) : null
   // Live re-render on pushes: recompute groups when stores change
   if (selectors) {
     selectors.subscribe(() => {
@@ -46,7 +109,8 @@ export function createEpicsView(
       doRender()
       // Auto-expand first epic when transitioning from empty to non-empty
       if (had_none && groups.length > 0) {
-        const first_id = String(groups[0].epic?.id || "")
+        const first_group = groups[0]
+        const first_id = first_group ? String(first_group.epic?.id || "") : ""
         if (first_id && !expanded.has(first_id)) {
           void toggle(first_id)
         }
@@ -63,26 +127,23 @@ export function createEpicsView(
     row_class: "epic-row",
   })
 
-  function doRender() {
+  function doRender(): void {
     render(template(), mount_element)
   }
 
-  function template() {
+  function template(): TemplateResult {
     if (!groups.length) {
       return html`<div class="panel__header muted">No epics found.</div>`
     }
     return html`${groups.map(g => groupTemplate(g))}`
   }
 
-  /**
-   * @param {any} g
-   */
-  function groupTemplate(g) {
-    const epic = g.epic || {}
+  function groupTemplate(g: EpicGroup): TemplateResult {
+    const epic = g.epic || ({} as EpicEntity)
     const id = String(epic.id || "")
     const is_open = expanded.has(id)
     // Compose children via selectors
-    const list = selectors ? selectors.selectEpicChildren(id) : []
+    const list: IssueRowData[] = selectors ? selectors.selectEpicChildren(id) : []
     const is_loading = loading.has(id)
     return html`
       <div class="epic-group" data-epic-id=${id}>
@@ -139,11 +200,7 @@ export function createEpicsView(
     `
   }
 
-  /**
-   * @param {string} id
-   * @param {{ [k: string]: any }} patch
-   */
-  async function updateInline(id, patch) {
+  async function updateInline(id: string, patch: Record<string, unknown>): Promise<void> {
     try {
       await data.updateIssue({ id, ...patch })
       // Re-render; view will update on subsequent push
@@ -153,10 +210,7 @@ export function createEpicsView(
     }
   }
 
-  /**
-   * @param {string} epic_id
-   */
-  async function toggle(epic_id) {
+  async function toggle(epic_id: string): Promise<void> {
     if (!expanded.has(epic_id)) {
       expanded.add(epic_id)
       loading.add(epic_id)
@@ -166,8 +220,8 @@ export function createEpicsView(
         try {
           // Register store first to avoid dropping the initial snapshot
           try {
-            if (issue_stores && /** @type {any} */ (issue_stores).register) {
-              /** @type {any} */ issue_stores.register(`detail:${epic_id}`, {
+            if (issue_stores && issue_stores.register) {
+              issue_stores.register(`detail:${epic_id}`, {
                 type: "issue-detail",
                 params: { id: epic_id },
               })
@@ -200,8 +254,8 @@ export function createEpicsView(
         }
         epic_unsubs.delete(epic_id)
         try {
-          if (issue_stores && /** @type {any} */ (issue_stores).unregister) {
-            /** @type {any} */ issue_stores.unregister(`detail:${epic_id}`)
+          if (issue_stores && issue_stores.unregister) {
+            issue_stores.unregister(`detail:${epic_id}`)
           }
         } catch {
           // ignore
@@ -212,24 +266,19 @@ export function createEpicsView(
   }
 
   /** Build groups from the current `tab:epics` snapshot. */
-  function buildGroupsFromSnapshot() {
-    /** @type {IssueLite[]} */
-    const epic_entities =
+  function buildGroupsFromSnapshot(): EpicGroup[] {
+    const epic_entities: EpicEntity[] =
       issue_stores && issue_stores.snapshotFor ?
-        /** @type {IssueLite[]} */ (issue_stores.snapshotFor("tab:epics") || [])
+        (issue_stores.snapshotFor("tab:epics") as EpicEntity[]) || []
       : []
-    const next_groups = []
+    const next_groups: EpicGroup[] = []
     for (const epic of epic_entities) {
-      const dependents =
-        Array.isArray(/** @type {any} */ (epic).dependents) ?
-          /** @type {any[]} */ (/** @type {any} */ (epic).dependents)
-        : []
+      const dependents = Array.isArray(epic.dependents) ? epic.dependents : []
       // Prefer explicit counters when provided by server; otherwise derive
-      const has_total = Number.isFinite(/** @type {any} */ (epic).total_children)
-      const has_closed = Number.isFinite(/** @type {any} */ (epic).closed_children)
-      const total =
-        has_total ? Number(/** @type {any} */ (epic).total_children) || 0 : dependents.length
-      let closed = has_closed ? Number(/** @type {any} */ (epic).closed_children) || 0 : 0
+      const has_total = Number.isFinite(epic.total_children)
+      const has_closed = Number.isFinite(epic.closed_children)
+      const total = has_total ? Number(epic.total_children) || 0 : dependents.length
+      let closed = has_closed ? Number(epic.closed_children) || 0 : 0
       if (!has_closed) {
         for (const d of dependents) {
           if (String(d.status || "") === "closed") {
@@ -247,13 +296,14 @@ export function createEpicsView(
   }
 
   return {
-    async load() {
+    async load(): Promise<void> {
       groups = buildGroupsFromSnapshot()
       doRender()
       // Auto-expand first epic on screen
       try {
         if (groups.length > 0) {
-          const first_id = String(groups[0].epic?.id || "")
+          const first_group = groups[0]
+          const first_id = first_group ? String(first_group.epic?.id || "") : ""
           if (first_id && !expanded.has(first_id)) {
             // This will render and load children lazily
             await toggle(first_id)

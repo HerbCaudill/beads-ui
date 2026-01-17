@@ -92,6 +92,7 @@ Never update `CHANGES.md`.
   - `app/views/detail.ts` - Issue detail panel view component with lit-html templating
   - `app/views/board.ts` - Kanban board view component with drag-drop support
   - `app/views/list.ts` - Issues list view component with filtering and inline editing
+  - `app/views/epics.ts` - Epics view component with expandable epic groups
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createSubscriptionStore } from "../data/subscriptions-store.js"
-import { createEpicsView } from "./epics.js"
+import { createEpicsView } from "./epics.ts"
 
 describe("views/epics", () => {
   test("loads groups from store and expands to show non-closed children, navigates on click", async () => {
