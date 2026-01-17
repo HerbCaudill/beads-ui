@@ -1,5 +1,7 @@
-import { html, render } from "lit-html"
-import { createListSelectors } from "../data/list-selectors.js"
+import { html, render, TemplateResult } from "lit-html"
+import type { ViewName } from "../router.js"
+import type { AppState, StatePatch } from "../state.js"
+import { createListSelectors, ListSelectors, IssueStores } from "../data/list-selectors.js"
 import { cmpClosedDesc } from "../data/sort.js"
 import { ISSUE_TYPES, typeLabel } from "../utils/issue-type.js"
 import { issueHashFor } from "../utils/issue-url.js"
@@ -10,64 +12,96 @@ import { createIssueRowRenderer } from "./issue-row.js"
 // List view implementation; requires a transport send function.
 
 /**
- * @typedef {{ id: string, title?: string, status?: 'closed'|'open'|'in_progress', priority?: number, issue_type?: string, assignee?: string, labels?: string[] }} Issue
+ * Issue type for list view.
  */
+interface Issue {
+  id: string
+  title?: string
+  status?: "closed" | "open" | "in_progress"
+  priority?: number
+  issue_type?: string
+  assignee?: string
+  labels?: string[]
+}
+
+/**
+ * RPC transport function type.
+ */
+type SendFn = (type: string, payload?: unknown) => Promise<unknown>
+
+/**
+ * Navigation function type.
+ */
+type NavigateFn = (hash: string) => void
+
+/**
+ * Default navigation function using window.location.hash.
+ */
+function defaultNavigateFn(hash: string): void {
+  window.location.hash = hash
+}
+
+/**
+ * App state store interface for list view.
+ */
+interface ListStore {
+  getState: () => AppState
+  setState: (patch: StatePatch) => void
+  subscribe: (fn: (s: AppState) => void) => () => void
+}
+
+/**
+ * Subscriptions interface (unused but kept for API compatibility).
+ */
+interface Subscriptions {
+  selectors: {
+    getIds: (client_id: string) => string[]
+  }
+}
+
+/**
+ * View API returned by createListView.
+ */
+export interface ListViewAPI {
+  load: () => Promise<void>
+  destroy: () => void
+}
 
 /**
  * Create the Issues List view.
  *
- * @param {HTMLElement} mount_element - Element to render into.
- * @param {(type: string, payload?: unknown) => Promise<unknown>} sendFn - RPC transport.
- * @param {(hash: string) => void} [navigate_fn] - Navigation function (defaults to setting location.hash).
- * @param {{ getState: () => any, setState: (patch: any) => void, subscribe: (fn: (s:any)=>void)=>()=>void }} [store] - Optional state store.
- * @param {{ selectors: { getIds: (client_id: string) => string[] } }} [_subscriptions]
- * @param {{ snapshotFor?: (client_id: string) => any[], subscribe?: (fn: () => void) => () => void }} [issueStores]
- * @returns {{ load: () => Promise<void>, destroy: () => void }} View API.
- */
-/**
- * Create the Issues List view.
- *
- * @param {HTMLElement} mount_element
- * @param {(type: string, payload?: unknown) => Promise<unknown>} sendFn
- * @param {(hash: string) => void} [navigateFn]
- * @param {{ getState: () => any, setState: (patch: any) => void, subscribe: (fn: (s:any)=>void)=>()=>void }} [store]
- * @param {{ selectors: { getIds: (client_id: string) => string[] } }} [_subscriptions]
- * @param {{ snapshotFor?: (client_id: string) => any[], subscribe?: (fn: () => void) => () => void }} [issue_stores]
- * @returns {{ load: () => Promise<void>, destroy: () => void }}
+ * @param mount_element - Element to render into.
+ * @param sendFn - RPC transport.
+ * @param navigateFn - Navigation function (defaults to setting location.hash).
+ * @param store - Optional state store.
+ * @param _subscriptions - Unused subscriptions interface.
+ * @param issue_stores - Optional issue stores for live updates.
+ * @returns View API.
  */
 export function createListView(
-  mount_element,
-  sendFn,
-  navigateFn,
-  store,
-  _subscriptions = undefined,
-  issue_stores = undefined,
-) {
+  mount_element: HTMLElement,
+  sendFn: SendFn,
+  navigateFn: NavigateFn = defaultNavigateFn,
+  store?: ListStore,
+  _subscriptions?: Subscriptions,
+  issue_stores?: IssueStores,
+): ListViewAPI {
   const log = debug("views:list")
   // Touch unused param to satisfy lint rules without impacting behavior
-  /** @type {any} */ void _subscriptions
-  /** @type {string[]} */
-  let status_filters = []
-  /** @type {string} */
+  void _subscriptions
+  let status_filters: string[] = []
   let search_text = ""
-  /** @type {Issue[]} */
-  let issues_cache = []
-  /** @type {string[]} */
-  let type_filters = []
-  /** @type {string | null} */
-  let selected_id = store ? store.getState().selected_id : null
-  /** @type {null | (() => void)} */
-  let unsubscribe = null
+  let issues_cache: Issue[] = []
+  let type_filters: string[] = []
+  let selected_id: string | null = store ? store.getState().selected_id : null
+  let unsubscribe: (() => void) | null = null
   let status_dropdown_open = false
   let type_dropdown_open = false
 
   /**
    * Normalize legacy string filter to array format.
-   *
-   * @param {string | string[] | undefined} val
-   * @returns {string[]}
    */
-  function normalizeStatusFilter(val) {
+  function normalizeStatusFilter(val: string | string[] | undefined): string[] {
     if (Array.isArray(val)) return val
     if (typeof val === "string" && val !== "" && val !== "all") return [val]
     return []
@@ -75,11 +109,8 @@ export function createListView(
 
   /**
    * Normalize legacy string filter to array format.
-   *
-   * @param {string | string[] | undefined} val
-   * @returns {string[]}
    */
-  function normalizeTypeFilter(val) {
+  function normalizeTypeFilter(val: string | string[] | undefined): string[] {
     if (Array.isArray(val)) return val
     if (typeof val === "string" && val !== "") return [val]
     return []
@@ -87,10 +118,9 @@ export function createListView(
 
   // Shared row renderer (used in template below)
   const row_renderer = createIssueRowRenderer({
-    navigate: id => {
-      const nav = navigateFn || (h => (window.location.hash = h))
-      /** @type {'issues'|'epics'|'board'} */
-      const view = store ? store.getState().view : "issues"
+    navigate: (id: string) => {
+      const nav = navigateFn || defaultNavigateFn
+      const view: ViewName = store ? store.getState().view : "issues"
       nav(issueHashFor(view, id))
     },
     onUpdate: updateInline,
@@ -101,10 +131,9 @@ export function createListView(
 
   /**
    * Toggle a status filter chip.
-   *
-   * @param {string} status
+   * Note: status_filters is an array for multi-select UI, but the store may use string.
    */
-  const toggleStatusFilter = async status => {
+  const toggleStatusFilter = async (status: string): Promise<void> => {
     if (status_filters.includes(status)) {
       status_filters = status_filters.filter(s => s !== status)
     } else {
@@ -112,7 +141,10 @@ export function createListView(
     }
     log("status toggle %s -> %o", status, status_filters)
     if (store) {
-      store.setState({ filters: { status: status_filters } })
+      // Use type assertion for array-based multi-select that extends store's single-value type
+      store.setState({
+        filters: { status: status_filters as unknown as AppState["filters"]["status"] },
+      })
     }
     await load()
   }
@@ -120,11 +152,8 @@ export function createListView(
   /**
    * Event: search input.
    */
-  /**
-   * @param {Event} ev
-   */
-  const onSearchInput = ev => {
-    const input = /** @type {HTMLInputElement} */ (ev.currentTarget)
+  const onSearchInput = (ev: Event): void => {
+    const input = ev.currentTarget as HTMLInputElement
     search_text = input.value
     log("search input %s", search_text)
     if (store) {
@@ -135,10 +164,9 @@ export function createListView(
 
   /**
    * Toggle a type filter chip.
-   *
-   * @param {string} type
+   * Note: type_filters is an array for multi-select UI, but the store may use string.
    */
-  const toggleTypeFilter = type => {
+  const toggleTypeFilter = (type: string): void => {
     if (type_filters.includes(type)) {
       type_filters = type_filters.filter(t => t !== type)
     } else {
@@ -146,17 +174,16 @@ export function createListView(
     }
     log("type toggle %s -> %o", type, type_filters)
     if (store) {
-      store.setState({ filters: { type: type_filters } })
+      // Use type assertion for array-based multi-select that extends store's single-value type
+      store.setState({ filters: { type: type_filters as unknown as AppState["filters"]["type"] } })
     }
     doRender()
   }
 
   /**
    * Toggle status dropdown open/closed.
-   *
-   * @param {Event} e
    */
-  const toggleStatusDropdown = e => {
+  const toggleStatusDropdown = (e: Event): void => {
     e.stopPropagation()
     status_dropdown_open = !status_dropdown_open
     type_dropdown_open = false
@@ -165,10 +192,8 @@ export function createListView(
 
   /**
    * Toggle type dropdown open/closed.
-   *
-   * @param {Event} e
    */
-  const toggleTypeDropdown = e => {
+  const toggleTypeDropdown = (e: Event): void => {
     e.stopPropagation()
     type_dropdown_open = !type_dropdown_open
     status_dropdown_open = false
@@ -177,15 +202,15 @@ export function createListView(
 
   /**
    * Get display text for dropdown trigger.
-   *
-   * @param {string[]} selected
-   * @param {string} label
-   * @param {(val: string) => string} formatter
-   * @returns {string}
    */
-  function getDropdownDisplayText(selected, label, formatter) {
+  function getDropdownDisplayText(
+    selected: string[],
+    label: string,
+    formatter: (val: string) => string,
+  ): string {
     if (selected.length === 0) return `${label}: Any`
-    if (selected.length === 1) return `${label}: ${formatter(selected[0])}`
+    const first = selected[0]
+    if (selected.length === 1 && first !== undefined) return `${label}: ${formatter(first)}`
     return `${label} (${selected.length})`
   }
 
@@ -200,12 +225,12 @@ export function createListView(
   }
   // Initial values are reflected via bound `.value` in the template
   // Compose helpers: centralize membership + entity selection + sorting
-  const selectors = issue_stores ? createListSelectors(issue_stores) : null
+  const selectors: ListSelectors | null = issue_stores ? createListSelectors(issue_stores) : null
 
   /**
    * Build lit-html template for the list view.
    */
-  function template() {
+  function template(): TemplateResult {
     let filtered = issues_cache
     if (status_filters.length > 0 && !status_filters.includes("ready")) {
       filtered = filtered.filter(it => status_filters.includes(String(it.status || "")))
@@ -314,7 +339,7 @@ export function createListView(
   /**
    * Render the current issues_cache with filters applied.
    */
-  function doRender() {
+  function doRender(): void {
     render(template(), mount_element)
   }
 
@@ -324,11 +349,11 @@ export function createListView(
 
   /**
    * Update minimal fields inline via ws mutations and refresh that row's data.
-   *
-   * @param {string} id
-   * @param {{ [k: string]: any }} patch
    */
-  async function updateInline(id, patch) {
+  async function updateInline(
+    id: string,
+    patch: { title?: string; assignee?: string; status?: string; priority?: number },
+  ): Promise<void> {
     try {
       log("updateInline %s %o", id, Object.keys(patch))
       // Dispatch specific mutations based on provided keys
@@ -352,15 +377,15 @@ export function createListView(
   /**
    * Load issues from local push stores and re-render.
    */
-  async function load() {
+  async function load(): Promise<void> {
     log("load")
     // Preserve scroll position to avoid jarring jumps on live refresh
-    const beforeEl = /** @type {HTMLElement|null} */ (mount_element.querySelector("#list-root"))
+    const beforeEl = mount_element.querySelector("#list-root") as HTMLElement | null
     const prevScroll = beforeEl ? beforeEl.scrollTop : 0
     // Compose items from subscriptions membership and issues store entities
     try {
       if (selectors) {
-        issues_cache = /** @type {Issue[]} */ (selectors.selectIssuesFor("tab:issues"))
+        issues_cache = selectors.selectIssuesFor("tab:issues") as Issue[]
       } else {
         issues_cache = []
       }
@@ -371,7 +396,7 @@ export function createListView(
     doRender()
     // Restore scroll position if possible
     try {
-      const afterEl = /** @type {HTMLElement|null} */ (mount_element.querySelector("#list-root"))
+      const afterEl = mount_element.querySelector("#list-root") as HTMLElement | null
       if (afterEl && prevScroll > 0) {
         afterEl.scrollTop = prevScroll
       }
@@ -382,11 +407,11 @@ export function createListView(
 
   // Keyboard navigation
   mount_element.tabIndex = 0
-  mount_element.addEventListener("keydown", ev => {
+  mount_element.addEventListener("keydown", (ev: KeyboardEvent) => {
     // Grid cell Up/Down navigation when focus is inside the table and not within
     // an editable control (input/textarea/select). Preserves column position.
     if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
-      const tgt = /** @type {HTMLElement} */ (ev.target)
+      const tgt = ev.target as HTMLElement
       const table =
         tgt && typeof tgt.closest === "function" ? tgt.closest("#list-root table.table") : null
       if (table) {
@@ -399,8 +424,8 @@ export function createListView(
         if (!in_editable) {
           const cell = tgt && typeof tgt.closest === "function" ? tgt.closest("td") : null
           if (cell && cell.parentElement) {
-            const row = /** @type {HTMLTableRowElement} */ (cell.parentElement)
-            const tbody = /** @type {HTMLTableSectionElement|null} */ (row.parentElement)
+            const row = cell.parentElement as HTMLTableRowElement
+            const tbody = row.parentElement as HTMLTableSectionElement | null
             if (tbody && tbody.querySelectorAll) {
               const rows = Array.from(tbody.querySelectorAll("tr"))
               const row_idx = Math.max(0, rows.indexOf(row))
@@ -412,11 +437,9 @@ export function createListView(
               const next_row = rows[next_idx]
               const next_cell = next_row && next_row.cells ? next_row.cells[col_idx] : null
               if (next_cell) {
-                const focusable = /** @type {HTMLElement|null} */ (
-                  next_cell.querySelector(
-                    'button:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href], select:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled])',
-                  )
-                )
+                const focusable = next_cell.querySelector(
+                  'button:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href], select:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled])',
+                ) as HTMLElement | null
                 if (focusable && typeof focusable.focus === "function") {
                   ev.preventDefault()
                   focusable.focus()
@@ -429,9 +452,7 @@ export function createListView(
       }
     }
 
-    const tbody = /** @type {HTMLTableSectionElement|null} */ (
-      mount_element.querySelector("#list-root tbody")
-    )
+    const tbody = mount_element.querySelector("#list-root tbody") as HTMLTableSectionElement | null
     const items = tbody ? tbody.querySelectorAll("tr") : []
     if (items.length === 0) {
       return
@@ -472,18 +493,16 @@ export function createListView(
       const current = items[idx]
       const id = current ? current.getAttribute("data-issue-id") : ""
       if (id) {
-        const nav = navigateFn || (h => (window.location.hash = h))
-        /** @type {'issues'|'epics'|'board'} */
-        const view = store ? store.getState().view : "issues"
+        const nav = navigateFn || defaultNavigateFn
+        const view: ViewName = store ? store.getState().view : "issues"
         nav(issueHashFor(view, id))
       }
     }
   })
 
   // Click outside to close dropdowns
-  /** @param {MouseEvent} e */
-  const clickOutsideHandler = e => {
-    const target = /** @type {HTMLElement|null} */ (e.target)
+  const clickOutsideHandler = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement | null
     if (target && !target.closest(".filter-dropdown")) {
       if (status_dropdown_open || type_dropdown_open) {
         status_dropdown_open = false
@@ -534,7 +553,7 @@ export function createListView(
   if (selectors) {
     selectors.subscribe(() => {
       try {
-        issues_cache = /** @type {Issue[]} */ (selectors.selectIssuesFor("tab:issues"))
+        issues_cache = selectors.selectIssuesFor("tab:issues") as Issue[]
         doRender()
       } catch {
         // ignore
@@ -544,7 +563,7 @@ export function createListView(
 
   return {
     load,
-    destroy() {
+    destroy(): void {
       mount_element.replaceChildren()
       document.removeEventListener("click", clickOutsideHandler)
       if (unsubscribe) {
