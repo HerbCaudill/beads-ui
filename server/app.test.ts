@@ -6,11 +6,8 @@ import { getConfig } from "./config.js"
 
 /**
  * Narrow to function type for basic checks.
- *
- * @param {unknown} value
- * @returns {value is Function}
  */
-function isFunction(value) {
+function isFunction(value: unknown): value is Function {
   return typeof value === "function"
 }
 

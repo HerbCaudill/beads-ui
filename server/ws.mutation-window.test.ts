@@ -1,7 +1,9 @@
+import type { WebSocket } from "ws"
+import type { Mock } from "vitest"
 import { createServer } from "node:http"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBd } from "./bd.ts"
-import { fetchListForSubscription } from "./list-adapters.ts"
+import { runBd } from "./bd.js"
+import { fetchListForSubscription } from "./list-adapters.js"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
 vi.mock("./bd.ts", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
@@ -21,42 +23,45 @@ beforeEach(() => {
   vi.useFakeTimers()
 })
 
-function makeSocket() {
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+}
+
+function makeSocket(): StubSocket {
   return {
-    sent: /** @type {string[]} */ ([]),
+    sent: [],
     readyState: 1,
     OPEN: 1,
-    /** @param {string} msg */
-    send(msg) {
+    send(msg: string) {
       this.sent.push(String(msg))
     },
   }
 }
 
-/**
- * @param {import('ws').WebSocketServer} wss
- */
-async function subscribeTwoLists(wss) {
+async function subscribeTwoLists(wss: { clients: Set<WebSocket> }): Promise<void> {
   const a = makeSocket()
   const b = makeSocket()
-  wss.clients.add(/** @type {any} */ (a))
-  wss.clients.add(/** @type {any} */ (b))
+  wss.clients.add(a as unknown as WebSocket)
+  wss.clients.add(b as unknown as WebSocket)
   await handleMessage(
-    /** @type {any} */ (a),
+    a as unknown as WebSocket,
     Buffer.from(
       JSON.stringify({
         id: "l1",
-        type: /** @type {any} */ ("subscribe-list"),
+        type: "subscribe-list" as const,
         payload: { id: "c1", type: "all-issues" },
       }),
     ),
   )
   await handleMessage(
-    /** @type {any} */ (b),
+    b as unknown as WebSocket,
     Buffer.from(
       JSON.stringify({
         id: "l2",
-        type: /** @type {any} */ ("subscribe-list"),
+        type: "subscribe-list" as const,
         payload: { id: "c2", type: "in-progress-issues" },
       }),
     ),
@@ -74,21 +79,21 @@ describe("mutation window gating", () => {
     await subscribeTwoLists(wss)
 
     // Clear any refresh calls from initial subscriptions
-    const mFetch = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mFetch = fetchListForSubscription as Mock
     mFetch.mockClear()
 
     // Prepare mutation stubs
-    const mRun = /** @type {import('vitest').Mock} */ (runBd)
+    const mRun = runBd as Mock
     mRun.mockResolvedValueOnce({ code: 0, stdout: "UI-99", stderr: "" })
 
     // Fire a mutation
     const ws = makeSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "create1",
-          type: /** @type {any} */ ("create-issue"),
+          type: "create-issue" as const,
           payload: { title: "X" },
         }),
       ),
@@ -114,19 +119,19 @@ describe("mutation window gating", () => {
 
     await subscribeTwoLists(wss)
 
-    const mFetch = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mFetch = fetchListForSubscription as Mock
     mFetch.mockClear()
 
-    const mRun = /** @type {import('vitest').Mock} */ (runBd)
+    const mRun = runBd as Mock
     mRun.mockResolvedValueOnce({ code: 0, stdout: "UI-100", stderr: "" })
 
     const ws = makeSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "create2",
-          type: /** @type {any} */ ("create-issue"),
+          type: "create-issue" as const,
           payload: { title: "Y" },
         }),
       ),

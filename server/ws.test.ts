@@ -1,14 +1,22 @@
+import type { WebSocket } from "ws"
 import { describe, expect, test, vi } from "vitest"
 import { handleMessage } from "./ws.js"
 
-/** @returns {any} */
-function makeStubSocket() {
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+  ping: ReturnType<typeof vi.fn>
+  terminate: ReturnType<typeof vi.fn>
+}
+
+function makeStubSocket(): StubSocket {
   return {
-    sent: /** @type {string[]} */ ([]),
+    sent: [],
     readyState: 1,
     OPEN: 1,
-    /** @param {string} msg */
-    send(msg) {
+    send(msg: string) {
       this.sent.push(String(msg))
     },
     ping: vi.fn(),
@@ -19,17 +27,17 @@ function makeStubSocket() {
 describe("ws message handling", () => {
   test("invalid JSON yields bad_json error", () => {
     const ws = makeStubSocket()
-    handleMessage(/** @type {any} */ (ws), Buffer.from("{oops"))
+    handleMessage(ws as unknown as WebSocket, Buffer.from("{oops"))
     expect(ws.sent.length).toBe(1)
-    const obj = JSON.parse(ws.sent[0])
+    const obj = JSON.parse(ws.sent[0]!)
     expect(obj.ok).toBe(false)
     expect(obj.error.code).toBe("bad_json")
   })
 
   test("invalid envelope yields bad_request", () => {
     const ws = makeStubSocket()
-    handleMessage(/** @type {any} */ (ws), Buffer.from(JSON.stringify({ not: "a request" })))
-    const last = ws.sent[ws.sent.length - 1]
+    handleMessage(ws as unknown as WebSocket, Buffer.from(JSON.stringify({ not: "a request" })))
+    const last = ws.sent[ws.sent.length - 1]!
     const obj = JSON.parse(last)
     expect(obj.ok).toBe(false)
     expect(obj.error.code).toBe("bad_request")
@@ -38,8 +46,8 @@ describe("ws message handling", () => {
   test("unknown message type returns unknown_type error", () => {
     const ws = makeStubSocket()
     const req = { id: "1", type: "some-unknown", payload: {} }
-    handleMessage(/** @type {any} */ (ws), Buffer.from(JSON.stringify(req)))
-    const last = ws.sent[ws.sent.length - 1]
+    handleMessage(ws as unknown as WebSocket, Buffer.from(JSON.stringify(req)))
+    const last = ws.sent[ws.sent.length - 1]!
     const obj = JSON.parse(last)
     expect(obj.ok).toBe(false)
     expect(obj.error.code).toBe("unknown_type")

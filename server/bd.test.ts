@@ -1,23 +1,20 @@
+import type { ChildProcess } from "node:child_process"
+import type { Mock } from "vitest"
 import { spawn as spawnMock } from "node:child_process"
 import { EventEmitter } from "node:events"
 import { PassThrough } from "node:stream"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { getBdBin, getGitUserName, runBd, runBdJson } from "./bd.ts"
+import { getBdBin, getGitUserName, runBd, runBdJson } from "./bd.js"
 
 // Mock child_process.spawn before importing the module under test
 vi.mock("node:child_process", () => ({ spawn: vi.fn() }))
 
-/**
- * @param {string} stdoutText
- * @param {string} stderrText
- * @param {number} code
- */
-function makeFakeProc(stdoutText, stderrText, code) {
-  const cp = /** @type {any} */ (new EventEmitter())
+function makeFakeProc(stdoutText: string, stderrText: string, code: number): ChildProcess {
+  const cp = new EventEmitter() as ChildProcess
   const out = new PassThrough()
   const err = new PassThrough()
-  cp.stdout = out
-  cp.stderr = err
+  ;(cp as unknown as { stdout: PassThrough }).stdout = out
+  ;(cp as unknown as { stderr: PassThrough }).stderr = err
   // Simulate async emission
   queueMicrotask(() => {
     if (stdoutText) {
@@ -33,7 +30,7 @@ function makeFakeProc(stdoutText, stderrText, code) {
   return cp
 }
 
-const mockedSpawn = /** @type {import('vitest').Mock} */ (spawnMock)
+const mockedSpawn = spawnMock as Mock
 
 beforeEach(() => {
   mockedSpawn.mockReset()

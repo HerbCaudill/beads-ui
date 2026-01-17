@@ -1,5 +1,6 @@
+import type { WebSocket } from "ws"
 import { describe, expect, test, vi } from "vitest"
-import { SubscriptionRegistry, computeDelta, keyOf, toItemsMap } from "./subscriptions.ts"
+import { SubscriptionRegistry, computeDelta, keyOf, toItemsMap } from "./subscriptions.js"
 
 describe("subscriptions registry", () => {
   test("keyOf sorts params for stable keys", () => {
@@ -74,10 +75,8 @@ describe("subscriptions registry", () => {
 
   test("attach/detach and disconnect-driven eviction", () => {
     const reg = new SubscriptionRegistry()
-    /** @type {any} */
-    const ws_a = { OPEN: 1, readyState: 1, send: vi.fn() }
-    /** @type {any} */
-    const ws_b = { OPEN: 1, readyState: 1, send: vi.fn() }
+    const ws_a = { OPEN: 1, readyState: 1, send: vi.fn() } as unknown as WebSocket
+    const ws_b = { OPEN: 1, readyState: 1, send: vi.fn() } as unknown as WebSocket
 
     const spec = { type: "list", params: { status: "open" } }
     const { key } = reg.attach(spec, ws_a)
@@ -99,8 +98,7 @@ describe("subscriptions registry", () => {
 
   test("applyItems stores map and returns correct delta", () => {
     const reg = new SubscriptionRegistry()
-    /** @type {any} */
-    const ws = { OPEN: 1, readyState: 1, send: vi.fn() }
+    const ws = { OPEN: 1, readyState: 1, send: vi.fn() } as unknown as WebSocket
     const spec = { type: "list", params: { ready: true } }
     const { key } = reg.attach(spec, ws)
 

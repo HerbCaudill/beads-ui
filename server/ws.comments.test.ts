@@ -1,5 +1,7 @@
+import type { WebSocket } from "ws"
+import type { Mock } from "vitest"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { getGitUserName, runBd, runBdJson } from "./bd.ts"
+import { getGitUserName, runBd, runBdJson } from "./bd.js"
 import { handleMessage } from "./ws.js"
 
 vi.mock("./bd.ts", () => ({
@@ -8,13 +10,19 @@ vi.mock("./bd.ts", () => ({
   getGitUserName: vi.fn(),
 }))
 
-function makeStubSocket() {
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+}
+
+function makeStubSocket(): StubSocket {
   return {
-    sent: /** @type {string[]} */ ([]),
+    sent: [],
     readyState: 1,
     OPEN: 1,
-    /** @param {string} msg */
-    send(msg) {
+    send(msg: string) {
       this.sent.push(String(msg))
     },
   }
@@ -26,7 +34,7 @@ describe("get-comments handler", () => {
   })
 
   test("returns comments array on success", async () => {
-    const rj = /** @type {import('vitest').Mock} */ (runBdJson)
+    const rj = runBdJson as Mock
     const comments = [
       {
         id: 1,
@@ -47,18 +55,18 @@ describe("get-comments handler", () => {
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-1",
-          type: /** @type {any} */ ("get-comments"),
+          type: "get-comments" as const,
           payload: { id: "UI-1" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(true)
     expect(reply.payload).toEqual(comments)
 
@@ -69,40 +77,40 @@ describe("get-comments handler", () => {
   test("returns error when issue id missing", async () => {
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-2",
-          type: /** @type {any} */ ("get-comments"),
+          type: "get-comments" as const,
           payload: {},
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bad_request")
   })
 
   test("returns error when bd command fails", async () => {
-    const rj = /** @type {import('vitest').Mock} */ (runBdJson)
+    const rj = runBdJson as Mock
     rj.mockResolvedValueOnce({ code: 1, stderr: "Issue not found" })
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-3",
-          type: /** @type {any} */ ("get-comments"),
+          type: "get-comments" as const,
           payload: { id: "UI-999" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bd_error")
   })
@@ -114,9 +122,9 @@ describe("add-comment handler", () => {
   })
 
   test("adds comment with git author and returns updated comments", async () => {
-    const gitUser = /** @type {import('vitest').Mock} */ (getGitUserName)
-    const rb = /** @type {import('vitest').Mock} */ (runBd)
-    const rj = /** @type {import('vitest').Mock} */ (runBdJson)
+    const gitUser = getGitUserName as Mock
+    const rb = runBd as Mock
+    const rj = runBdJson as Mock
 
     // Mock git config user.name
     gitUser.mockResolvedValueOnce("Test User")
@@ -136,18 +144,18 @@ describe("add-comment handler", () => {
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-4",
-          type: /** @type {any} */ ("add-comment"),
+          type: "add-comment" as const,
           payload: { id: "UI-1", text: "New comment" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(true)
     expect(reply.payload).toEqual(updatedComments)
 
@@ -156,9 +164,9 @@ describe("add-comment handler", () => {
   })
 
   test("adds comment without author when git user name is empty", async () => {
-    const gitUser = /** @type {import('vitest').Mock} */ (getGitUserName)
-    const rb = /** @type {import('vitest').Mock} */ (runBd)
-    const rj = /** @type {import('vitest').Mock} */ (runBdJson)
+    const gitUser = getGitUserName as Mock
+    const rb = runBd as Mock
+    const rj = runBdJson as Mock
 
     // Mock empty git user name
     gitUser.mockResolvedValueOnce("")
@@ -169,18 +177,18 @@ describe("add-comment handler", () => {
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-5",
-          type: /** @type {any} */ ("add-comment"),
+          type: "add-comment" as const,
           payload: { id: "UI-1", text: "Anonymous comment" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(true)
 
     // Verify bd was called without --author
@@ -190,18 +198,18 @@ describe("add-comment handler", () => {
   test("returns error when text is empty", async () => {
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-6",
-          type: /** @type {any} */ ("add-comment"),
+          type: "add-comment" as const,
           payload: { id: "UI-1", text: "" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bad_request")
   })
@@ -209,25 +217,25 @@ describe("add-comment handler", () => {
   test("returns error when id is missing", async () => {
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-7",
-          type: /** @type {any} */ ("add-comment"),
+          type: "add-comment" as const,
           payload: { text: "Some text" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bad_request")
   })
 
   test("returns error when bd comment command fails", async () => {
-    const gitUser = /** @type {import('vitest').Mock} */ (getGitUserName)
-    const rb = /** @type {import('vitest').Mock} */ (runBd)
+    const gitUser = getGitUserName as Mock
+    const rb = runBd as Mock
 
     gitUser.mockResolvedValueOnce("Test User")
     rb.mockResolvedValueOnce({
@@ -238,18 +246,18 @@ describe("add-comment handler", () => {
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-8",
-          type: /** @type {any} */ ("add-comment"),
+          type: "add-comment" as const,
           payload: { id: "UI-999", text: "Comment" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bd_error")
   })

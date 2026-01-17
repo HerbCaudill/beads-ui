@@ -1,7 +1,9 @@
+import type { WebSocket } from "ws"
+import type { Mock } from "vitest"
 import { createServer } from "node:http"
 import { describe, expect, test, vi } from "vitest"
-import { fetchListForSubscription } from "./list-adapters.ts"
-import { keyOf, registry } from "./subscriptions.ts"
+import { fetchListForSubscription } from "./list-adapters.js"
+import { keyOf, registry } from "./subscriptions.js"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
 // Mock adapters BEFORE importing ws.js to ensure the mock is applied
@@ -18,6 +20,24 @@ vi.mock("./list-adapters.ts", () => ({
   }),
 }))
 
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+}
+
+function makeStubSocket(): StubSocket {
+  return {
+    sent: [],
+    readyState: 1,
+    OPEN: 1,
+    send(msg: string) {
+      this.sent.push(String(msg))
+    },
+  }
+}
+
 describe("ws list subscriptions", () => {
   test("refresh emits upsert/delete after subscribe", async () => {
     vi.useFakeTimers()
@@ -27,24 +47,16 @@ describe("ws list subscriptions", () => {
       heartbeat_ms: 10000,
       refresh_debounce_ms: 50,
     })
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
-    wss.clients.add(/** @type {any} */ (sock))
+    const sock = makeStubSocket()
+    wss.clients.add(sock as unknown as WebSocket)
 
     // Initial subscribe
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "sub-2",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c2", type: "all-issues" },
         }),
       ),
@@ -54,7 +66,7 @@ describe("ws list subscriptions", () => {
     sock.sent = []
 
     // Change adapter to simulate one added, one updated, one removed
-    const mock = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mock = fetchListForSubscription as Mock
     mock.mockResolvedValueOnce({
       ok: true,
       items: [
@@ -83,25 +95,17 @@ describe("ws list subscriptions", () => {
     vi.useRealTimers()
   })
   test("subscribe-list attaches and publishes initial snapshot", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     const req = {
       id: "sub-1",
-      type: /** @type {any} */ ("subscribe-list"),
+      type: "subscribe-list" as const,
       payload: { id: "c1", type: "in-progress-issues" },
     }
-    await handleMessage(/** @type {any} */ (sock), Buffer.from(JSON.stringify(req)))
+    await handleMessage(sock as unknown as WebSocket, Buffer.from(JSON.stringify(req)))
 
     // Expect an OK reply for subscribe-list
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(true)
     expect(reply && reply.type).toBe("subscribe-list")
@@ -128,7 +132,7 @@ describe("ws list subscriptions", () => {
   })
 
   test("subscribe-list returns bd_error payload when adapter fails", async () => {
-    const mock = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mock = fetchListForSubscription as Mock
     mock.mockResolvedValueOnce({
       ok: false,
       error: {
@@ -138,25 +142,17 @@ describe("ws list subscriptions", () => {
       },
     })
 
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     const req = {
       id: "sub-error",
-      type: /** @type {any} */ ("subscribe-list"),
+      type: "subscribe-list" as const,
       payload: { id: "c-err", type: "all-issues" },
     }
 
-    await handleMessage(/** @type {any} */ (sock), Buffer.from(JSON.stringify(req)))
+    await handleMessage(sock as unknown as WebSocket, Buffer.from(JSON.stringify(req)))
 
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(false)
     expect(reply && reply.error && reply.error.code).toBe("bd_error")
@@ -165,23 +161,15 @@ describe("ws list subscriptions", () => {
   })
 
   test("unsubscribe-list detaches and disconnect sweep evicts entry", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     // Subscribe first
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "sub-1",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c1", type: "all-issues" },
         }),
       ),
@@ -194,11 +182,11 @@ describe("ws list subscriptions", () => {
 
     // Now unsubscribe
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "unsub-1",
-          type: /** @type {any} */ ("unsubscribe-list"),
+          type: "unsubscribe-list" as const,
           payload: { id: "c1" },
         }),
       ),
@@ -214,7 +202,7 @@ describe("ws list subscriptions", () => {
   test("closed-issues pre-filter applies before diff", async () => {
     const now = Date.now()
     // Configure adapter mock for this test case
-    const mock = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mock = fetchListForSubscription as Mock
     mock.mockResolvedValueOnce({
       ok: true,
       items: [
@@ -224,23 +212,15 @@ describe("ws list subscriptions", () => {
       ],
     })
 
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     const since = now - 1000
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "sub-closed",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c-closed", type: "closed-issues", params: { since } },
         }),
       ),
@@ -253,50 +233,34 @@ describe("ws list subscriptions", () => {
   })
 
   test("subscribe-list rejects unknown subscription type", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "bad-sub",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c-bad", type: "not-supported" },
         }),
       ),
     )
 
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(false)
     expect(reply && reply.error && reply.error.code).toBe("bad_request")
   })
 
   test("subscribe-list accepts issue-detail with id and publishes snapshot", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "sub-detail-1",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: {
             id: "detail:UI-1",
             type: "issue-detail",
@@ -306,7 +270,7 @@ describe("ws list subscriptions", () => {
       ),
     )
 
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(true)
     expect(reply && reply.type).toBe("subscribe-list")
@@ -326,49 +290,33 @@ describe("ws list subscriptions", () => {
   })
 
   test("subscribe-list issue-detail enforces id", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "bad-detail",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "detail:UI-X", type: "issue-detail" },
         }),
       ),
     )
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(false)
     expect(reply && reply.error && reply.error.code).toBe("bad_request")
   })
 
   test("subscribe-list closed-issues validates since param", async () => {
-    const sock = {
-      sent: /** @type {string[]} */ ([]),
-      readyState: 1,
-      OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
-        this.sent.push(String(msg))
-      },
-    }
+    const sock = makeStubSocket()
 
     await handleMessage(
-      /** @type {any} */ (sock),
+      sock as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "bad-since",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: {
             id: "c-closed",
             type: "closed-issues",
@@ -377,7 +325,7 @@ describe("ws list subscriptions", () => {
         }),
       ),
     )
-    const last = sock.sent[sock.sent.length - 1]
+    const last = sock.sent[sock.sent.length - 1]!
     const reply = JSON.parse(last)
     expect(reply && reply.ok).toBe(false)
     expect(reply && reply.error && reply.error.code).toBe("bad_request")

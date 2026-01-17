@@ -1,6 +1,8 @@
+import type { WebSocket } from "ws"
+import type { Mock } from "vitest"
 import { createServer } from "node:http"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { fetchListForSubscription } from "./list-adapters.ts"
+import { fetchListForSubscription } from "./list-adapters.js"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
 vi.mock("./list-adapters.ts", () => ({
@@ -19,6 +21,13 @@ beforeEach(() => {
   vi.useFakeTimers()
 })
 
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+}
+
 describe("ws list refresh coalescing", () => {
   test("schedules one refresh per burst for active specs", async () => {
     const server = createServer()
@@ -29,51 +38,49 @@ describe("ws list refresh coalescing", () => {
     })
 
     // Two connected clients
-    const a = {
-      sent: /** @type {string[]} */ ([]),
+    const a: StubSocket = {
+      sent: [],
       readyState: 1,
       OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
+      send(msg: string) {
         this.sent.push(String(msg))
       },
     }
-    const b = {
-      sent: /** @type {string[]} */ ([]),
+    const b: StubSocket = {
+      sent: [],
       readyState: 1,
       OPEN: 1,
-      /** @param {string} msg */
-      send(msg) {
+      send(msg: string) {
         this.sent.push(String(msg))
       },
     }
-    wss.clients.add(/** @type {any} */ (a))
-    wss.clients.add(/** @type {any} */ (b))
+    wss.clients.add(a as unknown as WebSocket)
+    wss.clients.add(b as unknown as WebSocket)
 
     // Subscribe to two different lists
     await handleMessage(
-      /** @type {any} */ (a),
+      a as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "l1",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c1", type: "all-issues" },
         }),
       ),
     )
     await handleMessage(
-      /** @type {any} */ (b),
+      b as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "l2",
-          type: /** @type {any} */ ("subscribe-list"),
+          type: "subscribe-list" as const,
           payload: { id: "c2", type: "in-progress-issues" },
         }),
       ),
     )
 
     // Clear initial refresh calls from subscribe-list
-    const mock = /** @type {import('vitest').Mock} */ (fetchListForSubscription)
+    const mock = fetchListForSubscription as Mock
     mock.mockClear()
 
     // Simulate a burst of DB change events

@@ -2,12 +2,11 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
-import { findNearestBeadsDb, resolveDbPath } from "./db.ts"
+import { findNearestBeadsDb, resolveDbPath } from "./db.js"
 
-/** @type {string[]} */
-const tmps = []
+const tmps: string[] = []
 
-function mkdtemp() {
+function mkdtemp(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "beads-ui-test-"))
   tmps.push(dir)
   return dir

@@ -1,20 +1,26 @@
+import type { FSWatcher, WatchEventType } from "node:fs"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { watchDb } from "./watcher.ts"
+import { watchDb } from "./watcher.js"
 
-/** @type {{ dir: string, cb: (event: string, filename?: string) => void, w: { close: () => void } }[]} */
-const watchers = []
+interface MockWatcher {
+  dir: string
+  cb: (event: WatchEventType, filename?: string | null) => void
+  w: { close: () => void }
+}
+
+const watchers: MockWatcher[] = []
 
 vi.mock("node:fs", () => {
-  const watch = vi.fn((dir, _opts, cb) => {
+  const watch = vi.fn((dir: string, _opts: unknown, cb: MockWatcher["cb"]) => {
     // Minimal event emitter interface for FSWatcher
-    const handlers = /** @type {{ close: Array<() => void> }} */ ({
+    const handlers: { close: Array<() => void> } = {
       close: [],
-    })
+    }
     const w = {
       close: () => handlers.close.forEach(fn => fn()),
     }
     watchers.push({ dir, cb, w })
-    return /** @type {any} */ (w)
+    return w as unknown as FSWatcher
   })
   return { default: { watch }, watch }
 })
@@ -27,13 +33,13 @@ beforeEach(() => {
 
 describe("watchDb", () => {
   test("debounces rapid change events", () => {
-    const calls = []
+    const calls: null[] = []
     const handle = watchDb("/repo", () => calls.push(null), {
       debounce_ms: 100,
       explicit_db: "/repo/.beads/ui.db",
     })
     expect(watchers.length).toBe(1)
-    const { cb } = watchers[0]
+    const { cb } = watchers[0]!
 
     // Fire multiple changes in quick succession
     cb("change", "ui.db")
@@ -52,12 +58,12 @@ describe("watchDb", () => {
   })
 
   test("ignores other filenames", () => {
-    const calls = []
+    const calls: null[] = []
     const handle = watchDb("/repo", () => calls.push(null), {
       debounce_ms: 50,
       explicit_db: "/repo/.beads/ui.db",
     })
-    const { cb } = watchers[0]
+    const { cb } = watchers[0]!
     cb("change", "something-else.db")
     vi.advanceTimersByTime(60)
     expect(calls.length).toBe(0)
@@ -65,20 +71,20 @@ describe("watchDb", () => {
   })
 
   test("rebind attaches to new db path", () => {
-    const calls = []
+    const calls: null[] = []
     const handle = watchDb("/repo", () => calls.push(null), {
       debounce_ms: 50,
       explicit_db: "/repo/.beads/ui.db",
     })
     expect(watchers.length).toBe(1)
-    const first = watchers[0]
+    const first = watchers[0]!
 
     // Rebind to a different DB path
     handle.rebind({ explicit_db: "/other/.beads/alt.db" })
 
     // A new watcher is created
     expect(watchers.length).toBe(2)
-    const second = watchers[1]
+    const second = watchers[1]!
 
     // Old watcher should ignore new file name
     first.cb("change", "ui.db")
@@ -94,13 +100,13 @@ describe("watchDb", () => {
   })
 
   test("ignores changes during cooldown window", () => {
-    const calls = []
+    const calls: null[] = []
     const handle = watchDb("/repo", () => calls.push(null), {
       debounce_ms: 10,
       cooldown_ms: 100,
       explicit_db: "/repo/.beads/ui.db",
     })
-    const { cb } = watchers[0]
+    const { cb } = watchers[0]!
 
     cb("change", "ui.db")
     vi.advanceTimersByTime(10)

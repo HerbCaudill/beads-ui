@@ -1,5 +1,7 @@
+import type { WebSocket } from "ws"
+import type { Mock } from "vitest"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBd } from "./bd.ts"
+import { runBd } from "./bd.js"
 import { handleMessage } from "./ws.js"
 
 vi.mock("./bd.ts", () => ({
@@ -8,13 +10,19 @@ vi.mock("./bd.ts", () => ({
   getGitUserName: vi.fn(),
 }))
 
-function makeStubSocket() {
+interface StubSocket {
+  sent: string[]
+  readyState: number
+  OPEN: number
+  send: (msg: string) => void
+}
+
+function makeStubSocket(): StubSocket {
   return {
-    sent: /** @type {string[]} */ ([]),
+    sent: [],
     readyState: 1,
     OPEN: 1,
-    /** @param {string} msg */
-    send(msg) {
+    send(msg: string) {
       this.sent.push(String(msg))
     },
   }
@@ -26,16 +34,16 @@ describe("delete-issue handler", () => {
   })
 
   test("sends delete-issue and receives success", async () => {
-    const rb = /** @type {import('vitest').Mock} */ (runBd)
+    const rb = runBd as Mock
     rb.mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-1",
-          type: /** @type {any} */ ("delete-issue"),
+          type: "delete-issue" as const,
           payload: { id: "beads-abc123" },
         }),
       ),
@@ -46,14 +54,14 @@ describe("delete-issue handler", () => {
 
     // Check response
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(true)
     expect(reply.payload.deleted).toBe(true)
     expect(reply.payload.id).toBe("beads-abc123")
   })
 
   test("returns error when bd delete fails", async () => {
-    const rb = /** @type {import('vitest').Mock} */ (runBd)
+    const rb = runBd as Mock
     rb.mockResolvedValueOnce({
       code: 1,
       stdout: "",
@@ -62,18 +70,18 @@ describe("delete-issue handler", () => {
 
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-2",
-          type: /** @type {any} */ ("delete-issue"),
+          type: "delete-issue" as const,
           payload: { id: "beads-notfound" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bd_error")
     expect(reply.error.message).toBe("Issue not found")
@@ -82,18 +90,18 @@ describe("delete-issue handler", () => {
   test("returns error when id is missing", async () => {
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-3",
-          type: /** @type {any} */ ("delete-issue"),
+          type: "delete-issue" as const,
           payload: {},
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bad_request")
   })
@@ -101,18 +109,18 @@ describe("delete-issue handler", () => {
   test("returns error when id is empty string", async () => {
     const ws = makeStubSocket()
     await handleMessage(
-      /** @type {any} */ (ws),
+      ws as unknown as WebSocket,
       Buffer.from(
         JSON.stringify({
           id: "req-4",
-          type: /** @type {any} */ ("delete-issue"),
+          type: "delete-issue" as const,
           payload: { id: "" },
         }),
       ),
     )
 
     expect(ws.sent.length).toBe(1)
-    const reply = JSON.parse(ws.sent[0])
+    const reply = JSON.parse(ws.sent[0]!)
     expect(reply.ok).toBe(false)
     expect(reply.error.code).toBe("bad_request")
   })

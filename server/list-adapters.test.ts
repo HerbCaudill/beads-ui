@@ -1,12 +1,15 @@
+import type { Mock } from "vitest"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBdJson } from "./bd.ts"
-import { fetchListForSubscription, mapSubscriptionToBdArgs } from "./list-adapters.ts"
+import { runBdJson } from "./bd.js"
+import { fetchListForSubscription, mapSubscriptionToBdArgs } from "./list-adapters.js"
 
 vi.mock("./bd.ts", () => ({ runBdJson: vi.fn() }))
 
+const runBdJsonMock = runBdJson as Mock
+
 describe("list adapters for subscription types", () => {
   beforeEach(() => {
-    /** @type {import('vitest').Mock} */ runBdJson.mockReset()
+    runBdJsonMock.mockReset()
   })
 
   test("mapSubscriptionToBdArgs returns args for all-issues", () => {
@@ -49,7 +52,7 @@ describe("list adapters for subscription types", () => {
   })
 
   test("fetchListForSubscription returns normalized items (Date.parse)", async () => {
-    /** @type {import('vitest').Mock} */ runBdJson.mockResolvedValue({
+    runBdJsonMock.mockResolvedValue({
       code: 0,
       stdoutJson: [
         {
@@ -90,7 +93,7 @@ describe("list adapters for subscription types", () => {
   })
 
   test("fetchListForSubscription surfaces bd error", async () => {
-    /** @type {import('vitest').Mock} */ runBdJson.mockResolvedValue({
+    runBdJsonMock.mockResolvedValue({
       code: 2,
       stderr: "boom",
     })
@@ -104,7 +107,7 @@ describe("list adapters for subscription types", () => {
   })
 
   test("fetchListForSubscription returns error for unknown type", async () => {
-    const res = await fetchListForSubscription(/** @type {any} */ ({ type: "unknown" }))
+    const res = await fetchListForSubscription({ type: "unknown" } as never)
     expect(res.ok).toBe(false)
     if (!res.ok) {
       expect(res.error.code).toBe("bad_request")
