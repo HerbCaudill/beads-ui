@@ -1,6 +1,3 @@
-/**
- * @import { MessageType } from '../protocol.js'
- */
 import { describe, expect, test, vi } from "vitest"
 import { createSubscriptionStore } from "./subscriptions-store.js"
 

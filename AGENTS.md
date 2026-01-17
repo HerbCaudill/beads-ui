@@ -68,6 +68,7 @@ Never update `CHANGES.md`.
 - **TypeScript Migration (in progress)**: Converting modules from `.js` to `.ts`
   with full runtime code. Converted modules:
   - `app/data/providers.ts` - Data layer for issue mutations
+  - `app/data/subscriptions-store.ts` - Client-side list subscription store
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

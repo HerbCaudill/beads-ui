@@ -1,9 +1,4 @@
 /**
- * @import { MessageType } from '../protocol.js'
- */
-import { debug } from "../utils/logging.js"
-
-/**
  * Client-side list subscription store.
  *
  * Maintains per-subscription state keyed by client-provided `id`.
@@ -11,21 +6,67 @@ import { debug } from "../utils/logging.js"
  * selectors for rendering.
  */
 
+import type { MessageType } from "../../types/protocol.js"
+import type { SubscriptionSpec } from "../../types/list-adapters.js"
+import { debug } from "../utils/logging.js"
+
 /**
- * @typedef {{ type: string, params?: Record<string, string|number|boolean> }} SubscriptionSpec
+ * Delta object for subscription updates.
  */
+export interface SubscriptionDelta {
+  added: string[]
+  updated: string[]
+  removed: string[]
+}
+
+/**
+ * Internal subscription entry tracking items for a client.
+ */
+interface SubscriptionEntry {
+  key: string
+  itemsById: Map<string, true>
+}
+
+/**
+ * Transport function signature for sending messages to the server.
+ */
+export type SubscriptionTransport = (type: MessageType, payload?: unknown) => Promise<unknown>
+
+/**
+ * Selectors interface for querying subscription state.
+ */
+export interface SubscriptionSelectors {
+  /** Get an array of item ids for a subscription. */
+  getIds: (clientId: string) => string[]
+  /** Check if an id exists in a subscription. */
+  has: (clientId: string, id: string) => boolean
+  /** Count items for a subscription. */
+  count: (clientId: string) => number
+  /** Return a shallow object copy `{ [id]: true }` for rendering helpers. */
+  getItemsById: (clientId: string) => Record<string, true>
+}
+
+/**
+ * Subscription store interface returned by createSubscriptionStore.
+ */
+export interface SubscriptionStore {
+  /** Subscribe to a list spec with a client-provided id. Returns an unsubscribe function. */
+  subscribeList: (clientId: string, spec: SubscriptionSpec) => Promise<() => Promise<void>>
+  /** Apply a delta to all client ids mapped to a given key (for testing/diagnostics). */
+  _applyDelta: (key: string, delta: SubscriptionDelta) => void
+  /** Generate a stable subscription key string from a spec (for testing/diagnostics). */
+  _subKeyOf: (spec: SubscriptionSpec) => string
+  /** Selectors for querying subscription state. */
+  selectors: SubscriptionSelectors
+}
 
 /**
  * Generate a stable subscription key string from a spec.
  * Mirrors server `keyOf` implementation (sorted params, URLSearchParams).
- *
- * @param {SubscriptionSpec} spec
- * @returns {string}
  */
-export function subKeyOf(spec) {
+export function subKeyOf(spec: SubscriptionSpec): string {
   const type = String(spec.type || "").trim()
-  /** @type {Record<string, string>} */
-  const flat = {}
+  const flat: Record<string, string> = {}
   if (spec.params && typeof spec.params === "object") {
     const keys = Object.keys(spec.params).sort()
     for (const k of keys) {
@@ -45,22 +86,17 @@ export function subKeyOf(spec) {
  *
  * Selectors are synchronous and return derived state by client id.
  *
- * @param {(type: MessageType, payload?: unknown) => Promise<unknown>} send - ws send.
+ * @param send - ws send function.
  */
-export function createSubscriptionStore(send) {
+export function createSubscriptionStore(send: SubscriptionTransport): SubscriptionStore {
   const log = debug("subs")
-  /** @type {Map<string, { key: string, itemsById: Map<string, true> }>} */
-  const subs_by_id = new Map()
-  /** @type {Map<string, Set<string>>} */
-  const ids_by_key = new Map()
+  const subs_by_id = new Map<string, SubscriptionEntry>()
+  const ids_by_key = new Map<string, Set<string>>()
 
   /**
    * Apply a delta to all client ids mapped to a given key.
-   *
-   * @param {string} key
-   * @param {{ added: string[], updated: string[], removed: string[] }} delta
    */
-  function applyDelta(key, delta) {
+  function applyDelta(key: string, delta: SubscriptionDelta): void {
     log(
       "applyDelta %s +%d ~%d -%d",
       key,
@@ -104,12 +140,11 @@ export function createSubscriptionStore(send) {
    * Subscribe to a list spec with a client-provided id.
    * Returns an unsubscribe function.
    * Creates an empty items store immediately; server will publish deltas.
-   *
-   * @param {string} client_id
-   * @param {SubscriptionSpec} spec
-   * @returns {Promise<() => Promise<void>>}
    */
-  async function subscribeList(client_id, spec) {
+  async function subscribeList(
+    client_id: string,
+    spec: SubscriptionSpec,
+  ): Promise<() => Promise<void>> {
     const key = subKeyOf(spec)
     log("subscribe %s key=%s", client_id, key)
     // Initialize local entry immediately to capture early deltas
@@ -182,14 +217,11 @@ export function createSubscriptionStore(send) {
   /**
    * Selectors by client id.
    */
-  const selectors = {
+  const selectors: SubscriptionSelectors = {
     /**
      * Get an array of item ids for a subscription.
-     *
-     * @param {string} client_id
-     * @returns {string[]}
      */
-    getIds(client_id) {
+    getIds(client_id: string): string[] {
       const entry = subs_by_id.get(client_id)
       if (!entry) {
         return []
@@ -198,12 +230,8 @@ export function createSubscriptionStore(send) {
     },
     /**
      * Check if an id exists in a subscription.
-     *
-     * @param {string} client_id
-     * @param {string} id
-     * @returns {boolean}
      */
-    has(client_id, id) {
+    has(client_id: string, id: string): boolean {
       const entry = subs_by_id.get(client_id)
       if (!entry) {
         return false
@@ -212,24 +240,17 @@ export function createSubscriptionStore(send) {
     },
     /**
      * Count items for a subscription.
-     *
-     * @param {string} client_id
-     * @returns {number}
      */
-    count(client_id) {
+    count(client_id: string): number {
       const entry = subs_by_id.get(client_id)
       return entry ? entry.itemsById.size : 0
     },
     /**
      * Return a shallow object copy `{ [id]: true }` for rendering helpers.
-     *
-     * @param {string} client_id
-     * @returns {Record<string, true>}
      */
-    getItemsById(client_id) {
+    getItemsById(client_id: string): Record<string, true> {
       const entry = subs_by_id.get(client_id)
-      /** @type {Record<string, true>} */
-      const out = {}
+      const out: Record<string, true> = {}
       if (!entry) {
         return out
       }
