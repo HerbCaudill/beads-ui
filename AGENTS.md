@@ -93,6 +93,12 @@ Never update `CHANGES.md`.
   - `app/views/board.ts` - Kanban board view component with drag-drop support
   - `app/views/list.ts` - Issues list view component with filtering and inline editing
   - `app/views/epics.ts` - Epics view component with expandable epic groups
+  - `app/views/nav.ts` - Top navigation tabs component
+  - `app/views/issue-dialog.ts` - Issue detail dialog wrapper with focus management
+  - `app/views/issue-row.ts` - Reusable issue row renderer with inline editing
+  - `app/views/new-issue-dialog.ts` - New issue creation dialog
+  - `app/views/workspace-picker.ts` - Workspace selection dropdown
+  - `app/views/fatal-error-dialog.ts` - Fatal error dialog for backend failures
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)

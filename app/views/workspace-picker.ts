@@ -1,44 +1,51 @@
-import { html, render } from "lit-html"
+import { html, render, TemplateResult } from "lit-html"
+import type { Store, WorkspaceInfo } from "../state.js"
 import { debug } from "../utils/logging.js"
-
-/**
- * @typedef {import('../state.js').WorkspaceInfo} WorkspaceInfo
- */
 
 /**
  * Extract the project name from a workspace path. Returns just the directory
  * name (e.g., 'myproject' from '/home/user/code/myproject').
  *
- * @param {string} workspace_path
- * @returns {string}
+ * @param workspace_path - Full path to workspace.
+ * @returns Project directory name.
  */
-function getProjectName(workspace_path) {
+function getProjectName(workspace_path: string): string {
   if (!workspace_path) return "Unknown"
   const parts = workspace_path.split("/").filter(Boolean)
-  return parts.length > 0 ? parts[parts.length - 1] : "Unknown"
+  return parts.length > 0 ? parts[parts.length - 1]! : "Unknown"
+}
+
+/**
+ * View API returned by createWorkspacePicker.
+ */
+export interface WorkspacePickerAPI {
+  destroy: () => void
 }
 
 /**
  * Create the workspace picker dropdown component.
  *
- * @param {HTMLElement} mount_element
- * @param {{ getState: () => any, subscribe: (fn: (s: any) => void) => () => void }} store
- * @param {(workspace_path: string) => Promise<void>} onWorkspaceChange
+ * @param mount_element - Element to render into.
+ * @param store - Application state store.
+ * @param onWorkspaceChange - Callback when workspace is changed.
+ * @returns View API with destroy method.
  */
-export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
+export function createWorkspacePicker(
+  mount_element: HTMLElement,
+  store: Store,
+  onWorkspaceChange: (workspace_path: string) => Promise<void>,
+): WorkspacePickerAPI {
   const log = debug("views:workspace-picker")
-  /** @type {(() => void) | null} */
-  let unsubscribe = null
-  /** @type {boolean} */
+  let unsubscribe: (() => void) | null = null
   let is_switching = false
 
   /**
    * Handle workspace selection change.
    *
-   * @param {Event} ev
+   * @param ev - Change event from select element.
    */
-  async function onChange(ev) {
-    const select = /** @type {HTMLSelectElement} */ (ev.target)
+  async function onChange(ev: Event): Promise<void> {
+    const select = ev.target as HTMLSelectElement
     const new_path = select.value
     const s = store.getState()
     const current_path = s.workspace?.current?.path || ""
@@ -58,7 +65,7 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
     }
   }
 
-  function template() {
+  function template(): TemplateResult {
     const s = store.getState()
     const current = s.workspace?.current
     const available = s.workspace?.available || []
@@ -70,10 +77,11 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
 
     // If only one workspace, show it as a simple label
     if (available.length === 1) {
-      const name = getProjectName(available[0].path)
+      const ws = available[0]!
+      const name = getProjectName(ws.path)
       return html`
         <div class="workspace-picker workspace-picker--single">
-          <span class="workspace-picker__label" title="${available[0].path}">${name}</span>
+          <span class="workspace-picker__label" title="${ws.path}">${name}</span>
         </div>
       `
     }
@@ -89,7 +97,7 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
           aria-label="Select project workspace"
         >
           ${available.map(
-            (/** @type {WorkspaceInfo} */ ws) => html`
+            (ws: WorkspaceInfo) => html`
               <option value="${ws.path}" ?selected=${ws.path === current_path} title="${ws.path}">
                 ${getProjectName(ws.path)}
               </option>
@@ -103,7 +111,7 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
     `
   }
 
-  function doRender() {
+  function doRender(): void {
     render(template(), mount_element)
   }
 
@@ -111,7 +119,7 @@ export function createWorkspacePicker(mount_element, store, onWorkspaceChange) {
   unsubscribe = store.subscribe(() => doRender())
 
   return {
-    destroy() {
+    destroy(): void {
       if (unsubscribe) {
         unsubscribe()
         unsubscribe = null

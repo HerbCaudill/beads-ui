@@ -1,12 +1,21 @@
 /**
+ * View API returned by createFatalErrorDialog.
+ */
+export interface FatalErrorDialogAPI {
+  open: (title: string, message: string, detail?: string) => void
+  close: () => void
+  getElement: () => HTMLDialogElement
+}
+
+/**
  * Create and manage a fatal error dialog that surfaces stderr output from
  * backend failures (e.g., bd command errors).
  *
- * @param {HTMLElement} mount_element
- * @returns {{ open: (title: string, message: string, detail?: string) => void, close: () => void, getElement: () => HTMLDialogElement }}
+ * @param mount_element - Element to attach the dialog to.
+ * @returns Dialog API with open, close, and getElement methods.
  */
-export function createFatalErrorDialog(mount_element) {
-  const dialog = document.createElement("dialog")
+export function createFatalErrorDialog(mount_element: HTMLElement): FatalErrorDialogAPI {
+  const dialog = document.createElement("dialog") as HTMLDialogElement
   dialog.id = "fatal-error-dialog"
   dialog.setAttribute("role", "alertdialog")
   dialog.setAttribute("aria-modal", "true")
@@ -26,13 +35,13 @@ export function createFatalErrorDialog(mount_element) {
     </div>`
   mount_element.appendChild(dialog)
 
-  const title_el = dialog.querySelector("#fatal-error-title")
-  const message_el = dialog.querySelector("#fatal-error-message")
-  const detail_el = dialog.querySelector("#fatal-error-detail")
-  const reload_btn = dialog.querySelector("#fatal-error-reload")
-  const close_btn = dialog.querySelector("#fatal-error-close")
+  const title_el = dialog.querySelector("#fatal-error-title") as HTMLHeadingElement | null
+  const message_el = dialog.querySelector("#fatal-error-message") as HTMLParagraphElement | null
+  const detail_el = dialog.querySelector("#fatal-error-detail") as HTMLPreElement | null
+  const reload_btn = dialog.querySelector("#fatal-error-reload") as HTMLButtonElement | null
+  const close_btn = dialog.querySelector("#fatal-error-close") as HTMLButtonElement | null
 
-  const close = () => {
+  const close = (): void => {
     if (typeof dialog.close === "function") {
       try {
         dialog.close()
@@ -44,11 +53,13 @@ export function createFatalErrorDialog(mount_element) {
   }
 
   /**
-   * @param {string} title
-   * @param {string} message
-   * @param {string} [detail]
+   * Open the dialog with error details.
+   *
+   * @param title - Dialog title.
+   * @param message - Error message.
+   * @param detail - Optional detailed error information.
    */
-  const open = (title, message, detail = "") => {
+  const open = (title: string, message: string, detail: string = ""): void => {
     if (title_el) {
       title_el.textContent = title || "Unexpected Error"
     }
@@ -89,7 +100,7 @@ export function createFatalErrorDialog(mount_element) {
     close_btn.addEventListener("click", () => close())
   }
 
-  dialog.addEventListener("cancel", ev => {
+  dialog.addEventListener("cancel", (ev: Event) => {
     ev.preventDefault()
     close()
   })
@@ -97,7 +108,7 @@ export function createFatalErrorDialog(mount_element) {
   return {
     open,
     close,
-    getElement() {
+    getElement(): HTMLDialogElement {
       return dialog
     },
   }

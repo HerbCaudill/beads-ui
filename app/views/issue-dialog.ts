@@ -5,19 +5,35 @@ import { createIssueIdRenderer } from "../utils/issue-id-renderer.js"
 // Ensures accessibility, backdrop click to close, and Esc handling.
 
 /**
- * @typedef {{ getState: () => { selected_id: string|null } }} Store
+ * Store interface for reading selected issue.
  */
+interface Store {
+  getState: () => { selected_id: string | null }
+}
+
+/**
+ * View API returned by createIssueDialog.
+ */
+export interface IssueDialogAPI {
+  open: (id: string) => void
+  close: () => void
+  getMount: () => HTMLElement
+}
 
 /**
  * Create and manage the Issue Details dialog.
  *
- * @param {HTMLElement} mount_element - Container to attach the <dialog> to (e.g., #detail-panel)
- * @param {Store} store - Read-only access to app state
- * @param {() => void} onClose - Called when dialog requests close (backdrop/esc/button)
- * @returns {{ open: (id: string) => void, close: () => void, getMount: () => HTMLElement }}
+ * @param mount_element - Container to attach the <dialog> to (e.g., #detail-panel).
+ * @param store - Read-only access to app state.
+ * @param onClose - Called when dialog requests close (backdrop/esc/button).
+ * @returns Dialog API with open, close, and getMount methods.
  */
-export function createIssueDialog(mount_element, store, onClose) {
-  const dialog = document.createElement("dialog")
+export function createIssueDialog(
+  mount_element: HTMLElement,
+  store: Store,
+  onClose: () => void,
+): IssueDialogAPI {
+  const dialog = document.createElement("dialog") as HTMLDialogElement
   dialog.id = "issue-dialog"
   dialog.setAttribute("role", "dialog")
   dialog.setAttribute("aria-modal", "true")
@@ -37,38 +53,39 @@ export function createIssueDialog(mount_element, store, onClose) {
 
   mount_element.appendChild(dialog)
 
-  const body_mount = /** @type {HTMLElement} */ (dialog.querySelector("#issue-dialog-body"))
-  const title_el = /** @type {HTMLElement} */ (dialog.querySelector("#issue-dialog-title"))
-  const btn_close = /** @type {HTMLButtonElement} */ (dialog.querySelector(".issue-dialog__close"))
+  const body_mount = dialog.querySelector("#issue-dialog-body") as HTMLElement
+  const title_el = dialog.querySelector("#issue-dialog-title") as HTMLElement
+  const btn_close = dialog.querySelector(".issue-dialog__close") as HTMLButtonElement
 
   /**
-   * @param {string} id
+   * Set the dialog title with a copyable ID renderer.
+   *
+   * @param id - Issue ID to display.
    */
-  function setTitle(id) {
+  function setTitle(id: string): void {
     // Use copyable ID renderer but keep visible text as raw id for tests/clarity
     title_el.replaceChildren()
     title_el.appendChild(createIssueIdRenderer(id))
   }
 
   // Backdrop click: when clicking the dialog itself (outside container), close
-  dialog.addEventListener("mousedown", ev => {
+  dialog.addEventListener("mousedown", (ev: MouseEvent) => {
     if (ev.target === dialog) {
       ev.preventDefault()
       requestClose()
     }
   })
   // Esc key produces a cancel event on <dialog>
-  dialog.addEventListener("cancel", ev => {
+  dialog.addEventListener("cancel", (ev: Event) => {
     ev.preventDefault()
     requestClose()
   })
   // Close button
   btn_close.addEventListener("click", () => requestClose())
 
-  /** @type {HTMLElement | null} */
-  let last_focus = null
+  let last_focus: HTMLElement | null = null
 
-  function requestClose() {
+  function requestClose(): void {
     try {
       if (typeof dialog.close === "function") {
         dialog.close()
@@ -88,9 +105,11 @@ export function createIssueDialog(mount_element, store, onClose) {
   }
 
   /**
-   * @param {string} id
+   * Open the dialog for a specific issue.
+   *
+   * @param id - Issue ID to display.
    */
-  function open(id) {
+  function open(id: string): void {
     // Capture currently focused element to restore after closing
     try {
       const ae = document.activeElement
@@ -123,7 +142,7 @@ export function createIssueDialog(mount_element, store, onClose) {
     }
   }
 
-  function close() {
+  function close(): void {
     try {
       if (typeof dialog.close === "function") {
         dialog.close()
@@ -136,7 +155,7 @@ export function createIssueDialog(mount_element, store, onClose) {
     restoreFocus()
   }
 
-  function restoreFocus() {
+  function restoreFocus(): void {
     try {
       if (last_focus && document.contains(last_focus)) {
         last_focus.focus()
@@ -151,7 +170,7 @@ export function createIssueDialog(mount_element, store, onClose) {
   return {
     open,
     close,
-    getMount() {
+    getMount(): HTMLElement {
       return body_mount
     },
   }

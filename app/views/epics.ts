@@ -1,7 +1,7 @@
 import { html, render, TemplateResult } from "lit-html"
 import { createListSelectors, IssueStores, ListSelectors } from "../data/list-selectors.js"
 import { createIssueIdRenderer } from "../utils/issue-id-renderer.js"
-import { createIssueRowRenderer } from "./issue-row.js"
+import { createIssueRowRenderer, IssueUpdatePatch } from "./issue-row.js"
 import type { IssueLite } from "../../types/issues.js"
 
 /**
@@ -200,7 +200,7 @@ export function createEpicsView(
     `
   }
 
-  async function updateInline(id: string, patch: Record<string, unknown>): Promise<void> {
+  async function updateInline(id: string, patch: IssueUpdatePatch): Promise<void> {
     try {
       await data.updateIssue({ id, ...patch })
       // Re-render; view will update on subsequent push

@@ -1,17 +1,62 @@
 import { ISSUE_TYPES, typeLabel } from "../utils/issue-type.js"
 import { priority_levels } from "../utils/priority.js"
+import type { MessageType } from "../protocol.js"
+import type { IssueLite } from "../../types/issues.js"
+
+/**
+ * Transport function type for sending messages.
+ */
+type SendFn = (type: MessageType, payload?: unknown) => Promise<unknown>
+
+/**
+ * Router interface for navigation.
+ */
+interface Router {
+  gotoIssue: (id: string) => void
+}
+
+/**
+ * Store interface for state management.
+ */
+interface Store {
+  setState: (patch: { selected_id?: string | null }) => void
+  getState: () => { selected_id: string | null }
+}
+
+/**
+ * View API returned by createNewIssueDialog.
+ */
+export interface NewIssueDialogAPI {
+  open: () => void
+  close: () => void
+}
+
+/**
+ * Create issue payload structure.
+ */
+interface CreateIssuePayload {
+  title: string
+  type?: string
+  priority?: number
+  description?: string
+}
 
 /**
  * Create and manage the New Issue dialog (native <dialog>).
  *
- * @param {HTMLElement} mount_element - Container to attach dialog (e.g., main#app)
- * @param {(type: import('../protocol.js').MessageType, payload?: unknown) => Promise<unknown>} sendFn - Transport function
- * @param {{ gotoIssue: (id: string) => void }} router - Router for opening details after create
- * @param {{ setState: (patch: any) => void, getState: () => any }} [store]
- * @returns {{ open: () => void, close: () => void }}
+ * @param mount_element - Container to attach dialog (e.g., main#app).
+ * @param sendFn - Transport function for sending messages.
+ * @param router - Router for opening details after create.
+ * @param store - Optional store for state management.
+ * @returns Dialog API with open and close methods.
  */
-export function createNewIssueDialog(mount_element, sendFn, router, store) {
-  const dialog = /** @type {HTMLDialogElement} */ (document.createElement("dialog"))
+export function createNewIssueDialog(
+  mount_element: HTMLElement,
+  sendFn: SendFn,
+  router: Router,
+  store?: Store,
+): NewIssueDialogAPI {
+  const dialog = document.createElement("dialog") as HTMLDialogElement
   dialog.id = "new-issue-dialog"
   dialog.setAttribute("role", "dialog")
   dialog.setAttribute("aria-modal", "true")
@@ -52,21 +97,19 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
 
   mount_element.appendChild(dialog)
 
-  const form = /** @type {HTMLFormElement} */ (dialog.querySelector("#new-issue-form"))
-  const input_title = /** @type {HTMLInputElement} */ (dialog.querySelector("#new-title"))
-  const sel_type = /** @type {HTMLSelectElement} */ (dialog.querySelector("#new-type"))
-  const sel_priority = /** @type {HTMLSelectElement} */ (dialog.querySelector("#new-priority"))
-  const input_labels = /** @type {HTMLInputElement} */ (dialog.querySelector("#new-labels"))
-  const input_description = /** @type {HTMLTextAreaElement} */ (
-    dialog.querySelector("#new-description")
-  )
-  const error_box = /** @type {HTMLDivElement} */ (dialog.querySelector("#new-issue-error"))
-  const btn_cancel = /** @type {HTMLButtonElement} */ (dialog.querySelector("#btn-cancel"))
-  const btn_create = /** @type {HTMLButtonElement} */ (dialog.querySelector("#btn-create"))
-  const btn_close = /** @type {HTMLButtonElement} */ (dialog.querySelector(".new-issue__close"))
+  const form = dialog.querySelector("#new-issue-form") as HTMLFormElement
+  const input_title = dialog.querySelector("#new-title") as HTMLInputElement
+  const sel_type = dialog.querySelector("#new-type") as HTMLSelectElement
+  const sel_priority = dialog.querySelector("#new-priority") as HTMLSelectElement
+  const input_labels = dialog.querySelector("#new-labels") as HTMLInputElement
+  const input_description = dialog.querySelector("#new-description") as HTMLTextAreaElement
+  const error_box = dialog.querySelector("#new-issue-error") as HTMLDivElement
+  const btn_cancel = dialog.querySelector("#btn-cancel") as HTMLButtonElement
+  const btn_create = dialog.querySelector("#btn-create") as HTMLButtonElement
+  const btn_close = dialog.querySelector(".new-issue__close") as HTMLButtonElement
 
   // Populate selects
-  function populateSelects() {
+  function populateSelects(): void {
     sel_type.replaceChildren()
     // Empty option to allow leaving type unspecified
     const optEmpty = document.createElement("option")
@@ -91,7 +134,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
   }
   populateSelects()
 
-  function requestClose() {
+  function requestClose(): void {
     try {
       if (typeof dialog.close === "function") {
         dialog.close()
@@ -104,9 +147,11 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
   }
 
   /**
-   * @param {boolean} is_busy
+   * Set busy state for form controls.
+   *
+   * @param is_busy - Whether the form is in a busy state.
    */
-  function setBusy(is_busy) {
+  function setBusy(is_busy: boolean): void {
     input_title.disabled = is_busy
     sel_type.disabled = is_busy
     sel_priority.disabled = is_busy
@@ -117,18 +162,20 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     btn_create.textContent = is_busy ? "Creating…" : "Create"
   }
 
-  function clearError() {
+  function clearError(): void {
     error_box.textContent = ""
   }
 
   /**
-   * @param {string} msg
+   * Display an error message.
+   *
+   * @param msg - Error message to display.
    */
-  function setError(msg) {
+  function setError(msg: string): void {
     error_box.textContent = msg
   }
 
-  function loadDefaults() {
+  function loadDefaults(): void {
     try {
       const t = window.localStorage.getItem("beads-ui.new.type")
       if (t) {
@@ -148,7 +195,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     }
   }
 
-  function saveDefaults() {
+  function saveDefaults(): void {
     const t = sel_type.value || ""
     const p = sel_priority.value || ""
     if (t.length > 0) {
@@ -162,19 +209,18 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
   /**
    * Extract numeric suffix from an id like "UI-123"; return -1 when absent.
    *
-   * @param {string} id
+   * @param id - Issue ID.
+   * @returns Numeric suffix or -1.
    */
-  function idNumeric(id) {
+  function idNumeric(id: string): number {
     const m = /-(\d+)$/.exec(String(id || ""))
     return m && m[1] ? Number(m[1]) : -1
   }
 
   /**
    * Submit handler: validate, create, then open the created issue details.
-   *
-   * @returns {Promise<void>}
    */
-  async function createNow() {
+  async function createNow(): Promise<void> {
     clearError()
     const title = String(input_title.value || "").trim()
     if (title.length === 0) {
@@ -195,8 +241,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
       .map(s => s.trim())
       .filter(s => s.length > 0)
 
-    /** @type {{ title: string, type?: string, priority?: number, description?: string }} */
-    const payload = { title }
+    const payload: CreateIssuePayload = { title }
     if (type.length > 0) {
       payload.type = type
     }
@@ -219,12 +264,11 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     saveDefaults()
 
     // Best-effort: find the created id by matching title among open issues and picking the highest numeric id
-    /** @type {any} */
-    let list = null
+    let list: IssueLite[] | null = null
     try {
-      list = await sendFn("list-issues", {
+      list = (await sendFn("list-issues", {
         filters: { status: "open", limit: 50 },
-      })
+      })) as IssueLite[] | null
     } catch {
       list = null
     }
@@ -232,7 +276,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
     if (Array.isArray(list)) {
       const matches = list.filter(it => String(it.title || "") === title)
       if (matches.length > 0) {
-        let best = matches[0]
+        let best = matches[0]!
         for (const it of matches) {
           const ai = idNumeric(best.id || "")
           const bi = idNumeric(it.id || "")
@@ -277,25 +321,25 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
   }
 
   // Events
-  dialog.addEventListener("cancel", ev => {
+  dialog.addEventListener("cancel", (ev: Event) => {
     ev.preventDefault()
     requestClose()
   })
   btn_close.addEventListener("click", () => requestClose())
   btn_cancel.addEventListener("click", () => requestClose())
-  dialog.addEventListener("keydown", ev => {
+  dialog.addEventListener("keydown", (ev: KeyboardEvent) => {
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
       ev.preventDefault()
       void createNow()
     }
   })
-  form.addEventListener("submit", ev => {
+  form.addEventListener("submit", (ev: Event) => {
     ev.preventDefault()
     void createNow()
   })
 
   return {
-    open() {
+    open(): void {
       form.reset()
       clearError()
       loadDefaults()
@@ -316,7 +360,7 @@ export function createNewIssueDialog(mount_element, sendFn, router, store) {
         }
       }, 0)
     },
-    close() {
+    close(): void {
       requestClose()
     },
   }
