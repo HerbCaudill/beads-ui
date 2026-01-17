@@ -1,5 +1,5 @@
 import { getConfig } from "../config.js"
-import { resolveDbPath } from "../db.js"
+import { resolveDbPath } from "../db.ts"
 import {
   isProcessRunning,
   printServerUrl,

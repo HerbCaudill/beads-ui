@@ -2,7 +2,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
-import { findNearestBeadsDb, resolveDbPath } from "./db.js"
+import { findNearestBeadsDb, resolveDbPath } from "./db.ts"
 
 /** @type {string[]} */
 const tmps = []

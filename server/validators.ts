@@ -4,12 +4,13 @@
  * Provides schema checks for subscription specs and selected mutations.
  */
 
+import type { SubscriptionSpec } from "../types/list-adapters.js"
+import type { SubscriptionType } from "../types/subscriptions.js"
+
 /**
  * Known subscription types supported by the server.
- *
- * @type {Set<string>}
  */
-const SUBSCRIPTION_TYPES = new Set([
+const SUBSCRIPTION_TYPES: Set<SubscriptionType> = new Set([
   "all-issues",
   "epics",
   "blocked-issues",
@@ -20,12 +21,34 @@ const SUBSCRIPTION_TYPES = new Set([
 ])
 
 /**
- * Validate a subscribe-list payload and normalize to a SubscriptionSpec.
- *
- * @param {unknown} payload
- * @returns {{ ok: true, id: string, spec: { type: string, params?: Record<string, string|number|boolean> } } | { ok: false, code: 'bad_request', message: string }}
+ * Successful validation result for subscribe-list payload.
  */
-export function validateSubscribeListPayload(payload) {
+export interface ValidateSubscribeListSuccess {
+  ok: true
+  id: string
+  spec: SubscriptionSpec
+}
+
+/**
+ * Failed validation result for subscribe-list payload.
+ */
+export interface ValidateSubscribeListFailure {
+  ok: false
+  code: "bad_request"
+  message: string
+}
+
+/**
+ * Result of validating a subscribe-list payload.
+ */
+export type ValidateSubscribeListResult =
+  | ValidateSubscribeListSuccess
+  | ValidateSubscribeListFailure
+
+/**
+ * Validate a subscribe-list payload and normalize to a SubscriptionSpec.
+ */
+export function validateSubscribeListPayload(payload: unknown): ValidateSubscribeListResult {
   if (!payload || typeof payload !== "object") {
     return {
       ok: false,
@@ -33,7 +56,7 @@ export function validateSubscribeListPayload(payload) {
       message: "payload must be an object",
     }
   }
-  const any = /** @type {{ id?: unknown, type?: unknown, params?: unknown }} */ (payload)
+  const any = payload as { id?: unknown; type?: unknown; params?: unknown }
 
   const id = typeof any.id === "string" ? any.id : ""
   if (id.length === 0) {
@@ -45,7 +68,7 @@ export function validateSubscribeListPayload(payload) {
   }
 
   const type = typeof any.type === "string" ? any.type : ""
-  if (type.length === 0 || !SUBSCRIPTION_TYPES.has(type)) {
+  if (type.length === 0 || !SUBSCRIPTION_TYPES.has(type as SubscriptionType)) {
     return {
       ok: false,
       code: "bad_request",
@@ -53,8 +76,7 @@ export function validateSubscribeListPayload(payload) {
     }
   }
 
-  /** @type {Record<string, string|number|boolean> | undefined} */
-  let params
+  let params: Record<string, string | number | boolean> | undefined
   if (any.params !== undefined) {
     if (!any.params || typeof any.params !== "object" || Array.isArray(any.params)) {
       return {
@@ -63,20 +85,20 @@ export function validateSubscribeListPayload(payload) {
         message: "payload.params must be an object when provided",
       }
     }
-    params = /** @type {Record<string, string|number|boolean>} */ (any.params)
+    params = any.params as Record<string, string | number | boolean>
   }
 
   // Per-type param schemas
   if (type === "issue-detail") {
-    const id = String(params?.id ?? "").trim()
-    if (id.length === 0) {
+    const issue_id = String(params?.id ?? "").trim()
+    if (issue_id.length === 0) {
       return {
         ok: false,
         code: "bad_request",
         message: "params.id must be a non-empty string",
       }
     }
-    params = { id }
+    params = { id: issue_id }
   } else if (type === "closed-issues") {
     if (params && "since" in params) {
       const since = params.since
@@ -104,5 +126,6 @@ export function validateSubscribeListPayload(payload) {
     params = undefined
   }
 
-  return { ok: true, id, spec: { type, params } }
+  const spec: SubscriptionSpec = params !== undefined ? { type, params } : { type }
+  return { ok: true, id, spec }
 }

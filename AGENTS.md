@@ -76,6 +76,8 @@ Never update `CHANGES.md`.
   - `app/main.ts` - Main app bootstrap/orchestration module
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
+  - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)
+  - `server/validators.ts` - Input validation for subscription protocol payloads
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

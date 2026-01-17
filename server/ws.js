@@ -7,12 +7,12 @@ import path from "node:path"
 import { WebSocketServer } from "ws"
 import { isRequest, makeError, makeOk } from "../app/protocol.ts"
 import { getGitUserName, runBd, runBdJson } from "./bd.js"
-import { resolveDbPath } from "./db.js"
+import { resolveDbPath } from "./db.ts"
 import { fetchListForSubscription } from "./list-adapters.js"
 import { debug } from "./logging.ts"
 import { getAvailableWorkspaces } from "./registry-watcher.js"
 import { keyOf, registry } from "./subscriptions.js"
-import { validateSubscribeListPayload } from "./validators.js"
+import { validateSubscribeListPayload } from "./validators.ts"
 
 const log = debug("ws")
 

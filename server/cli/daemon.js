@@ -7,7 +7,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { getConfig } from "../config.js"
-import { resolveDbPath } from "../db.js"
+import { resolveDbPath } from "../db.ts"
 
 /**
  * Resolve the runtime directory used for PID and log files.

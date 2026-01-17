@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import { resolveDbPath } from "./db.js"
+import { resolveDbPath } from "./db.ts"
 import { debug } from "./logging.ts"
 
 /**
