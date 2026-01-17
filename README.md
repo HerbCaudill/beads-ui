@@ -7,29 +7,25 @@
 - 🏂 **Board view** – Blocked / Ready / In progress / Closed columns
 - ⌨️ **Keyboard navigation** – Navigate and edit without touching the mouse
 
-## Setup
+## Quick start
 
 ```sh
-npm i beads-ui -g
-# In your project directory:
-bdui start --open
+pnpm dlx @herbcaudill/beads-ui start --open
 ```
-
-See `bdui --help` for options.
 
 ## Screenshots
 
 **Issues**
 
-![Issues view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-issues.png)
+![Issues view](./media/bdui-issues.png)
 
 **Epics**
 
-![Epics view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-epics.png)
+![Epics view](./media/bdui-epics.png)
 
 **Board**
 
-![Board view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-board.png)
+![Board view](./media/bdui-board.png)
 
 ## Environment variables
 
