@@ -4,7 +4,7 @@ import { createDetailView } from "./detail.js"
 describe("detail deps UI (UI-47)", () => {
   test("renders id, type and title for dependency items", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issue = {
       id: "UI-100",
@@ -17,8 +17,7 @@ describe("detail deps UI (UI-47)", () => {
     }
 
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-100" ? [issue] : []
       },
       subscribe() {
@@ -38,16 +37,15 @@ describe("detail deps UI (UI-47)", () => {
 
   test("clicking a dependency row triggers navigation", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
-    const navs = /** @type {string[]} */ ([])
+    const mount = document.getElementById("mount") as HTMLElement
+    const navs: string[] = []
     const current = {
       id: "UI-200",
       dependencies: [{ id: "UI-9", issue_type: "feature", title: "Z" }],
       dependents: [],
     }
     const stores2 = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-200" ? [current] : []
       },
       subscribe() {
@@ -59,18 +57,17 @@ describe("detail deps UI (UI-47)", () => {
 
     await view.load("UI-200")
 
-    const row = /** @type {HTMLLIElement} */ (mount.querySelector("ul li"))
+    const row = mount.querySelector("ul li") as HTMLLIElement
     row.click()
     expect(navs[navs.length - 1]).toBe("#/issues?issue=UI-9")
   })
 
   test("add input is placed at the bottom of the section", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
     const current2 = { id: "UI-300", dependencies: [], dependents: [] }
     const stores3 = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-300" ? [current2] : []
       },
       subscribe() {
@@ -81,9 +78,7 @@ describe("detail deps UI (UI-47)", () => {
     const view = createDetailView(mount, send, undefined, stores3)
     await view.load("UI-300")
 
-    const input = /** @type {HTMLInputElement} */ (
-      mount.querySelector('[data-testid="add-dependency"]')
-    )
+    const input = mount.querySelector('[data-testid="add-dependency"]') as HTMLInputElement
     expect(input).toBeTruthy()
     const prev = input.parentElement?.previousElementSibling
     // Expect the add controls to follow the list (ul)

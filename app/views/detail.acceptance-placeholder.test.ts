@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest"
 import { createDetailView } from "./detail.js"
+import type { IssueStores } from "../data/list-selectors.js"
 
 describe("views/detail acceptance placeholder", () => {
   test("shows placeholder and allows entering edit mode when empty", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
-    /** @type {any} */
-    const issue = {
+    const issue: Record<string, unknown> = {
       id: "UI-200",
       title: "Empty acceptance",
       acceptance: "",
@@ -17,8 +17,7 @@ describe("views/detail acceptance placeholder", () => {
     }
 
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-200" ? [issue] : []
       },
       subscribe() {
@@ -29,17 +28,16 @@ describe("views/detail acceptance placeholder", () => {
       mount,
       async (type, payload) => {
         if (type === "edit-text") {
-          const f = /** @type {any} */ (payload).field
-          const v = /** @type {any} */ (payload).value
+          const f = (payload as { field: string }).field
+          const v = (payload as { value: string }).value
           expect(f).toBe("acceptance")
-          /** @type {any} */
           issue[f] = v
           return issue
         }
         throw new Error("Unexpected: " + type)
       },
       undefined,
-      stores,
+      stores as unknown as IssueStores,
     )
 
     await view.load("UI-200")
@@ -51,9 +49,9 @@ describe("views/detail acceptance placeholder", () => {
     expect(ph && (ph.textContent || "")).toContain("Add acceptance criteria")
 
     // Click to enter edit mode
-    const editable = /** @type {HTMLDivElement} */ (mount.querySelector(".acceptance .editable"))
+    const editable = mount.querySelector(".acceptance .editable") as HTMLDivElement
     editable.click()
-    const ta = /** @type {HTMLTextAreaElement} */ (mount.querySelector(".acceptance textarea"))
+    const ta = mount.querySelector(".acceptance textarea") as HTMLTextAreaElement
     expect(ta).toBeTruthy()
     ta.value = "Step 1"
 
@@ -63,7 +61,7 @@ describe("views/detail acceptance placeholder", () => {
     await Promise.resolve()
 
     // Back to read mode, content rendered
-    const md = /** @type {HTMLDivElement} */ (mount.querySelector(".acceptance .md"))
+    const md = mount.querySelector(".acceptance .md") as HTMLDivElement
     expect(md && (md.textContent || "")).toContain("Step 1")
   })
 })

@@ -1,17 +1,14 @@
 import { describe, expect, test, vi } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createListView } from "./list.js"
+import type { IssueStores } from "../data/list-selectors.js"
+import type { Issue } from "../../types/issues.js"
+import type { SnapshotMsg, UpsertMsg } from "../../types/subscription-issue-store.js"
 
 function createTestIssueStores() {
-  /** @type {Map<string, any>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
-  /**
-   * @param {string} id
-   * @returns {any}
-   */
-  function getStore(id) {
+  const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+  const listeners = new Set<() => void>()
+  function getStore(id: string) {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -30,12 +27,10 @@ function createTestIssueStores() {
   }
   return {
     getStore,
-    /** @param {string} id */
-    snapshotFor(id) {
+    snapshotFor(id: string) {
       return getStore(id).snapshot().slice()
     },
-    /** @param {() => void} fn */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
@@ -45,7 +40,7 @@ function createTestIssueStores() {
 describe("views/list inline edits", () => {
   test("priority select dispatches update and refreshes row", async () => {
     document.body.innerHTML = '<aside id="mount" class="panel"></aside>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const initial = [
       {
@@ -62,50 +57,55 @@ describe("views/list inline edits", () => {
         priority: 2,
         issue_type: "bug",
       },
-    ]
+    ] as Issue[]
 
-    /** @type {{ calls: Array<{ type: string, payload: any }> }} */
-    const spy = { calls: [] }
+    const spy = { calls: [] as Array<{ type: string; payload: unknown }> }
     let current = [...initial]
 
-    /** @type {(type: string, payload?: any) => Promise<any>} */
-    const send = vi.fn(async (type, payload) => {
+    const issueStores = createTestIssueStores()
+
+    const send = vi.fn(async (type: string, payload?: unknown) => {
       spy.calls.push({ type, payload })
       // no list-issues requests in push-only mode
       if (type === "update-priority") {
-        const id = payload.id
+        const id = (payload as { id: string }).id
         const idx = current.findIndex(x => x.id === id)
         if (idx >= 0) {
           // simulate server-side update, then push an upsert to the store
-          const updated = { ...current[idx], priority: 4 }
+          const updated = { ...current[idx]!, priority: 4 }
           current[idx] = updated
           issueStores.getStore("tab:issues").applyPush({
             type: "upsert",
             id: "tab:issues",
             revision: 2,
-            issues: [updated],
-          })
+            issue: updated as Issue,
+          } as UpsertMsg)
         }
         return {}
       }
       throw new Error("Unexpected")
     })
-    const issueStores = createTestIssueStores()
+
     issueStores.getStore("tab:issues").applyPush({
       type: "snapshot",
       id: "tab:issues",
       revision: 1,
       issues: current,
-    })
+    } as SnapshotMsg)
 
-    const view = createListView(mount, send, undefined, undefined, undefined, issueStores)
+    const view = createListView(
+      mount,
+      send,
+      undefined,
+      undefined,
+      undefined,
+      issueStores as IssueStores,
+    )
     await view.load()
 
-    const firstRow = /** @type {HTMLElement} */ (
-      mount.querySelector('tr.issue-row[data-issue-id="UI-1"]')
-    )
+    const firstRow = mount.querySelector('tr.issue-row[data-issue-id="UI-1"]') as HTMLElement
     expect(firstRow).toBeTruthy()
-    const prio = /** @type {HTMLSelectElement} */ (firstRow.querySelector("select.badge--priority"))
+    const prio = firstRow.querySelector("select.badge--priority") as HTMLSelectElement
     expect(prio.value).toBe("1")
 
     // Change to a different priority; handler should call update-priority.
@@ -117,9 +117,9 @@ describe("views/list inline edits", () => {
     const types = spy.calls.map(c => c.type)
     expect(types).toContain("update-priority")
 
-    const prio2 = /** @type {HTMLSelectElement} */ (
-      mount.querySelector('tr.issue-row[data-issue-id="UI-1"] select.badge--priority')
-    )
+    const prio2 = mount.querySelector(
+      'tr.issue-row[data-issue-id="UI-1"] select.badge--priority',
+    ) as HTMLSelectElement
     expect(prio2.value).toBe("4")
   })
 })

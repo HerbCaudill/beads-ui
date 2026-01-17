@@ -1,10 +1,11 @@
 import { describe, expect, test } from "vitest"
 import { createDetailView } from "./detail.js"
+import type { IssueStores } from "../data/list-selectors.js"
 
 describe("views/detail", () => {
   test("renders fields, markdown description, and dependency links", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issue = {
       id: "UI-29",
@@ -17,11 +18,9 @@ describe("views/detail", () => {
       dependents: [{ id: "UI-34" }],
     }
 
-    /** @type {string[]} */
-    const navigations = []
+    const navigations: string[] = []
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-29" ? [issue] : []
       },
       subscribe() {
@@ -40,15 +39,15 @@ describe("views/detail", () => {
     await view.load("UI-29")
 
     // ID is no longer rendered within detail view; the dialog title shows it
-    const titleSpan = /** @type {HTMLSpanElement} */ (mount.querySelector("h2 .editable"))
+    const titleSpan = mount.querySelector("h2 .editable") as HTMLSpanElement
     expect(titleSpan.textContent).toBe("Issue detail view")
     // status select + priority select exist
     const selects = mount.querySelectorAll("select")
     expect(selects.length).toBeGreaterThanOrEqual(2)
     // description rendered as markdown in read mode
-    const md = /** @type {HTMLDivElement} */ (mount.querySelector(".md"))
+    const md = mount.querySelector(".md") as HTMLDivElement
     expect(md).toBeTruthy()
-    const a = /** @type {HTMLAnchorElement|null} */ (md.querySelector("a"))
+    const a = md.querySelector("a") as HTMLAnchorElement | null
     expect(a && a.getAttribute("href")).toBe("https://example.com")
     const code = md.querySelector("code")
     expect(code && code.textContent).toBe("code")
@@ -60,19 +59,17 @@ describe("views/detail", () => {
     expect(hrefs).toEqual(["#/issues?issue=UI-25", "#/issues?issue=UI-27", "#/issues?issue=UI-34"])
 
     // No description textarea in read mode (only comment input textarea should exist)
-    const descInput0 = /** @type {HTMLTextAreaElement|null} */ (
-      mount.querySelector(".description textarea")
-    )
+    const descInput0 = mount.querySelector(".description textarea") as HTMLTextAreaElement | null
     expect(descInput0).toBeNull()
 
     // Simulate clicking the first internal link, ensure navigate_fn is used
-    links[0].click()
+    links[0]!.click()
     expect(navigations[navigations.length - 1]).toBe("#/issues?issue=UI-25")
   })
 
   test("renders type in Properties sidebar", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
     const issue = {
       id: "UI-50",
       title: "With type",
@@ -81,8 +78,7 @@ describe("views/detail", () => {
       dependents: [],
     }
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-50" ? [issue] : []
       },
       subscribe() {
@@ -98,9 +94,9 @@ describe("views/detail", () => {
 
   test("inline editing toggles for title and description", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
-    const issue = {
+    const issue: Record<string, unknown> = {
       id: "UI-29",
       title: "Issue detail view",
       description: "Some text",
@@ -111,8 +107,7 @@ describe("views/detail", () => {
     }
 
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-29" ? [issue] : []
       },
       subscribe() {
@@ -123,46 +118,44 @@ describe("views/detail", () => {
       mount,
       async (type, payload) => {
         if (type === "edit-text") {
-          const f = /** @type {any} */ (payload).field
-          const v = /** @type {any} */ (payload).value
-          /** @type {any} */ issue[f] = v
+          const f = (payload as { field: string }).field
+          const v = (payload as { value: string }).value
+          issue[f] = v
           return issue
         }
         throw new Error("Unexpected type")
       },
       undefined,
-      stores,
+      stores as unknown as IssueStores,
     )
 
     await view.load("UI-29")
 
     // Title: click to edit -> input appears, Esc cancels
-    const titleSpan = /** @type {HTMLSpanElement} */ (mount.querySelector("h2 .editable"))
+    const titleSpan = mount.querySelector("h2 .editable") as HTMLSpanElement
     titleSpan.click()
-    let titleInput = /** @type {HTMLInputElement} */ (mount.querySelector("h2 input"))
+    let titleInput = mount.querySelector("h2 input") as HTMLInputElement
     expect(titleInput).toBeTruthy()
     const esc = new KeyboardEvent("keydown", { key: "Escape" })
     titleInput.dispatchEvent(esc)
-    expect(/** @type {HTMLInputElement|null} */ (mount.querySelector("h2 input"))).toBeNull()
+    expect(mount.querySelector("h2 input") as HTMLInputElement | null).toBeNull()
 
     // Description: click to edit -> textarea appears, Ctrl+Enter saves
-    const md = /** @type {HTMLDivElement} */ (mount.querySelector(".md"))
+    const md = mount.querySelector(".md") as HTMLDivElement
     md.click()
-    const area = /** @type {HTMLTextAreaElement} */ (mount.querySelector("textarea"))
+    const area = mount.querySelector("textarea") as HTMLTextAreaElement
     area.value = "Changed"
     const key = new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true })
     area.dispatchEvent(key)
     // After save, returns to read mode (allow microtask flush)
     await Promise.resolve()
     // Only the comment input textarea should remain, no description textarea
-    expect(
-      /** @type {HTMLTextAreaElement|null} */ (mount.querySelector(".description textarea")),
-    ).toBeNull()
+    expect(mount.querySelector(".description textarea") as HTMLTextAreaElement | null).toBeNull()
   })
 
   test("shows placeholder when not found or bad payload", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
     const stores = {
       snapshotFor() {
         return []
@@ -182,7 +175,7 @@ describe("views/detail", () => {
 
   test("renders comments section with author and timestamp", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issue = {
       id: "UI-99",
@@ -206,7 +199,7 @@ describe("views/detail", () => {
     }
 
     const stores = {
-      snapshotFor(/** @type {string} */ id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-99" ? [issue] : []
       },
       subscribe() {
@@ -227,13 +220,13 @@ describe("views/detail", () => {
 
     // Check first comment content
     const firstComment = commentItems[0]
-    expect(firstComment.textContent).toContain("Alice")
-    expect(firstComment.textContent).toContain("This is a comment")
+    expect(firstComment!.textContent).toContain("Alice")
+    expect(firstComment!.textContent).toContain("This is a comment")
   })
 
   test("shows placeholder when no comments", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issue = {
       id: "UI-100",
@@ -244,7 +237,7 @@ describe("views/detail", () => {
     }
 
     const stores = {
-      snapshotFor(/** @type {string} */ id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-100" ? [issue] : []
       },
       subscribe() {
@@ -262,7 +255,7 @@ describe("views/detail", () => {
 
   test("submits new comment via sendFn", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issue = {
       id: "UI-101",
@@ -272,9 +265,8 @@ describe("views/detail", () => {
       comments: [],
     }
 
-    /** @type {Array<{type: string, payload: unknown}>} */
-    const calls = []
-    const sendFn = async (/** @type {string} */ type, /** @type {unknown} */ payload) => {
+    const calls: Array<{ type: string; payload: unknown }> = []
+    const sendFn = async (type: string, payload: unknown) => {
       calls.push({ type, payload })
       // Return updated comments
       return [
@@ -288,7 +280,7 @@ describe("views/detail", () => {
     }
 
     const stores = {
-      snapshotFor(/** @type {string} */ id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-101" ? [issue] : []
       },
       subscribe() {
@@ -300,10 +292,8 @@ describe("views/detail", () => {
     await view.load("UI-101")
 
     // Find textarea and button
-    const textarea = /** @type {HTMLTextAreaElement} */ (
-      mount.querySelector(".comment-input textarea")
-    )
-    const button = /** @type {HTMLButtonElement} */ (mount.querySelector(".comment-input button"))
+    const textarea = mount.querySelector(".comment-input textarea") as HTMLTextAreaElement
+    const button = mount.querySelector(".comment-input button") as HTMLButtonElement
 
     expect(textarea).toBeTruthy()
     expect(button).toBeTruthy()
@@ -320,13 +310,13 @@ describe("views/detail", () => {
 
     // Verify sendFn was called correctly
     expect(calls.length).toBe(1)
-    expect(calls[0].type).toBe("add-comment")
-    expect(calls[0].payload).toEqual({ id: "UI-101", text: "Test comment" })
+    expect(calls[0]!.type).toBe("add-comment")
+    expect(calls[0]!.payload).toEqual({ id: "UI-101", text: "Test comment" })
   })
 
   test("fetches comments on load when not in snapshot", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     // Issue without comments in snapshot
     const issue = {
@@ -337,9 +327,8 @@ describe("views/detail", () => {
       // No comments property
     }
 
-    /** @type {Array<{type: string, payload: unknown}>} */
-    const calls = []
-    const sendFn = async (/** @type {string} */ type, /** @type {unknown} */ payload) => {
+    const calls: Array<{ type: string; payload: unknown }> = []
+    const sendFn = async (type: string, payload: unknown) => {
       calls.push({ type, payload })
       if (type === "get-comments") {
         return [
@@ -355,7 +344,7 @@ describe("views/detail", () => {
     }
 
     const stores = {
-      snapshotFor(/** @type {string} */ id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-102" ? [issue] : []
       },
       subscribe() {
@@ -363,7 +352,7 @@ describe("views/detail", () => {
       },
     }
 
-    const view = createDetailView(mount, sendFn, undefined, stores)
+    const view = createDetailView(mount, sendFn, undefined, stores as unknown as IssueStores)
     await view.load("UI-102")
 
     // Wait for async fetch
@@ -377,13 +366,13 @@ describe("views/detail", () => {
     // Verify fetched comment is displayed
     const commentItems = mount.querySelectorAll(".comment-item")
     expect(commentItems.length).toBe(1)
-    expect(commentItems[0].textContent).toContain("Fetched")
+    expect(commentItems[0]!.textContent).toContain("Fetched")
   })
 
   describe("delete issue", () => {
     test("renders delete button in detail view", async () => {
       document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-      const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+      const mount = document.getElementById("mount") as HTMLElement
       const issue = {
         id: "UI-99",
         title: "Test delete",
@@ -391,8 +380,7 @@ describe("views/detail", () => {
         dependents: [],
       }
       const stores = {
-        /** @param {string} id */
-        snapshotFor(id) {
+        snapshotFor(id: string) {
           return id === "detail:UI-99" ? [issue] : []
         },
         subscribe() {
@@ -409,7 +397,7 @@ describe("views/detail", () => {
 
     test("clicking delete button opens confirmation dialog", async () => {
       document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-      const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+      const mount = document.getElementById("mount") as HTMLElement
       const issue = {
         id: "UI-100",
         title: "Confirm delete test",
@@ -417,8 +405,7 @@ describe("views/detail", () => {
         dependents: [],
       }
       const stores = {
-        /** @param {string} id */
-        snapshotFor(id) {
+        snapshotFor(id: string) {
           return id === "detail:UI-100" ? [issue] : []
         },
         subscribe() {
@@ -428,7 +415,7 @@ describe("views/detail", () => {
       const view = createDetailView(mount, async () => ({}), undefined, stores)
       await view.load("UI-100")
 
-      const deleteBtn = /** @type {HTMLButtonElement} */ (mount.querySelector(".delete-issue-btn"))
+      const deleteBtn = mount.querySelector(".delete-issue-btn") as HTMLButtonElement
       deleteBtn.click()
 
       // Dialog should now be in document
@@ -444,7 +431,7 @@ describe("views/detail", () => {
 
     test("cancel button closes dialog without deleting", async () => {
       document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-      const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+      const mount = document.getElementById("mount") as HTMLElement
       const issue = {
         id: "UI-101",
         title: "Cancel test",
@@ -453,8 +440,7 @@ describe("views/detail", () => {
       }
       let deleteCalled = false
       const stores = {
-        /** @param {string} id */
-        snapshotFor(id) {
+        snapshotFor(id: string) {
           return id === "detail:UI-101" ? [issue] : []
         },
         subscribe() {
@@ -472,13 +458,11 @@ describe("views/detail", () => {
       )
       await view.load("UI-101")
 
-      const deleteBtn = /** @type {HTMLButtonElement} */ (mount.querySelector(".delete-issue-btn"))
+      const deleteBtn = mount.querySelector(".delete-issue-btn") as HTMLButtonElement
       deleteBtn.click()
 
-      const dialog = /** @type {HTMLDialogElement} */ (
-        document.getElementById("delete-confirm-dialog")
-      )
-      const cancelBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector(".btn:not(.danger)"))
+      const dialog = document.getElementById("delete-confirm-dialog") as HTMLDialogElement
+      const cancelBtn = dialog.querySelector(".btn:not(.danger)") as HTMLButtonElement
       cancelBtn.click()
 
       expect(dialog.hasAttribute("open")).toBe(false)
@@ -487,18 +471,16 @@ describe("views/detail", () => {
 
     test("confirm button sends delete-issue and clears view", async () => {
       document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-      const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+      const mount = document.getElementById("mount") as HTMLElement
       const issue = {
         id: "UI-102",
         title: "Delete me",
         dependencies: [],
         dependents: [],
       }
-      /** @type {{ type: string, payload: any }[]} */
-      const calls = []
+      const calls: { type: string; payload: unknown }[] = []
       const stores = {
-        /** @param {string} id */
-        snapshotFor(id) {
+        snapshotFor(id: string) {
           return id === "detail:UI-102" ? [issue] : []
         },
         subscribe() {
@@ -516,13 +498,11 @@ describe("views/detail", () => {
       )
       await view.load("UI-102")
 
-      const deleteBtn = /** @type {HTMLButtonElement} */ (mount.querySelector(".delete-issue-btn"))
+      const deleteBtn = mount.querySelector(".delete-issue-btn") as HTMLButtonElement
       deleteBtn.click()
 
-      const dialog = /** @type {HTMLDialogElement} */ (
-        document.getElementById("delete-confirm-dialog")
-      )
-      const confirmBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector(".btn.danger"))
+      const dialog = document.getElementById("delete-confirm-dialog") as HTMLDialogElement
+      const confirmBtn = dialog.querySelector(".btn.danger") as HTMLButtonElement
       confirmBtn.click()
 
       // Wait for async operation

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { createDetailView } from "./detail.js"
+import type { IssueStores } from "../data/list-selectors.js"
 
 function mountDiv() {
   const div = document.createElement("div")
@@ -10,7 +11,6 @@ function mountDiv() {
 describe("detail view design section", () => {
   test("orders sections: Description → Design → Notes → Acceptance Criteria", async () => {
     const mount = mountDiv()
-    /** @type {any} */
     const issue = {
       id: "UI-116",
       title: "Ordering test",
@@ -20,18 +20,22 @@ describe("detail view design section", () => {
       acceptance_criteria: "- a", // also supports fallback field
     }
     const storesA = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-116" ? [issue] : []
       },
       subscribe() {
         return () => {}
       },
     }
-    const view = createDetailView(mount, async () => ({}), undefined, storesA)
+    const view = createDetailView(
+      mount,
+      async () => ({}),
+      undefined,
+      storesA as unknown as IssueStores,
+    )
     await view.load("UI-116")
 
-    const main = /** @type {HTMLElement} */ (mount.querySelector(".detail-main"))
+    const main = mount.querySelector(".detail-main") as HTMLElement
     expect(main).toBeTruthy()
     const children = Array.from(main.children).filter(el => !el.classList.contains("detail-title"))
     const names = children.map(el => {
@@ -57,8 +61,7 @@ describe("detail view design section", () => {
 
   test("editing Design updates field and persists after reload", async () => {
     const mount = mountDiv()
-    /** @type {any} */
-    let current = {
+    let current: Record<string, unknown> = {
       id: "UI-116",
       title: "Design edit test",
       description: "X",
@@ -68,39 +71,34 @@ describe("detail view design section", () => {
       priority: 2,
     }
     const storesB = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-116" ? [current] : []
       },
       subscribe() {
         return () => {}
       },
     }
-    /**
-     * @param {string} type
-     * @param {any} [payload]
-     */
-    const send = async (type, payload) => {
+    const send = async (type: string, payload?: unknown) => {
       if (type === "edit-text") {
-        if (payload.field === "design") {
-          current = { ...current, design: payload.value }
+        const p = payload as { field?: string; value?: string }
+        if (p?.field === "design") {
+          current = { ...current, design: p.value }
           return current
         }
-        throw new Error("Unexpected field: " + payload.field)
+        throw new Error("Unexpected field: " + p?.field)
       }
       throw new Error("Unexpected: " + type)
     }
-    const view = createDetailView(mount, send, undefined, storesB)
+    const view = createDetailView(mount, send, undefined, storesB as unknown as IssueStores)
     await view.load("UI-116")
 
     // Simulate edit-text result from server and reload to verify persistence
     await send("edit-text", {
-      id: "UI-116",
       field: "design",
       value: "Proposed design\n\n- step 1",
     })
     await view.load("UI-116")
-    const designDiv2 = /** @type {HTMLDivElement} */ (mount.querySelector(".design"))
+    const designDiv2 = mount.querySelector(".design") as HTMLDivElement
     expect(designDiv2 && (designDiv2.textContent || "")).toContain("Proposed design")
   })
 })

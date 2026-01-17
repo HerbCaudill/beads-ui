@@ -1,17 +1,14 @@
 import { describe, expect, test } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createBoardView } from "./board.js"
+import type { IssueStores } from "../data/list-selectors.js"
+import type { Issue } from "../../types/issues.js"
+import type { SnapshotMsg } from "../../types/subscription-issue-store.js"
 
 function createTestIssueStores() {
-  /** @type {Map<string, any>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
-  /**
-   * @param {string} id
-   * @returns {any}
-   */
-  function getStore(id) {
+  const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+  const listeners = new Set<() => void>()
+  function getStore(id: string) {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -30,12 +27,10 @@ function createTestIssueStores() {
   }
   return {
     getStore,
-    /** @param {string} id */
-    snapshotFor(id) {
+    snapshotFor(id: string) {
       return getStore(id).snapshot().slice()
     },
-    /** @param {() => void} fn */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
@@ -45,7 +40,7 @@ function createTestIssueStores() {
 describe("views/board", () => {
   test("renders four columns (Blocked, Ready, In Progress, Closed) with sorted cards and navigates on click", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
 
     const now = Date.now()
     const issues = [
@@ -121,35 +116,34 @@ describe("views/board", () => {
         closed_at: new Date(now - 1000).getTime(),
         issue_type: "bug",
       },
-    ]
+    ] as Issue[]
     const issueStores = createTestIssueStores()
     issueStores.getStore("tab:board:blocked").applyPush({
       type: "snapshot",
       id: "tab:board:blocked",
       revision: 1,
       issues: issues.filter(i => i.id.startsWith("B-")),
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:ready").applyPush({
       type: "snapshot",
       id: "tab:board:ready",
       revision: 1,
       issues: issues.filter(i => i.id.startsWith("R-")),
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:in-progress").applyPush({
       type: "snapshot",
       id: "tab:board:in-progress",
       revision: 1,
       issues: issues.filter(i => i.id.startsWith("P-")),
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:closed").applyPush({
       type: "snapshot",
       id: "tab:board:closed",
       revision: 1,
       issues: issues.filter(i => i.id.startsWith("C-")),
-    })
+    } as SnapshotMsg)
 
-    /** @type {string[]} */
-    const navigations = []
+    const navigations: string[] = []
     const view = createBoardView(
       mount,
       null,
@@ -158,7 +152,7 @@ describe("views/board", () => {
       },
       undefined,
       undefined,
-      issueStores,
+      issueStores as IssueStores,
     )
 
     await view.load()
@@ -188,16 +182,14 @@ describe("views/board", () => {
     expect(closed_ids).toEqual(["C-2", "C-1"])
 
     // Click navigates
-    const first_ready = /** @type {HTMLElement|null} */ (
-      mount.querySelector("#ready-col .board-card")
-    )
+    const first_ready = mount.querySelector("#ready-col .board-card") as HTMLElement | null
     first_ready?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     expect(navigations[0]).toBe("R-1")
   })
 
   test("shows column count badges next to titles", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
 
     const now = Date.now()
     const issueStores = createTestIssueStores()
@@ -221,7 +213,7 @@ describe("views/board", () => {
           issue_type: "task",
         },
       ],
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:ready").applyPush({
       type: "snapshot",
       id: "tab:board:ready",
@@ -249,7 +241,7 @@ describe("views/board", () => {
           issue_type: "task",
         },
       ],
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:in-progress").applyPush({
       type: "snapshot",
       id: "tab:board:in-progress",
@@ -263,7 +255,7 @@ describe("views/board", () => {
           issue_type: "feature",
         },
       ],
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:closed").applyPush({
       type: "snapshot",
       id: "tab:board:closed",
@@ -277,9 +269,16 @@ describe("views/board", () => {
           issue_type: "chore",
         },
       ],
-    })
+    } as SnapshotMsg)
 
-    const view = createBoardView(mount, null, () => {}, undefined, undefined, issueStores)
+    const view = createBoardView(
+      mount,
+      null,
+      () => {},
+      undefined,
+      undefined,
+      issueStores as IssueStores,
+    )
 
     await view.load()
 
@@ -307,41 +306,48 @@ describe("views/board", () => {
 
   test("filters Ready to exclude items that are In Progress", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
 
     const issues = [
       {
         id: "X-1",
         title: "x1",
         priority: 1,
-        created_at: "2025-10-23T10:00:00.000Z",
-        updated_at: "2025-10-23T10:00:00.000Z",
+        created_at: new Date("2025-10-23T10:00:00.000Z").getTime(),
+        updated_at: new Date("2025-10-23T10:00:00.000Z").getTime(),
         issue_type: "task",
       },
       {
         id: "X-2",
         title: "x2",
         priority: 1,
-        created_at: "2025-10-23T09:00:00.000Z",
-        updated_at: "2025-10-23T09:00:00.000Z",
+        created_at: new Date("2025-10-23T09:00:00.000Z").getTime(),
+        updated_at: new Date("2025-10-23T09:00:00.000Z").getTime(),
         issue_type: "task",
       },
-    ]
+    ] as Issue[]
     const issueStores = createTestIssueStores()
     issueStores.getStore("tab:board:ready").applyPush({
       type: "snapshot",
       id: "tab:board:ready",
       revision: 1,
       issues: issues,
-    })
+    } as SnapshotMsg)
     issueStores.getStore("tab:board:in-progress").applyPush({
       type: "snapshot",
       id: "tab:board:in-progress",
       revision: 1,
       issues: issues.filter(i => i.id.startsWith("X-2")),
-    })
+    } as SnapshotMsg)
 
-    const view = createBoardView(mount, null, () => {}, undefined, undefined, issueStores)
+    const view = createBoardView(
+      mount,
+      null,
+      () => {},
+      undefined,
+      undefined,
+      issueStores as IssueStores,
+    )
 
     await view.load()
 

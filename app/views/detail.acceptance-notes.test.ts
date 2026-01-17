@@ -4,9 +4,8 @@ import { createDetailView } from "./detail.js"
 describe("views/detail acceptance + notes", () => {
   test("renders acceptance from acceptance_criteria and notes markdown", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
-    /** @type {any} */
     const issue = {
       id: "UI-71",
       title: "Has acceptance + notes",
@@ -17,8 +16,7 @@ describe("views/detail acceptance + notes", () => {
     }
 
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-71" ? [issue] : []
       },
       subscribe() {
@@ -41,9 +39,8 @@ describe("views/detail acceptance + notes", () => {
 
   test("gates headings when acceptance and notes are empty", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
-    /** @type {any} */
     const issue = {
       id: "UI-72",
       title: "No acceptance/notes",
@@ -54,8 +51,7 @@ describe("views/detail acceptance + notes", () => {
     }
 
     const stores2 = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-72" ? [issue] : []
       },
       subscribe() {

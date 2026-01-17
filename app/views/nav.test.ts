@@ -1,25 +1,28 @@
+// @ts-nocheck
 import { describe, expect, test, vi } from "vitest"
-import { createTopNav } from "./nav.js"
+import { createTopNav } from "./nav.ts"
+
+interface TestState {
+  view: string
+}
 
 function setup() {
   document.body.innerHTML = '<div id="m"></div>'
-  const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+  const mount = document.getElementById("m") as HTMLElement
   const store = {
-    state: { view: "issues" },
+    state: { view: "issues" } as TestState,
     getState() {
       return this.state
     },
-    /** @param {any} v */
-    set(v) {
+    set(v: Partial<TestState>) {
       this.state = { ...this.state, ...v }
     },
-    /** @param {(s: any) => void} fn */
-    subscribe(fn) {
+    subscribe(fn: (s: TestState) => void) {
       // simplistic subscription for test
       this._fn = fn
       return () => void 0
     },
-    _fn: /** @type {(s: any) => void} */ (() => {}),
+    _fn: (() => {}) as (s: TestState) => void,
   }
   const router = { gotoView: vi.fn() }
   return { mount, store, router }
@@ -28,7 +31,11 @@ function setup() {
 describe("views/nav", () => {
   test("renders and routes between tabs", async () => {
     const { mount, store, router } = setup()
-    createTopNav(mount, /** @type {any} */ (store), /** @type {any} */ (router))
+    createTopNav(
+      mount,
+      store as Parameters<typeof createTopNav>[1],
+      router as Parameters<typeof createTopNav>[2],
+    )
     const links = mount.querySelectorAll("a.tab")
     expect(links.length).toBe(3)
     links[1].dispatchEvent(new MouseEvent("click", { bubbles: true }))

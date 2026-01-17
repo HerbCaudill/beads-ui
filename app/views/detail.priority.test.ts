@@ -1,13 +1,12 @@
 import { describe, expect, test, vi } from "vitest"
 import { createDetailView } from "./detail.js"
 
-/** @type {(impl: (type: string, payload?: unknown) => Promise<any>) => (type: string, payload?: unknown) => Promise<any>} */
-const mockSend = impl => vi.fn(impl)
+const mockSend = (impl: (type: string, payload?: unknown) => Promise<unknown>) => vi.fn(impl)
 
 describe("views/detail priority edit", () => {
   test("updates priority via dropdown and re-renders from reply", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const initial = {
       id: "UI-70",
@@ -17,8 +16,7 @@ describe("views/detail priority edit", () => {
       priority: 2,
     }
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-70" ? [initial] : []
       },
       subscribe() {
@@ -38,7 +36,7 @@ describe("views/detail priority edit", () => {
 
     const selects = mount.querySelectorAll("select.badge--priority")
     expect(selects.length).toBe(1)
-    const prio = /** @type {HTMLSelectElement} */ (selects[0])
+    const prio = selects[0] as HTMLSelectElement
     expect(prio.value).toBe("2")
 
     prio.value = "4"
@@ -46,18 +44,17 @@ describe("views/detail priority edit", () => {
 
     await Promise.resolve()
 
-    const prio2 = /** @type {HTMLSelectElement} */ (mount.querySelector("select.badge--priority"))
+    const prio2 = mount.querySelector("select.badge--priority") as HTMLSelectElement
     expect(prio2.value).toBe("4")
   })
 
   test("shows toast on error and restores previous value", async () => {
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const initial = { id: "UI-71", title: "Q", status: "open", priority: 1 }
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-71" ? [initial] : []
       },
       subscribe() {
@@ -73,7 +70,7 @@ describe("views/detail priority edit", () => {
 
     const view = createDetailView(mount, send, undefined, stores)
     await view.load("UI-71")
-    const prio = /** @type {HTMLSelectElement} */ (mount.querySelector("select.badge--priority"))
+    const prio = mount.querySelector("select.badge--priority") as HTMLSelectElement
     expect(prio.value).toBe("1")
 
     prio.value = "3"
@@ -84,7 +81,7 @@ describe("views/detail priority edit", () => {
     const toast = document.body.querySelector(".toast")
     expect(toast).toBeTruthy()
     // Should restore previous value
-    const prio2 = /** @type {HTMLSelectElement} */ (mount.querySelector("select.badge--priority"))
+    const prio2 = mount.querySelector("select.badge--priority") as HTMLSelectElement
     expect(prio2.value).toBe("1")
   })
 })

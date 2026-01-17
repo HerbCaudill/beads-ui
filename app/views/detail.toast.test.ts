@@ -1,19 +1,17 @@
 import { describe, expect, test, vi } from "vitest"
 import { createDetailView } from "./detail.js"
 
-/** @type {(impl: (type: string, payload?: unknown) => Promise<any>) => (type: string, payload?: unknown) => Promise<any>} */
-const mockSend = impl => vi.fn(impl)
+const mockSend = (impl: (type: string, payload?: unknown) => Promise<unknown>) => vi.fn(impl)
 
 describe("views/detail toast", () => {
   test("applies fixed positioning to toast", async () => {
     vi.useFakeTimers()
     document.body.innerHTML = '<section class="panel"><div id="mount"></div></section>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const initial = { id: "UI-110", title: "X", status: "open", priority: 2 }
     const stores = {
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return id === "detail:UI-110" ? [initial] : []
       },
       subscribe() {
@@ -30,13 +28,13 @@ describe("views/detail toast", () => {
     const view = createDetailView(mount, send, undefined, stores)
     await view.load("UI-110")
 
-    const prio = /** @type {HTMLSelectElement} */ (mount.querySelector("select.badge--priority"))
+    const prio = mount.querySelector("select.badge--priority") as HTMLSelectElement
     prio.value = "3"
     prio.dispatchEvent(new Event("change"))
 
     await Promise.resolve()
 
-    const toast = /** @type {HTMLDivElement} */ (document.body.querySelector(".toast"))
+    const toast = document.body.querySelector(".toast") as HTMLDivElement
     expect(toast).not.toBeNull()
     expect(toast.style.position).toBe("fixed")
     expect(toast.style.zIndex).toBe("1000")

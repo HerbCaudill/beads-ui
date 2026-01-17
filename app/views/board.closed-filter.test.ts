@@ -1,17 +1,14 @@
 import { describe, expect, test } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createBoardView } from "./board.js"
+import type { IssueStores } from "../data/list-selectors.js"
+import type { Issue } from "../../types/issues.js"
+import type { SnapshotMsg } from "../../types/subscription-issue-store.js"
 
 function createTestIssueStores() {
-  /** @type {Map<string, any>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
-  /**
-   * @param {string} id
-   * @returns {any}
-   */
-  function getStore(id) {
+  const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+  const listeners = new Set<() => void>()
+  function getStore(id: string) {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -30,12 +27,10 @@ function createTestIssueStores() {
   }
   return {
     getStore,
-    /** @param {string} id */
-    snapshotFor(id) {
+    snapshotFor(id: string) {
       return getStore(id).snapshot().slice()
     },
-    /** @param {() => void} fn */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
@@ -45,7 +40,7 @@ function createTestIssueStores() {
 describe("views/board closed filter", () => {
   test("filters closed issues by timeframe and sorts by closed_at", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
 
     const now = Date.now()
     const oneDay = 24 * 60 * 60 * 1000
@@ -62,16 +57,23 @@ describe("views/board closed filter", () => {
         closed_at: new Date(now - 1 * oneDay).getTime(),
       },
       { id: "C-3", title: "today", closed_at: new Date(now).getTime() },
-    ]
+    ] as Issue[]
     const issueStores = createTestIssueStores()
     issueStores.getStore("tab:board:closed").applyPush({
       type: "snapshot",
       id: "tab:board:closed",
       revision: 1,
       issues,
-    })
+    } as SnapshotMsg)
 
-    const view = createBoardView(mount, null, () => {}, undefined, undefined, issueStores)
+    const view = createBoardView(
+      mount,
+      null,
+      () => {},
+      undefined,
+      undefined,
+      issueStores as IssueStores,
+    )
     await view.load()
 
     // Default filter: Today → only C-3 visible
@@ -81,7 +83,7 @@ describe("views/board closed filter", () => {
     expect(closed_ids).toEqual(["C-3"])
 
     // Change to Last 3 days → C-3 (today) and C-2 (yesterday)
-    const select = /** @type {HTMLSelectElement} */ (mount.querySelector("#closed-filter"))
+    const select = mount.querySelector("#closed-filter") as HTMLSelectElement
     select.value = "3"
     select.dispatchEvent(new Event("change", { bubbles: true }))
 

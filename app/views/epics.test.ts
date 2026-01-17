@@ -1,21 +1,21 @@
+// @ts-nocheck
 import { describe, expect, test, vi } from "vitest"
-import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
-import { createSubscriptionStore } from "../data/subscriptions-store.js"
+import { createSubscriptionIssueStore } from "../data/subscription-issue-store.ts"
+import { createSubscriptionStore } from "../data/subscriptions-store.ts"
 import { createEpicsView } from "./epics.ts"
 
 describe("views/epics", () => {
   test("loads groups from store and expands to show non-closed children, navigates on click", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
     const data = {
       updateIssue: vi.fn(),
-      getIssue: vi.fn(async id => ({ id })),
+      getIssue: vi.fn(async (id: string) => ({ id })),
     }
     /** test issue stores */
-    const stores = new Map()
-    const listeners = new Set()
-    /** @param {string} id */
-    const getStore = id => {
+    const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+    const listeners = new Set<() => void>()
+    const getStore = (id: string) => {
       let s = stores.get(id)
       if (!s) {
         s = createSubscriptionIssueStore(id)
@@ -34,12 +34,10 @@ describe("views/epics", () => {
     }
     const issueStores = {
       getStore,
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return getStore(id).snapshot().slice()
       },
-      /** @param {() => void} fn */
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         listeners.add(fn)
         return () => listeners.delete(fn)
       },
@@ -59,14 +57,13 @@ describe("views/epics", () => {
         },
       ],
     })
-    /** @type {string[]} */
-    const navCalls = []
+    const navCalls: string[] = []
     const view = createEpicsView(
       mount,
-      /** @type {any} */ (data),
+      data as Parameters<typeof createEpicsView>[1],
       id => navCalls.push(id),
       subscriptions,
-      /** @type {any} */ (issueStores),
+      issueStores as Parameters<typeof createEpicsView>[4],
     )
     await view.load()
     // Register epic detail and push snapshot with dependents
@@ -111,15 +108,14 @@ describe("views/epics", () => {
 
   test("sorts children by priority then created_at asc", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
     const data = {
       updateIssue: vi.fn(),
-      getIssue: vi.fn(async id => ({ id })),
+      getIssue: vi.fn(async (id: string) => ({ id })),
     }
-    const stores2 = new Map()
-    const listeners2 = new Set()
-    /** @param {string} id */
-    const getStore2 = id => {
+    const stores2 = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+    const listeners2 = new Set<() => void>()
+    const getStore2 = (id: string) => {
       let s = stores2.get(id)
       if (!s) {
         s = createSubscriptionIssueStore(id)
@@ -138,12 +134,10 @@ describe("views/epics", () => {
     }
     const issueStores2 = {
       getStore: getStore2,
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return getStore2(id).snapshot().slice()
       },
-      /** @param {() => void} fn */
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         listeners2.add(fn)
         return () => listeners2.delete(fn)
       },
@@ -165,10 +159,10 @@ describe("views/epics", () => {
     })
     const view = createEpicsView(
       mount,
-      /** @type {any} */ (data),
+      data as Parameters<typeof createEpicsView>[1],
       () => {},
       subscriptions,
-      /** @type {any} */ (issueStores2),
+      issueStores2 as Parameters<typeof createEpicsView>[4],
     )
     await view.load()
     // Seed epic detail snapshot for UI-10 with out-of-order dependents
@@ -216,23 +210,20 @@ describe("views/epics", () => {
     })
     await view.load()
     const rows = Array.from(mount.querySelectorAll("tr.epic-row"))
-    const ids = rows.map(r =>
-      /** @type {HTMLElement} */ (r.querySelector("td.mono"))?.textContent?.trim(),
-    )
+    const ids = rows.map(r => (r.querySelector("td.mono") as HTMLElement)?.textContent?.trim())
     expect(ids).toEqual(["UI-12", "UI-11", "UI-13"])
   })
 
   test("clicking inputs/selects inside a row does not navigate", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
     const data = {
       updateIssue: vi.fn(),
-      getIssue: vi.fn(async id => ({ id })),
+      getIssue: vi.fn(async (id: string) => ({ id })),
     }
-    const stores3 = new Map()
-    const listeners3 = new Set()
-    /** @param {string} id */
-    const getStore3 = id => {
+    const stores3 = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+    const listeners3 = new Set<() => void>()
+    const getStore3 = (id: string) => {
       let s = stores3.get(id)
       if (!s) {
         s = createSubscriptionIssueStore(id)
@@ -251,12 +242,10 @@ describe("views/epics", () => {
     }
     const issueStores3 = {
       getStore: getStore3,
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return getStore3(id).snapshot().slice()
       },
-      /** @param {() => void} fn */
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         listeners3.add(fn)
         return () => listeners3.delete(fn)
       },
@@ -275,14 +264,13 @@ describe("views/epics", () => {
         },
       ],
     })
-    /** @type {string[]} */
-    const navCalls = []
+    const navCalls: string[] = []
     const view = createEpicsView(
       mount,
-      /** @type {any} */ (data),
+      data as Parameters<typeof createEpicsView>[1],
       id => navCalls.push(id),
       subscriptions,
-      /** @type {any} */ (issueStores3),
+      issueStores3 as Parameters<typeof createEpicsView>[4],
     )
     await view.load()
     // Provide detail snapshot so a child row exists
@@ -310,22 +298,21 @@ describe("views/epics", () => {
     })
     await view.load()
     // Click a select inside the row; should not navigate
-    const sel = /** @type {HTMLSelectElement|null} */ (mount.querySelector("tr.epic-row select"))
+    const sel = mount.querySelector("tr.epic-row select") as HTMLSelectElement | null
     sel?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     expect(navCalls.length).toBe(0)
   })
 
   test("shows Loading… while fetching children on manual expansion (no flicker)", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
     const data = {
       updateIssue: vi.fn(),
-      getIssue: vi.fn(async id => ({ id })),
+      getIssue: vi.fn(async (id: string) => ({ id })),
     }
-    const stores4 = new Map()
-    const listeners4 = new Set()
-    /** @param {string} id */
-    const getStore4 = id => {
+    const stores4 = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+    const listeners4 = new Set<() => void>()
+    const getStore4 = (id: string) => {
       let s = stores4.get(id)
       if (!s) {
         s = createSubscriptionIssueStore(id)
@@ -344,12 +331,10 @@ describe("views/epics", () => {
     }
     const issueStores4 = {
       getStore: getStore4,
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return getStore4(id).snapshot().slice()
       },
-      /** @param {() => void} fn */
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         listeners4.add(fn)
         return () => listeners4.delete(fn)
       },
@@ -376,10 +361,10 @@ describe("views/epics", () => {
     })
     const view = createEpicsView(
       mount,
-      /** @type {any} */ (data),
+      data as Parameters<typeof createEpicsView>[1],
       () => {},
       subscriptions,
-      /** @type {any} */ (issueStores4),
+      issueStores4 as Parameters<typeof createEpicsView>[4],
     )
     await view.load()
     // Expand the second group manually
@@ -422,15 +407,14 @@ describe("views/epics", () => {
 
   test("clicking the editable title does not navigate and enters edit mode", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
     const data = {
       updateIssue: vi.fn(),
-      getIssue: vi.fn(async id => ({ id })),
+      getIssue: vi.fn(async (id: string) => ({ id })),
     }
-    const stores5 = new Map()
-    const listeners5 = new Set()
-    /** @param {string} id */
-    const getStore5 = id => {
+    const stores5 = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+    const listeners5 = new Set<() => void>()
+    const getStore5 = (id: string) => {
       let s = stores5.get(id)
       if (!s) {
         s = createSubscriptionIssueStore(id)
@@ -449,12 +433,10 @@ describe("views/epics", () => {
     }
     const issueStores5 = {
       getStore: getStore5,
-      /** @param {string} id */
-      snapshotFor(id) {
+      snapshotFor(id: string) {
         return getStore5(id).snapshot().slice()
       },
-      /** @param {() => void} fn */
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         listeners5.add(fn)
         return () => listeners5.delete(fn)
       },
@@ -473,14 +455,13 @@ describe("views/epics", () => {
         },
       ],
     })
-    /** @type {string[]} */
-    const navCalls = []
+    const navCalls: string[] = []
     const view = createEpicsView(
       mount,
-      /** @type {any} */ (data),
+      data as Parameters<typeof createEpicsView>[1],
       id => navCalls.push(id),
       subscriptions2,
-      /** @type {any} */ (issueStores5),
+      issueStores5 as Parameters<typeof createEpicsView>[4],
     )
     await view.load()
     issueStores5.getStore("detail:UI-30")
@@ -506,17 +487,17 @@ describe("views/epics", () => {
       ],
     })
     await view.load()
-    const titleSpan = /** @type {HTMLElement|null} */ (
-      mount.querySelector("tr.epic-row td:nth-child(3) .editable")
-    )
+    const titleSpan = mount.querySelector(
+      "tr.epic-row td:nth-child(3) .editable",
+    ) as HTMLElement | null
     expect(titleSpan).not.toBeNull()
     titleSpan?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     // Should not have navigated
     expect(navCalls.length).toBe(0)
     // Should render an input for title now
-    const input = /** @type {HTMLInputElement|null} */ (
-      mount.querySelector('tr.epic-row td:nth-child(3) input[type="text"]')
-    )
+    const input = mount.querySelector(
+      'tr.epic-row td:nth-child(3) input[type="text"]',
+    ) as HTMLInputElement | null
     expect(input).not.toBeNull()
   })
 })

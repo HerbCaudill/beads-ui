@@ -1,17 +1,15 @@
 import { describe, expect, test } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createBoardView } from "./board.js"
+import type { IssueStores } from "../data/list-selectors.js"
+import type { Issue } from "../../types/issues.js"
+import type { SnapshotMsg } from "../../types/subscription-issue-store.js"
+import type { Store } from "../state.js"
 
 function createTestIssueStores() {
-  /** @type {Map<string, any>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
-  /**
-   * @param {string} id
-   * @returns {any}
-   */
-  function getStore(id) {
+  const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+  const listeners = new Set<() => void>()
+  function getStore(id: string) {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -30,12 +28,10 @@ function createTestIssueStores() {
   }
   return {
     getStore,
-    /** @param {string} id */
-    snapshotFor(id) {
+    snapshotFor(id: string) {
       return getStore(id).snapshot().slice()
     },
-    /** @param {() => void} fn */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
@@ -45,7 +41,7 @@ function createTestIssueStores() {
 describe("views/board persisted closed filter via store", () => {
   test("applies persisted closed_filter and updates store on change", async () => {
     document.body.innerHTML = '<div id="m"></div>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("m"))
+    const mount = document.getElementById("m") as HTMLElement
 
     const now = Date.now()
     const oneDay = 24 * 60 * 60 * 1000
@@ -54,39 +50,39 @@ describe("views/board persisted closed filter via store", () => {
       { id: "A", closed_at: new Date(now - 8 * oneDay).getTime() },
       { id: "B", closed_at: new Date(now - 2 * oneDay).getTime() },
       { id: "C", closed_at: new Date(now).getTime() },
-    ]
+    ] as Issue[]
     const issueStores = createTestIssueStores()
     issueStores.getStore("tab:board:closed").applyPush({
       type: "snapshot",
       id: "tab:board:closed",
       revision: 1,
       issues,
-    })
+    } as SnapshotMsg)
 
-    /** @type {{ state: any, subs: ((s:any)=>void)[], getState: () => any, setState: (patch:any)=>void, subscribe: (fn:(s:any)=>void)=>()=>void }} */
     const store = {
       state: {
         selected_id: null,
         view: "board",
         filters: { status: "all", search: "", type: "" },
         board: { closed_filter: "7" },
+        workspace: null,
       },
-      subs: [],
+      subs: [] as (() => void)[],
       getState() {
         return this.state
       },
-      setState(patch) {
+      setState(patch: Partial<typeof this.state>) {
         this.state = {
           ...this.state,
           ...(patch || {}),
-          filters: { ...this.state.filters, ...(patch.filters || {}) },
-          board: { ...this.state.board, ...(patch.board || {}) },
+          filters: { ...this.state.filters, ...((patch as { filters?: object }).filters || {}) },
+          board: { ...this.state.board, ...((patch as { board?: object }).board || {}) },
         }
         for (const fn of this.subs) {
-          fn(this.state)
+          fn()
         }
       },
-      subscribe(fn) {
+      subscribe(fn: () => void) {
         this.subs.push(fn)
         return () => {
           this.subs = this.subs.filter(f => f !== fn)
@@ -94,7 +90,14 @@ describe("views/board persisted closed filter via store", () => {
       },
     }
 
-    const view = createBoardView(mount, null, () => {}, store, undefined, issueStores)
+    const view = createBoardView(
+      mount,
+      null,
+      () => {},
+      store as unknown as Store,
+      undefined,
+      issueStores as IssueStores,
+    )
     await view.load()
 
     // With persisted '7' days, B and C visible (A is 8 days old)
@@ -104,7 +107,7 @@ describe("views/board persisted closed filter via store", () => {
     expect(closed_ids).toEqual(["C", "B"])
 
     // Select reflects persisted value
-    const select = /** @type {HTMLSelectElement} */ (mount.querySelector("#closed-filter"))
+    const select = mount.querySelector("#closed-filter") as HTMLSelectElement
     expect(select.value).toBe("7")
 
     // Change to '3' and ensure store updates

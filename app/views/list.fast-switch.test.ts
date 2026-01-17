@@ -1,40 +1,32 @@
 import { describe, expect, test } from "vitest"
 import { createSubscriptionIssueStore } from "../data/subscription-issue-store.js"
 import { createListView } from "./list.js"
+import type { IssueStores } from "../data/list-selectors.js"
+import type { Issue } from "../../types/issues.js"
+import type { SnapshotMsg } from "../../types/subscription-issue-store.js"
 
 /**
  * Helper to toggle a filter option in a dropdown.
- *
- * @param {HTMLElement} mount - The container element
- * @param {number} dropdownIndex - 0 = status, 1 = types
- * @param {string} optionText - Text to match in the option label
  */
-function toggleFilter(mount, dropdownIndex, optionText) {
+function toggleFilter(mount: HTMLElement, dropdownIndex: number, optionText: string) {
   const dropdowns = mount.querySelectorAll(".filter-dropdown")
   const dropdown = dropdowns[dropdownIndex]
+  if (!dropdown) return
   // Open the dropdown
-  const trigger = /** @type {HTMLButtonElement} */ (
-    dropdown.querySelector(".filter-dropdown__trigger")
-  )
+  const trigger = dropdown.querySelector(".filter-dropdown__trigger") as HTMLButtonElement
   trigger.click()
   // Find and click the checkbox
   const option = Array.from(dropdown.querySelectorAll(".filter-dropdown__option")).find(opt =>
     opt.textContent?.includes(optionText),
   )
-  const checkbox = /** @type {HTMLInputElement} */ (option?.querySelector('input[type="checkbox"]'))
+  const checkbox = option?.querySelector('input[type="checkbox"]') as HTMLInputElement
   checkbox.click()
 }
 
 function createTestIssueStores() {
-  /** @type {Map<string, any>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
-  /**
-   * @param {string} id
-   * @returns {any}
-   */
-  function getStore(id) {
+  const stores = new Map<string, ReturnType<typeof createSubscriptionIssueStore>>()
+  const listeners = new Set<() => void>()
+  function getStore(id: string) {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -53,12 +45,10 @@ function createTestIssueStores() {
   }
   return {
     getStore,
-    /** @param {string} id */
-    snapshotFor(id) {
+    snapshotFor(id: string) {
       return getStore(id).snapshot().slice()
     },
-    /** @param {() => void} fn */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
@@ -68,7 +58,7 @@ function createTestIssueStores() {
 describe("list view — fast filter switches", () => {
   test("ignores out-of-order snapshots and renders from push-only store", async () => {
     document.body.innerHTML = '<aside id="mount" class="panel"></aside>'
-    const mount = /** @type {HTMLElement} */ (document.getElementById("mount"))
+    const mount = document.getElementById("mount") as HTMLElement
 
     const issueStores = createTestIssueStores()
     // Initial empty snapshot for default "all"
@@ -77,8 +67,15 @@ describe("list view — fast filter switches", () => {
       id: "tab:issues",
       revision: 1,
       issues: [],
-    })
-    const view = createListView(mount, async () => [], undefined, undefined, undefined, issueStores)
+    } as SnapshotMsg)
+    const view = createListView(
+      mount,
+      async () => [],
+      undefined,
+      undefined,
+      undefined,
+      issueStores as IssueStores,
+    )
     await view.load()
     expect(mount.querySelectorAll("tr.issue-row").length).toBe(0)
 
@@ -101,7 +98,7 @@ describe("list view — fast filter switches", () => {
         created_at: 210,
         updated_at: 210,
       },
-    ]
+    ] as Issue[]
     const ready = [
       {
         id: "R-1",
@@ -110,7 +107,7 @@ describe("list view — fast filter switches", () => {
         created_at: 100,
         updated_at: 100,
       },
-    ]
+    ] as Issue[]
 
     // Newer revision first
     issueStores.getStore("tab:issues").applyPush({
@@ -118,7 +115,7 @@ describe("list view — fast filter switches", () => {
       id: "tab:issues",
       revision: 3,
       issues: inProg,
-    })
+    } as SnapshotMsg)
     await Promise.resolve()
     // Stale snapshot second
     issueStores.getStore("tab:issues").applyPush({
@@ -126,10 +123,9 @@ describe("list view — fast filter switches", () => {
       id: "tab:issues",
       revision: 2,
       issues: ready,
-    })
+    } as SnapshotMsg)
     await Promise.resolve()
 
-    /** @type {any[]} */
     const snapshot = issueStores.snapshotFor("tab:issues")
     const ids = snapshot.map(it => it.id)
     expect(ids).toEqual(["P-1", "P-2"])
