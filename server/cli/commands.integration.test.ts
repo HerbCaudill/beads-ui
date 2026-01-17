@@ -21,10 +21,8 @@ vi.mock("../db.js", () => ({
   }),
 }))
 
-/** @type {string} */
-let tmp_runtime_dir
-/** @type {Record<string, string | undefined>} */
-let prev_env
+let tmp_runtime_dir: string
+let prev_env: Record<string, string | undefined>
 
 beforeAll(() => {
   // Snapshot selected env vars to restore later

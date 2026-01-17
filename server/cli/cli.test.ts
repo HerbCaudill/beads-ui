@@ -1,3 +1,4 @@
+import type { MockInstance } from "vitest"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import * as logging from "../logging.js"
 import * as commands from "./commands.js"
@@ -14,8 +15,7 @@ vi.mock("./commands.js", () => ({
   handleRestart: vi.fn().mockResolvedValue(0),
 }))
 
-/** @type {import('vitest').MockInstance} */
-let write_mock
+let write_mock: MockInstance
 
 beforeEach(() => {
   write_mock = vi.spyOn(process.stdout, "write").mockImplementation(() => true)
