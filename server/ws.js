@@ -6,7 +6,7 @@
 import path from "node:path"
 import { WebSocketServer } from "ws"
 import { isRequest, makeError, makeOk } from "../app/protocol.ts"
-import { getGitUserName, runBd, runBdJson } from "./bd.js"
+import { getGitUserName, runBd, runBdJson } from "./bd.ts"
 import { resolveDbPath } from "./db.ts"
 import { fetchListForSubscription } from "./list-adapters.ts"
 import { debug } from "./logging.ts"

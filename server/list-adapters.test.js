@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBdJson } from "./bd.js"
+import { runBdJson } from "./bd.ts"
 import { fetchListForSubscription, mapSubscriptionToBdArgs } from "./list-adapters.ts"
 
-vi.mock("./bd.js", () => ({ runBdJson: vi.fn() }))
+vi.mock("./bd.ts", () => ({ runBdJson: vi.fn() }))
 
 describe("list adapters for subscription types", () => {
   beforeEach(() => {

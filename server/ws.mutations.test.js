@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBd, runBdJson } from "./bd.js"
+import { runBd, runBdJson } from "./bd.ts"
 import { handleMessage } from "./ws.js"
 
-vi.mock("./bd.js", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
+vi.mock("./bd.ts", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
 
 // Ensure clean mock state for each test
 beforeEach(() => {

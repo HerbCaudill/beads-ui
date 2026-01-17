@@ -1,16 +1,21 @@
 import { spawn } from "node:child_process"
-import { resolveDbPath } from "./db.ts"
-import { debug } from "./logging.ts"
+import { resolveDbPath } from "./db.js"
+import { debug } from "./logging.js"
 
 const log = debug("bd")
 
 /**
- * Get the git user name from git config.
- *
- * @param {{ cwd?: string }} [options]
- * @returns {Promise<string>}
+ * Options for getGitUserName.
  */
-export async function getGitUserName(options = {}) {
+export interface GetGitUserNameOptions {
+  /** Working directory. Defaults to process.cwd(). */
+  cwd?: string
+}
+
+/**
+ * Get the git user name from git config.
+ */
+export async function getGitUserName(options: GetGitUserNameOptions = {}): Promise<string> {
   return new Promise(resolve => {
     const child = spawn("git", ["config", "user.name"], {
       cwd: options.cwd || process.cwd(),
@@ -18,8 +23,7 @@ export async function getGitUserName(options = {}) {
       windowsHide: true,
     })
 
-    /** @type {string[]} */
-    const chunks = []
+    const chunks: string[] = []
 
     if (child.stdout) {
       child.stdout.setEncoding("utf8")
@@ -39,10 +43,8 @@ export async function getGitUserName(options = {}) {
 
 /**
  * Resolve the bd executable path.
- *
- * @returns {string}
  */
-export function getBdBin() {
+export function getBdBin(): string {
   const env_value = process.env.BD_BIN
   if (env_value && env_value.length > 0) {
     return env_value
@@ -51,14 +53,34 @@ export function getBdBin() {
 }
 
 /**
+ * Options for runBd and runBdJson.
+ */
+export interface RunBdOptions {
+  /** Working directory. Defaults to process.cwd(). */
+  cwd?: string
+  /** Environment variables. Defaults to process.env. */
+  env?: Record<string, string | undefined>
+  /** Timeout in milliseconds. */
+  timeout_ms?: number
+}
+
+/**
+ * Result from running bd command.
+ */
+export interface RunBdResult {
+  /** Exit code from the command. */
+  code: number
+  /** Standard output from the command. */
+  stdout: string
+  /** Standard error from the command. */
+  stderr: string
+}
+
+/**
  * Run the `bd` CLI with provided arguments.
  * Shell is not used to avoid injection; args must be pre-split.
- *
- * @param {string[]} args - Arguments to pass (e.g., ["list", "--json"]).
- * @param {{ cwd?: string, env?: Record<string, string | undefined>, timeout_ms?: number }} [options]
- * @returns {Promise<{ code: number, stdout: string, stderr: string }>}
  */
-export function runBd(args, options = {}) {
+export function runBd(args: string[], options: RunBdOptions = {}): Promise<RunBdResult> {
   const bin = getBdBin()
 
   // Ensure a consistent DB by setting BEADS_DB environment variable
@@ -74,20 +96,17 @@ export function runBd(args, options = {}) {
   const spawn_opts = {
     cwd: options.cwd || process.cwd(),
     env: env_with_db,
-    shell: false,
+    shell: false as const,
     windowsHide: true,
   }
 
-  /** @type {string[]} */
   const final_args = args.slice()
 
   return new Promise(resolve => {
     const child = spawn(bin, final_args, spawn_opts)
 
-    /** @type {string[]} */
-    const out_chunks = []
-    /** @type {string[]} */
-    const err_chunks = []
+    const out_chunks: string[] = []
+    const err_chunks: string[] = []
 
     if (child.stdout) {
       child.stdout.setEncoding("utf8")
@@ -102,8 +121,7 @@ export function runBd(args, options = {}) {
       })
     }
 
-    /** @type {ReturnType<typeof setTimeout> | undefined} */
-    let timer
+    let timer: ReturnType<typeof setTimeout> | undefined
     if (options.timeout_ms && options.timeout_ms > 0) {
       timer = setTimeout(() => {
         child.kill("SIGKILL")
@@ -111,10 +129,7 @@ export function runBd(args, options = {}) {
       timer.unref?.()
     }
 
-    /**
-     * @param {number | string | null} code
-     */
-    const finish = code => {
+    const finish = (code: number | string | null) => {
       if (timer) {
         clearTimeout(timer)
       }
@@ -137,20 +152,30 @@ export function runBd(args, options = {}) {
 }
 
 /**
- * Run `bd` and parse JSON from stdout if exit code is 0.
- *
- * @param {string[]} args - Must include flags that cause JSON to be printed (e.g., `--json`).
- * @param {{ cwd?: string, env?: Record<string, string | undefined>, timeout_ms?: number }} [options]
- * @returns {Promise<{ code: number, stdoutJson?: unknown, stderr?: string }>}
+ * Result from running bd command with JSON parsing.
  */
-export async function runBdJson(args, options = {}) {
+export interface RunBdJsonResult {
+  /** Exit code from the command. */
+  code: number
+  /** Parsed JSON from stdout (if successful). */
+  stdoutJson?: unknown
+  /** Error message (if failed). */
+  stderr?: string
+}
+
+/**
+ * Run `bd` and parse JSON from stdout if exit code is 0.
+ */
+export async function runBdJson(
+  args: string[],
+  options: RunBdOptions = {},
+): Promise<RunBdJsonResult> {
   const result = await runBd(args, options)
   if (result.code !== 0) {
     log("bd exited with code %d (args=%o) stderr=%s", result.code, args, result.stderr)
     return { code: result.code, stderr: result.stderr }
   }
-  /** @type {unknown} */
-  let parsed
+  let parsed: unknown
   try {
     parsed = JSON.parse(result.stdout || "null")
   } catch (err) {

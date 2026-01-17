@@ -83,6 +83,7 @@ Never update `CHANGES.md`.
   - `server/registry-watcher.ts` - Workspace registry watcher and in-memory workspace management
   - `server/subscriptions.ts` - Server-side subscription registry for list data with per-key locking
   - `server/list-adapters.ts` - List query adapters mapping subscription types to bd CLI commands
+  - `server/bd.ts` - BD CLI integration module (runs the bd command-line tool)
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

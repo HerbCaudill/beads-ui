@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from "vitest"
-import { runBd, runBdJson } from "./bd.js"
+import { runBd, runBdJson } from "./bd.ts"
 import { handleMessage } from "./ws.js"
 
-vi.mock("./bd.js", () => ({
+vi.mock("./bd.ts", () => ({
   runBd: vi.fn(),
   runBdJson: vi.fn(),
 }))

@@ -1,10 +1,10 @@
 import { createServer } from "node:http"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBd } from "./bd.js"
+import { runBd } from "./bd.ts"
 import { fetchListForSubscription } from "./list-adapters.ts"
 import { attachWsServer, handleMessage, scheduleListRefresh } from "./ws.js"
 
-vi.mock("./bd.js", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
+vi.mock("./bd.ts", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
 vi.mock("./list-adapters.ts", () => ({
   fetchListForSubscription: vi.fn(async () => {
     return {

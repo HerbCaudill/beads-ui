@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { runBd } from "./bd.js"
+import { runBd } from "./bd.ts"
 import { handleMessage } from "./ws.js"
 
-vi.mock("./bd.js", () => ({
+vi.mock("./bd.ts", () => ({
   runBd: vi.fn(),
   runBdJson: vi.fn(),
   getGitUserName: vi.fn(),
