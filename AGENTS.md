@@ -70,6 +70,7 @@ Never update `CHANGES.md`.
   - `app/protocol.ts` - WebSocket protocol definitions (message types, envelopes)
   - `app/data/providers.ts` - Data layer for issue mutations
   - `app/data/subscriptions-store.ts` - Client-side list subscription store
+  - `app/data/subscription-issue-store.ts` - Per-subscription issue store with sorted snapshots
   - `app/router.ts` - Hash-based URL router for views and issue deep-linking
   - `app/state.ts` - Global app state store with subscription support
   - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation
