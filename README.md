@@ -1,19 +1,3 @@
-<h1 align="center">
-  Beads UI
-</h1>
-<p align="center">
-  <b>Local UI for the <code>bd</code> CLI – <a href="https://github.com/steveyegge/beads">Beads</a></b><br>
-  Collaborate on issues with your coding agent.
-</p>
-<div align="center">
-  <a href="https://www.npmjs.com/package/beads-ui"><img src="https://img.shields.io/npm/v/beads-ui.svg" alt="npm Version"></a>
-  <a href="https://semver.org"><img src="https://img.shields.io/:semver-%E2%9C%93-blue.svg" alt="SemVer"></a>
-  <a href="https://github.com/mantoni/beads-ui/actions/worflows/ci.yml"><img src="https://github.com/mantoni/eslint_d.js/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/npm/l/eslint_d.svg" alt="MIT License"></a>
-  <br>
-  <br>
-</div>
-
 ## Features
 
 - ✨ **Zero setup** – just run `bdui start`
@@ -37,15 +21,15 @@ See `bdui --help` for options.
 
 **Issues**
 
-![Issues view](https://github.com/mantoni/beads-ui/raw/main/media/bdui-issues.png)
+![Issues view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-issues.png)
 
 **Epics**
 
-![Epics view](https://github.com/mantoni/beads-ui/raw/main/media/bdui-epics.png)
+![Epics view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-epics.png)
 
 **Board**
 
-![Board view](https://github.com/mantoni/beads-ui/raw/main/media/bdui-board.png)
+![Board view](https://github.com/herbcaudill/beads-ui/raw/main/media/bdui-board.png)
 
 ## Environment variables
 
@@ -65,9 +49,9 @@ These can also be set via CLI options: `bdui start --host 0.0.0.0 --port 8080`
 
 ## Developer Workflow
 
-- 🔨 Clone the repo and run `npm install`.
-- 🚀 Start the dev server with `npm start`.
-- 🔗 Alternatively, use `npm link` to link the package globally and run
+- 🔨 Clone the repo and run `pnpm install`.
+- 🚀 Start the dev server with `pnpm start`.
+- 🔗 Alternatively, use `pnpm link` to link the package globally and run
   `bdui start` from any project.
 
 ## Debug Logging

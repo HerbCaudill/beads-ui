@@ -24,8 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "prettier --write .",
-    "prettier:check": "prettier --check ."
+    "format": "prettier --write ."
   },
   "dependencies": {
     "debug": "^4.4.3",
@@ -66,9 +65,5 @@
     "LICENSE",
     "README.md",
     "!**/*.test.js"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mantoni/beads-ui.git"
-  }
+  ]
 }
