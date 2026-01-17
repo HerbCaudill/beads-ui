@@ -90,6 +90,7 @@ Never update `CHANGES.md`.
   - `app/utils/issue-id-renderer.ts` - Copy-to-clipboard issue ID button
   - `app/utils/activity-indicator.ts` - In-flight request activity tracker
   - `app/views/detail.ts` - Issue detail panel view component with lit-html templating
+  - `app/views/board.ts` - Kanban board view component with drag-drop support
   - `server/logging.ts` - Debug logger helper for Node server/CLI
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)

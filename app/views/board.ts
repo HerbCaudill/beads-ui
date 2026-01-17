@@ -1,35 +1,55 @@
-import { html, render } from "lit-html"
-import { createListSelectors } from "../data/list-selectors.js"
+import { html, render, TemplateResult } from "lit-html"
+import { createListSelectors, IssueStores, ListSelectors } from "../data/list-selectors.js"
 import { cmpClosedDesc, cmpPriorityThenCreated } from "../data/sort.js"
+import type { Store, ClosedFilter } from "../state.js"
 import { createIssueIdRenderer } from "../utils/issue-id-renderer.js"
 import { debug } from "../utils/logging.js"
 import { createPriorityBadge } from "../utils/priority-badge.js"
 import { showToast } from "../utils/toast.js"
 import { createTypeBadge } from "../utils/type-badge.js"
-
-/**
- * @typedef {{
- *   id: string,
- *   title?: string,
- *   status?: 'open'|'in_progress'|'closed',
- *   priority?: number,
- *   issue_type?: string,
- *   created_at?: number,
- *   updated_at?: number,
- *   closed_at?: number
- * }} IssueLite
- */
+import type { IssueLite } from "../../types/issues.js"
 
 /**
  * Map column IDs to their corresponding status values.
- *
- * @type {Record<string, 'open'|'in_progress'|'closed'>}
  */
-const COLUMN_STATUS_MAP = {
+const COLUMN_STATUS_MAP: Record<string, "open" | "in_progress" | "closed"> = {
   "blocked-col": "open",
   "ready-col": "open",
   "in-progress-col": "in_progress",
   "closed-col": "closed",
+}
+
+/**
+ * Subscriptions interface for querying issue IDs.
+ */
+interface Subscriptions {
+  selectors: {
+    getIds: (client_id: string) => string[]
+    count?: (client_id: string) => number
+  }
+}
+
+/**
+ * Legacy data interface for fallback fetch.
+ */
+interface LegacyData {
+  getReady: () => Promise<IssueLite[]>
+  getBlocked: () => Promise<IssueLite[]>
+  getInProgress: () => Promise<IssueLite[]>
+  getClosed: () => Promise<IssueLite[]>
+}
+
+/**
+ * Transport function type for sending updates.
+ */
+type TransportFn = (type: string, payload: unknown) => Promise<unknown>
+
+/**
+ * View API returned by createBoardView.
+ */
+export interface BoardViewAPI {
+  load: () => Promise<void>
+  clear: () => void
 }
 
 /**
@@ -40,59 +60,50 @@ const COLUMN_STATUS_MAP = {
  * - Ready/Blocked/In progress: priority asc, then created_at asc.
  * - Closed: closed_at desc.
  *
- * @param {HTMLElement} mount_element
- * @param {unknown} _data - Unused (legacy param retained for call-compat)
- * @param {(id: string) => void} gotoIssue - Navigate to issue detail.
- * @param {{ getState: () => any, setState: (patch: any) => void, subscribe?: (fn: (s:any)=>void)=>()=>void }} [store]
- * @param {{ selectors: { getIds: (client_id: string) => string[], count?: (client_id: string) => number } }} [subscriptions]
- * @param {{ snapshotFor?: (client_id: string) => any[], subscribe?: (fn: () => void) => () => void }} [issueStores]
- * @param {(type: string, payload: unknown) => Promise<unknown>} [transport] - Transport function for sending updates
- * @returns {{ load: () => Promise<void>, clear: () => void }}
+ * @param mount_element - Element to render into.
+ * @param _data - Unused (legacy param retained for call-compat).
+ * @param gotoIssue - Navigate to issue detail.
+ * @param store - Optional store for persisting board state.
+ * @param subscriptions - Optional subscriptions for querying issue IDs.
+ * @param issueStores - Optional issue stores for snapshots.
+ * @param transport - Optional transport function for sending updates.
+ * @returns View API.
  */
 export function createBoardView(
-  mount_element,
-  _data,
-  gotoIssue,
-  store,
-  subscriptions = undefined,
-  issueStores = undefined,
-  transport = undefined,
-) {
+  mount_element: HTMLElement,
+  _data: unknown,
+  gotoIssue: (id: string) => void,
+  store?: Store,
+  subscriptions?: Subscriptions,
+  issueStores?: IssueStores,
+  transport?: TransportFn,
+): BoardViewAPI {
   const log = debug("views:board")
-  /** @type {IssueLite[]} */
-  let list_ready = []
-  /** @type {IssueLite[]} */
-  let list_blocked = []
-  /** @type {IssueLite[]} */
-  let list_in_progress = []
-  /** @type {IssueLite[]} */
-  let list_closed = []
-  /** @type {IssueLite[]} */
-  let list_closed_raw = []
+  let list_ready: IssueLite[] = []
+  let list_blocked: IssueLite[] = []
+  let list_in_progress: IssueLite[] = []
+  let list_closed: IssueLite[] = []
+  let list_closed_raw: IssueLite[] = []
   // Centralized selection helpers
-  const selectors = issueStores ? createListSelectors(issueStores) : null
+  const selectors: ListSelectors | null = issueStores ? createListSelectors(issueStores) : null
 
   /**
    * Closed column filter mode.
-   * 'today' → items with closed_at since local day start
-   * '3' → last 3 days; '7' → last 7 days
-   *
-   * @type {'today'|'3'|'7'}
    */
-  let closed_filter_mode = "today"
+  let closed_filter_mode: ClosedFilter = "today"
   if (store) {
     try {
       const s = store.getState()
       const cf = s && s.board ? String(s.board.closed_filter || "today") : "today"
       if (cf === "today" || cf === "3" || cf === "7") {
-        closed_filter_mode = /** @type {any} */ (cf)
+        closed_filter_mode = cf as ClosedFilter
       }
     } catch {
       // ignore store init errors
     }
   }
 
-  function template() {
+  function template(): TemplateResult {
     return html`
       <div class="panel__body board-root">
         ${columnTemplate("Blocked", "blocked-col", list_blocked)}
@@ -103,12 +114,7 @@ export function createBoardView(
     `
   }
 
-  /**
-   * @param {string} title
-   * @param {string} id
-   * @param {IssueLite[]} items
-   */
-  function columnTemplate(title, id, items) {
+  function columnTemplate(title: string, id: string, items: IssueLite[]): TemplateResult {
     const item_count = Array.isArray(items) ? items.length : 0
     const count_label = item_count === 1 ? "1 issue" : `${item_count} issues`
     return html`
@@ -140,10 +146,7 @@ export function createBoardView(
     `
   }
 
-  /**
-   * @param {IssueLite} it
-   */
-  function cardTemplate(it) {
+  function cardTemplate(it: IssueLite): TemplateResult {
     return html`
       <article
         class="board-card"
@@ -151,8 +154,8 @@ export function createBoardView(
         role="listitem"
         tabindex="-1"
         draggable="true"
-        @click=${(/** @type {MouseEvent} */ ev) => onCardClick(ev, it.id)}
-        @dragstart=${(/** @type {DragEvent} */ ev) => onDragStart(ev, it.id)}
+        @click=${(ev: MouseEvent) => onCardClick(ev, it.id)}
+        @dragstart=${(ev: DragEvent) => onDragStart(ev, it.id)}
         @dragend=${onDragEnd}
       >
         <div class="board-card__title text-truncate">${it.title || "(no title)"}</div>
@@ -164,16 +167,12 @@ export function createBoardView(
     `
   }
 
-  /** @type {string|null} */
-  let dragging_id = null
+  let dragging_id: string | null = null
 
   /**
    * Handle card click, ignoring clicks during drag operations.
-   *
-   * @param {MouseEvent} ev
-   * @param {string} id
    */
-  function onCardClick(ev, id) {
+  function onCardClick(ev: MouseEvent, id: string): void {
     // Only navigate if this wasn't a drag operation
     if (!dragging_id) {
       gotoIssue(id)
@@ -182,28 +181,23 @@ export function createBoardView(
 
   /**
    * Handle drag start: store issue id in dataTransfer and add dragging class.
-   *
-   * @param {DragEvent} ev
-   * @param {string} id
    */
-  function onDragStart(ev, id) {
+  function onDragStart(ev: DragEvent, id: string): void {
     dragging_id = id
     if (ev.dataTransfer) {
       ev.dataTransfer.setData("text/plain", id)
       ev.dataTransfer.effectAllowed = "move"
     }
-    const target = /** @type {HTMLElement} */ (ev.target)
+    const target = ev.target as HTMLElement
     target.classList.add("board-card--dragging")
     log("dragstart %s", id)
   }
 
   /**
    * Handle drag end: remove dragging class.
-   *
-   * @param {DragEvent} ev
    */
-  function onDragEnd(ev) {
-    const target = /** @type {HTMLElement} */ (ev.target)
+  function onDragEnd(ev: DragEvent): void {
+    const target = ev.target as HTMLElement
     target.classList.remove("board-card--dragging")
     // Clear any highlighted drop target
     clearDropTarget()
@@ -217,9 +211,10 @@ export function createBoardView(
   /**
    * Clear the currently highlighted drop target column.
    */
-  function clearDropTarget() {
-    /** @type {HTMLElement[]} */
-    const all_cols = Array.from(mount_element.querySelectorAll(".board-column--drag-over"))
+  function clearDropTarget(): void {
+    const all_cols: HTMLElement[] = Array.from(
+      mount_element.querySelectorAll(".board-column--drag-over"),
+    )
     for (const c of all_cols) {
       c.classList.remove("board-column--drag-over")
     }
@@ -227,11 +222,11 @@ export function createBoardView(
 
   /**
    * Update issue status via WebSocket transport.
-   *
-   * @param {string} issue_id
-   * @param {'open'|'in_progress'|'closed'} new_status
    */
-  async function updateIssueStatus(issue_id, new_status) {
+  async function updateIssueStatus(
+    issue_id: string,
+    new_status: "open" | "in_progress" | "closed",
+  ): Promise<void> {
     if (!transport) {
       log("no transport available, status update skipped")
       showToast("Cannot update status: not connected", "error")
@@ -247,7 +242,7 @@ export function createBoardView(
     }
   }
 
-  function doRender() {
+  function doRender(): void {
     render(template(), mount_element)
     postRenderEnhance()
   }
@@ -259,31 +254,28 @@ export function createBoardView(
    * - ArrowLeft/ArrowRight to adjacent non-empty column (focus top card).
    * - Enter/Space to open details for focused card.
    */
-  function postRenderEnhance() {
+  function postRenderEnhance(): void {
     try {
-      /** @type {HTMLElement[]} */
-      const columns = Array.from(mount_element.querySelectorAll(".board-column"))
+      const columns: HTMLElement[] = Array.from(mount_element.querySelectorAll(".board-column"))
       for (const col of columns) {
-        const body = /** @type {HTMLElement|null} */ (col.querySelector(".board-column__body"))
+        const body = col.querySelector(".board-column__body") as HTMLElement | null
         if (!body) {
           continue
         }
-        /** @type {HTMLElement[]} */
-        const cards = Array.from(body.querySelectorAll(".board-card"))
+        const cards: HTMLElement[] = Array.from(body.querySelectorAll(".board-card"))
         // Assign aria-label using column header for screen readers
-        const header = /** @type {HTMLElement|null} */ (col.querySelector(".board-column__header"))
+        const header = col.querySelector(".board-column__header") as HTMLElement | null
         const col_name = header ? header.textContent?.trim() || "" : ""
         for (const card of cards) {
-          const title_el = /** @type {HTMLElement|null} */ (
-            card.querySelector(".board-card__title")
-          )
+          const title_el = card.querySelector(".board-card__title") as HTMLElement | null
           const t = title_el ? title_el.textContent?.trim() || "" : ""
           card.setAttribute("aria-label", `Issue ${t || "(no title)"} — Column ${col_name}`)
           // Default roving setup
           card.tabIndex = -1
         }
-        if (cards.length > 0) {
-          cards[0].tabIndex = 0
+        const first_card = cards[0]
+        if (first_card) {
+          first_card.tabIndex = 0
         }
       }
     } catch {
@@ -325,7 +317,7 @@ export function createBoardView(
     }
     ev.preventDefault()
     // Column context
-    const col = /** @type {HTMLElement|null} */ (card.closest(".board-column"))
+    const col = card.closest(".board-column") as HTMLElement | null
     if (!col) {
       return
     }
@@ -333,50 +325,55 @@ export function createBoardView(
     if (!body) {
       return
     }
-    /** @type {HTMLElement[]} */
-    const cards = Array.from(body.querySelectorAll(".board-card"))
-    const idx = cards.indexOf(/** @type {HTMLElement} */ (card))
+    const cards: HTMLElement[] = Array.from(body.querySelectorAll(".board-card"))
+    const idx = cards.indexOf(card as HTMLElement)
     if (idx === -1) {
       return
     }
     if (key === "ArrowDown" && idx < cards.length - 1) {
-      moveFocus(cards[idx], cards[idx + 1])
+      const current_card = cards[idx]
+      const next_card = cards[idx + 1]
+      if (current_card && next_card) {
+        moveFocus(current_card, next_card)
+      }
       return
     }
     if (key === "ArrowUp" && idx > 0) {
-      moveFocus(cards[idx], cards[idx - 1])
+      const current_card = cards[idx]
+      const prev_card = cards[idx - 1]
+      if (current_card && prev_card) {
+        moveFocus(current_card, prev_card)
+      }
       return
     }
     if (key === "ArrowRight" || key === "ArrowLeft") {
       // Find adjacent column with at least one card
-      /** @type {HTMLElement[]} */
-      const cols = Array.from(mount_element.querySelectorAll(".board-column"))
+      const cols: HTMLElement[] = Array.from(mount_element.querySelectorAll(".board-column"))
       const col_idx = cols.indexOf(col)
       if (col_idx === -1) {
         return
       }
       const dir = key === "ArrowRight" ? 1 : -1
       let next_idx = col_idx + dir
-      /** @type {HTMLElement|null} */
-      let target_col = null
+      let target_col: HTMLElement | null = null
       while (next_idx >= 0 && next_idx < cols.length) {
         const candidate = cols[next_idx]
-        const c_body = /** @type {HTMLElement|null} */ (
-          candidate.querySelector(".board-column__body")
-        )
-        const c_cards = c_body ? Array.from(c_body.querySelectorAll(".board-card")) : []
-        if (c_cards.length > 0) {
-          target_col = candidate
-          break
+        if (candidate) {
+          const c_body = candidate.querySelector(".board-column__body") as HTMLElement | null
+          const c_cards = c_body ? Array.from(c_body.querySelectorAll(".board-card")) : []
+          if (c_cards.length > 0) {
+            target_col = candidate
+            break
+          }
         }
         next_idx += dir
       }
       if (target_col) {
-        const first = /** @type {HTMLElement|null} */ (
-          target_col.querySelector(".board-column__body .board-card")
-        )
+        const first = target_col.querySelector(
+          ".board-column__body .board-card",
+        ) as HTMLElement | null
         if (first) {
-          moveFocus(/** @type {HTMLElement} */ (card), first)
+          moveFocus(card as HTMLElement, first)
         }
       }
       return
@@ -384,8 +381,7 @@ export function createBoardView(
   })
 
   // Track the currently highlighted column to avoid flicker
-  /** @type {HTMLElement|null} */
-  let current_drop_target = null
+  let current_drop_target: HTMLElement | null = null
 
   // Delegate drag and drop handling for columns
   mount_element.addEventListener("dragover", ev => {
@@ -394,8 +390,8 @@ export function createBoardView(
       ev.dataTransfer.dropEffect = "move"
     }
     // Find the column being dragged over
-    const target = /** @type {HTMLElement} */ (ev.target)
-    const col = /** @type {HTMLElement|null} */ (target.closest(".board-column"))
+    const target = ev.target as HTMLElement
+    const col = target.closest(".board-column") as HTMLElement | null
 
     // Only update if we've entered a different column
     if (col && col !== current_drop_target) {
@@ -410,7 +406,7 @@ export function createBoardView(
   })
 
   mount_element.addEventListener("dragleave", ev => {
-    const related = /** @type {HTMLElement|null} */ (ev.relatedTarget)
+    const related = ev.relatedTarget as HTMLElement | null
     // Only clear if we're leaving the mount element entirely
     if (!related || !mount_element.contains(related)) {
       if (current_drop_target) {
@@ -428,7 +424,7 @@ export function createBoardView(
       current_drop_target = null
     }
 
-    const target = /** @type {HTMLElement} */ (ev.target)
+    const target = ev.target as HTMLElement
     const col = target.closest(".board-column")
     if (!col) {
       return
@@ -451,11 +447,7 @@ export function createBoardView(
     void updateIssueStatus(issue_id, new_status)
   })
 
-  /**
-   * @param {HTMLElement} from
-   * @param {HTMLElement} to
-   */
-  function moveFocus(from, to) {
+  function moveFocus(from: HTMLElement, to: HTMLElement): void {
     try {
       from.tabIndex = -1
       to.tabIndex = 0
@@ -470,10 +462,9 @@ export function createBoardView(
   /**
    * Recompute closed list from raw using the current filter and sort.
    */
-  function applyClosedFilter() {
+  function applyClosedFilter(): void {
     log("applyClosedFilter %s", closed_filter_mode)
-    /** @type {IssueLite[]} */
-    let items = Array.isArray(list_closed_raw) ? [...list_closed_raw] : []
+    let items: IssueLite[] = Array.isArray(list_closed_raw) ? [...list_closed_raw] : []
     const now = new Date()
     let since_ts = 0
     if (closed_filter_mode === "today") {
@@ -485,7 +476,7 @@ export function createBoardView(
       since_ts = now.getTime() - 7 * 24 * 60 * 60 * 1000
     }
     items = items.filter(it => {
-      const s = Number.isFinite(it.closed_at) ? /** @type {number} */ (it.closed_at) : NaN
+      const s = Number.isFinite(it.closed_at) ? (it.closed_at as number) : NaN
       if (!Number.isFinite(s)) {
         return false
       }
@@ -495,12 +486,9 @@ export function createBoardView(
     list_closed = items
   }
 
-  /**
-   * @param {Event} ev
-   */
-  function onClosedFilterChange(ev) {
+  function onClosedFilterChange(ev: Event): void {
     try {
-      const el = /** @type {HTMLSelectElement} */ (ev.target)
+      const el = ev.target as HTMLSelectElement
       const v = String(el.value || "today")
       closed_filter_mode = v === "3" || v === "7" ? v : "today"
       log("closed filter %s", closed_filter_mode)
@@ -521,7 +509,7 @@ export function createBoardView(
   /**
    * Compose lists from subscriptions + issues store and render.
    */
-  function refreshFromStores() {
+  function refreshFromStores(): void {
     try {
       if (selectors) {
         const in_progress = selectors.selectBoardColumn("tab:board:in-progress", "in_progress")
@@ -530,8 +518,7 @@ export function createBoardView(
         const closed = selectors.selectBoardColumn("tab:board:closed", "closed")
 
         // Ready excludes items that are in progress
-        /** @type {Set<string>} */
-        const in_prog_ids = new Set(in_progress.map(i => i.id))
+        const in_prog_ids: Set<string> = new Set(in_progress.map(i => i.id))
         const ready = ready_raw.filter(i => !in_prog_ids.has(i.id))
 
         list_ready = ready
@@ -562,7 +549,7 @@ export function createBoardView(
   }
 
   return {
-    async load() {
+    async load(): Promise<void> {
       // Compose lists from subscriptions + issues store
       log("load")
       refreshFromStores()
@@ -571,10 +558,7 @@ export function createBoardView(
       // a fallback so the board is not empty on initial display.
       try {
         const has_subs = Boolean(subscriptions && subscriptions.selectors)
-        /**
-         * @param {string} id
-         */
-        const cnt = id => {
+        const cnt = (id: string): number => {
           if (!has_subs || !subscriptions) {
             return 0
           }
@@ -594,7 +578,7 @@ export function createBoardView(
           cnt("tab:board:blocked") +
           cnt("tab:board:in-progress") +
           cnt("tab:board:closed")
-        const data = /** @type {any} */ (_data)
+        const data = _data as LegacyData | null
         const can_fetch =
           data &&
           typeof data.getReady === "function" &&
@@ -603,26 +587,25 @@ export function createBoardView(
           typeof data.getClosed === "function"
         if (total_items === 0 && can_fetch) {
           log("fallback fetch")
-          /** @type {[IssueLite[], IssueLite[], IssueLite[], IssueLite[]]} */
-          const [ready_raw, blocked_raw, in_prog_raw, closed_raw] = await Promise.all([
-            data.getReady().catch(() => []),
-            data.getBlocked().catch(() => []),
-            data.getInProgress().catch(() => []),
-            data.getClosed().catch(() => []),
+          const [ready_raw, blocked_raw, in_prog_raw, closed_raw]: [
+            IssueLite[],
+            IssueLite[],
+            IssueLite[],
+            IssueLite[],
+          ] = await Promise.all([
+            data!.getReady().catch(() => []),
+            data!.getBlocked().catch(() => []),
+            data!.getInProgress().catch(() => []),
+            data!.getClosed().catch(() => []),
           ])
           // Normalize and map unknowns to IssueLite shape
-          /** @type {IssueLite[]} */
-          let ready = Array.isArray(ready_raw) ? ready_raw.map(it => it) : []
-          /** @type {IssueLite[]} */
-          const blocked = Array.isArray(blocked_raw) ? blocked_raw.map(it => it) : []
-          /** @type {IssueLite[]} */
-          const in_prog = Array.isArray(in_prog_raw) ? in_prog_raw.map(it => it) : []
-          /** @type {IssueLite[]} */
-          const closed = Array.isArray(closed_raw) ? closed_raw.map(it => it) : []
+          let ready: IssueLite[] = Array.isArray(ready_raw) ? ready_raw.map(it => it) : []
+          const blocked: IssueLite[] = Array.isArray(blocked_raw) ? blocked_raw.map(it => it) : []
+          const in_prog: IssueLite[] = Array.isArray(in_prog_raw) ? in_prog_raw.map(it => it) : []
+          const closed: IssueLite[] = Array.isArray(closed_raw) ? closed_raw.map(it => it) : []
 
           // Remove items from Ready that are already In Progress
-          /** @type {Set<string>} */
-          const in_progress_ids = new Set(in_prog.map(i => i.id))
+          const in_progress_ids: Set<string> = new Set(in_prog.map(i => i.id))
           ready = ready.filter(i => !in_progress_ids.has(i.id))
 
           // Sort as per column rules
@@ -640,7 +623,7 @@ export function createBoardView(
         // ignore fallback errors
       }
     },
-    clear() {
+    clear(): void {
       mount_element.replaceChildren()
       list_ready = []
       list_blocked = []
