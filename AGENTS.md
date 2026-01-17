@@ -65,6 +65,14 @@ Never update `CHANGES.md`.
   mode).
 - Use `.ts` files **only** for interface and type definitions. These files must
   not contain runtime code or side effects.
+- Shared types live in `types/`:
+  - `index.ts` - Central export point for all types
+  - `issues.ts` - Issue, Comment, Dependency types
+  - `protocol.ts` - WebSocket protocol types (MessageType, RequestEnvelope, etc.)
+  - `ws-client.ts` - WebSocket client types (ConnectionState, WsClient, etc.)
+  - `subscriptions.ts` - Subscription protocol types
+  - `subscription-issue-store.ts` - Store interface types
+  - `list-adapters.ts` - Server list adapter types
 - TypeScript strict mode is enabled with additional checks:
   `noUncheckedIndexedAccess`, `noImplicitOverride`, `exactOptionalPropertyTypes`.
 - Target ES2024 for Node 22+ and modern browser compatibility.

@@ -2,7 +2,7 @@
  * SubscriptionIssueStore interface definitions.
  * File is .ts by design: interfaces only.
  */
-import type { Issue } from "./subscriptions.js"
+import type { Issue } from "./issues.js"
 
 /** Stable comparator used by stores for deterministic ordering. */
 export type IssueComparator = (a: Issue, b: Issue) => number

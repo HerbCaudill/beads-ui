@@ -3,37 +3,9 @@
  * File is .ts by design: interface definitions only.
  */
 
-export interface IssueRef {
-  id: string
-  created_at?: number // epoch ms
-  updated_at?: number // epoch ms
-  closed_at?: number | null // epoch ms or null
-}
-
-export interface Issue extends IssueRef {
-  // Additional fields are server-defined; keep minimal here to guide clients.
-  title?: string
-  status?: string
-  epic_id?: string | null
-  priority?: number
-  issue_type?: string
-  assignee?: string | null
-  labels?: string[]
-  // Relationship fields for detail payloads
-  dependencies?: DependencyRef[]
-  dependents?: DependencyRef[]
-}
-
-export interface DependencyRef {
-  id: string
-  title?: string
-  status?: string
-  priority?: number
-  issue_type?: string
-  created_at?: number
-  updated_at?: number
-  closed_at?: number | null
-}
+// Re-export shared issue types for backwards compatibility
+export type { DependencyRef, Issue, IssueRef } from "./issues.js"
+import type { Issue, IssueRef } from "./issues.js"
 
 export type SubscriptionType =
   | "all-issues"
