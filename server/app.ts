@@ -1,29 +1,25 @@
-/**
- * @import { Express, Request, Response } from 'express'
- */
-import express from "express"
+import express, { type Express, type Request, type Response } from "express"
 import fs from "node:fs"
 import path from "node:path"
-import { registerWorkspace } from "./registry-watcher.ts"
+import { registerWorkspace } from "./registry-watcher.js"
+import type { ServerConfig } from "./config.js"
+
+interface RegisterWorkspaceBody {
+  path?: unknown
+  database?: unknown
+}
 
 /**
  * Create and configure the Express application.
- *
- * @param {{ host: string, port: number, app_dir: string, root_dir: string }} config - Server configuration.
- * @returns {Express} Configured Express app instance.
  */
-export function createApp(config) {
+export function createApp(config: ServerConfig): Express {
   const app = express()
 
   // Basic hardening and config
   app.disable("x-powered-by")
 
   // Health endpoint
-  /**
-   * @param {Request} _req
-   * @param {Response} res
-   */
-  app.get("/healthz", (_req, res) => {
+  app.get("/healthz", (_req: Request, res: Response) => {
     res.type("application/json")
     res.status(200).send({ ok: true })
   })
@@ -33,12 +29,8 @@ export function createApp(config) {
 
   // Register workspace endpoint - allows CLI to register workspaces dynamically
   // when the server is already running
-  /**
-   * @param {Request} req
-   * @param {Response} res
-   */
-  app.post("/api/register-workspace", (req, res) => {
-    const { path: workspace_path, database } = req.body || {}
+  app.post("/api/register-workspace", (req: Request, res: Response) => {
+    const { path: workspace_path, database } = (req.body || {}) as RegisterWorkspaceBody
     if (!workspace_path || typeof workspace_path !== "string") {
       res.status(400).json({ ok: false, error: "Missing or invalid path" })
       return
@@ -58,11 +50,8 @@ export function createApp(config) {
   ) {
     /**
      * On-demand bundle for the browser using esbuild.
-     *
-     * @param {Request} _req
-     * @param {Response} res
      */
-    app.get("/main.bundle.js", async (_req, res) => {
+    app.get("/main.bundle.js", async (_req: Request, res: Response) => {
       try {
         const esbuild = await import("esbuild")
         const entry = path.join(config.app_dir, "main.js")
@@ -88,7 +77,7 @@ export function createApp(config) {
         res
           .status(500)
           .type("text/plain")
-          .send("Bundle error: " + (err && /** @type {any} */ (err).message))
+          .send("Bundle error: " + (err && (err as Error).message))
       }
     })
   }
@@ -97,11 +86,7 @@ export function createApp(config) {
   app.use(express.static(config.app_dir))
 
   // Root serves index.html explicitly (even if static would catch it)
-  /**
-   * @param {Request} _req
-   * @param {Response} res
-   */
-  app.get("/", (_req, res) => {
+  app.get("/", (_req: Request, res: Response) => {
     const index_path = path.join(config.app_dir, "index.html")
     res.sendFile(index_path)
   })

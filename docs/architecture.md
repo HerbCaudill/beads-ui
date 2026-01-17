@@ -45,14 +45,14 @@ push‑only data flow used between the browser SPA and the local Node.js server.
     type guards
 
 - Server (server/)
-  - Web: `server/app.js` (Express app), `server/index.js` (startup and wiring)
-  - WebSocket: `server/ws.js` (attach server, parse, validate, dispatch
+  - Web: `server/app.ts` (Express app), `server/index.ts` (startup and wiring)
+  - WebSocket: `server/ws.ts` (attach server, parse, validate, dispatch
     handlers, broadcast events)
-  - bd bridge: `server/bd.js` (spawn `bd`, inject `--db` consistently, JSON
+  - bd bridge: `server/bd.ts` (spawn `bd`, inject `--db` consistently, JSON
     helpers)
-  - DB resolution/watch: `server/db.js` (resolve active DB path),
-    `server/watcher.js` (schedule list refresh)
-  - Config: `server/config.js` (bind to `127.0.0.1`, default port 3000)
+  - DB resolution/watch: `server/db.ts` (resolve active DB path),
+    `server/watcher.ts` (schedule list refresh)
+  - Config: `server/config.ts` (bind to `127.0.0.1`, default port 3000)
 
 ## Data Flow
 

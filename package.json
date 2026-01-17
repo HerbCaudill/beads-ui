@@ -19,7 +19,7 @@
   },
   "scripts": {
     "test:all": "pnpm typecheck && pnpm test",
-    "start": "node server/index.js --debug",
+    "start": "node server/index.ts --debug",
     "build": "node scripts/build-frontend.js",
     "test": "vitest run",
     "test:watch": "vitest",

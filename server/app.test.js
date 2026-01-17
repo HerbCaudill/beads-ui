@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, test } from "vitest"
 import { createApp } from "./app.js"
-import { getConfig } from "./config.ts"
+import { getConfig } from "./config.js"
 
 /**
  * Narrow to function type for basic checks.

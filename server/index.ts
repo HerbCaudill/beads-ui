@@ -1,11 +1,11 @@
 import { createServer } from "node:http"
 import { createApp } from "./app.js"
 import { printServerUrl } from "./cli/daemon.js"
-import { getConfig } from "./config.ts"
-import { resolveDbPath } from "./db.ts"
-import { debug, enableAllDebug } from "./logging.ts"
-import { registerWorkspace, watchRegistry } from "./registry-watcher.ts"
-import { watchDb } from "./watcher.ts"
+import { getConfig } from "./config.js"
+import { resolveDbPath } from "./db.js"
+import { debug, enableAllDebug } from "./logging.js"
+import { registerWorkspace, watchRegistry } from "./registry-watcher.js"
+import { watchDb } from "./watcher.js"
 import { attachWsServer } from "./ws.js"
 
 if (process.argv.includes("--debug") || process.argv.includes("-d")) {

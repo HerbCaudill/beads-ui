@@ -86,6 +86,8 @@ Never update `CHANGES.md`.
   - `server/list-adapters.ts` - List query adapters mapping subscription types to bd CLI commands
   - `server/bd.ts` - BD CLI integration module (runs the bd command-line tool)
   - `server/ws.ts` - WebSocket server handler for client-server communication
+  - `server/app.ts` - Express app setup and configuration
+  - `server/index.ts` - Server entry point and wiring
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types
