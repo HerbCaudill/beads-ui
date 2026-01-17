@@ -33,7 +33,8 @@ describe("views/detail notes edit", () => {
           const f = /** @type {any} */ (payload).field
           const v = /** @type {any} */ (payload).value
           expect(f).toBe("notes")
-          /** @type {any} */ ;(issue)[f] = v
+          /** @type {any} */
+          issue[f] = v
           return issue
         }
         throw new Error("Unexpected type: " + type)

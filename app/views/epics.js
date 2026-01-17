@@ -167,7 +167,7 @@ export function createEpicsView(
           // Register store first to avoid dropping the initial snapshot
           try {
             if (issue_stores && /** @type {any} */ (issue_stores).register) {
-              /** @type {any} */ ;(issue_stores).register(`detail:${epic_id}`, {
+              /** @type {any} */ issue_stores.register(`detail:${epic_id}`, {
                 type: "issue-detail",
                 params: { id: epic_id },
               })
@@ -201,7 +201,7 @@ export function createEpicsView(
         epic_unsubs.delete(epic_id)
         try {
           if (issue_stores && /** @type {any} */ (issue_stores).unregister) {
-            /** @type {any} */ ;(issue_stores).unregister(`detail:${epic_id}`)
+            /** @type {any} */ issue_stores.unregister(`detail:${epic_id}`)
           }
         } catch {
           // ignore

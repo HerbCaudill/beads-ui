@@ -125,7 +125,7 @@ describe("views/detail", () => {
         if (type === "edit-text") {
           const f = /** @type {any} */ (payload).field
           const v = /** @type {any} */ (payload).value
-          /** @type {any} */ ;(issue)[f] = v
+          /** @type {any} */ issue[f] = v
           return issue
         }
         throw new Error("Unexpected type")

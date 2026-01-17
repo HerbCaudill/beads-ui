@@ -32,7 +32,8 @@ describe("views/detail acceptance placeholder", () => {
           const f = /** @type {any} */ (payload).field
           const v = /** @type {any} */ (payload).value
           expect(f).toBe("acceptance")
-          /** @type {any} */ ;(issue)[f] = v
+          /** @type {any} */
+          issue[f] = v
           return issue
         }
         throw new Error("Unexpected: " + type)

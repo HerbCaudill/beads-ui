@@ -822,7 +822,7 @@ export function createDetailView(
       })
       if (Array.isArray(result)) {
         // Update comments in current issue
-        /** @type {any} */ ;(current).comments = result
+        /** @type {any} */ current.comments = result
         comment_text = ""
         doRender()
       }
@@ -1444,7 +1444,7 @@ export function createDetailView(
         try {
           const comments = await sendFn("get-comments", { id: current_id })
           if (Array.isArray(comments) && current && current_id === id) {
-            /** @type {any} */ ;(current).comments = comments
+            /** @type {any} */ current.comments = comments
             doRender()
           }
         } catch (err) {

@@ -6,7 +6,7 @@ vi.mock("./bd.js", () => ({ runBdJson: vi.fn() }))
 
 describe("list adapters for subscription types", () => {
   beforeEach(() => {
-    /** @type {import('vitest').Mock} */ ;(runBdJson).mockReset()
+    /** @type {import('vitest').Mock} */ runBdJson.mockReset()
   })
 
   test("mapSubscriptionToBdArgs returns args for all-issues", () => {
@@ -49,7 +49,7 @@ describe("list adapters for subscription types", () => {
   })
 
   test("fetchListForSubscription returns normalized items (Date.parse)", async () => {
-    /** @type {import('vitest').Mock} */ ;(runBdJson).mockResolvedValue({
+    /** @type {import('vitest').Mock} */ runBdJson.mockResolvedValue({
       code: 0,
       stdoutJson: [
         {
@@ -90,7 +90,7 @@ describe("list adapters for subscription types", () => {
   })
 
   test("fetchListForSubscription surfaces bd error", async () => {
-    /** @type {import('vitest').Mock} */ ;(runBdJson).mockResolvedValue({
+    /** @type {import('vitest').Mock} */ runBdJson.mockResolvedValue({
       code: 2,
       stderr: "boom",
     })

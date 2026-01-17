@@ -45,7 +45,7 @@ export function createListView(
 ) {
   const log = debug("views:list")
   // Touch unused param to satisfy lint rules without impacting behavior
-  /** @type {any} */ ;(void _subscriptions)
+  /** @type {any} */ void _subscriptions
   /** @type {string[]} */
   let status_filters = []
   /** @type {string} */

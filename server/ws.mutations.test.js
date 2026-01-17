@@ -6,8 +6,9 @@ vi.mock("./bd.js", () => ({ runBdJson: vi.fn(), runBd: vi.fn() }))
 
 // Ensure clean mock state for each test
 beforeEach(() => {
-  /** @type {import('vitest').Mock} */ ;(runBd).mockReset()
-  /** @type {import('vitest').Mock} */ ;(runBdJson).mockReset()
+  /** @type {import('vitest').Mock} */ runBd.mockReset()
+  /** @type {import('vitest').Mock} */
+  runBdJson.mockReset()
 })
 
 function makeStubSocket() {
