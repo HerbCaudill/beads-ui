@@ -65,6 +65,9 @@ Never update `CHANGES.md`.
   mode).
 - Use `.ts` files **only** for interface and type definitions. These files must
   not contain runtime code or side effects.
+- TypeScript strict mode is enabled with additional checks:
+  `noUncheckedIndexedAccess`, `noImplicitOverride`, `exactOptionalPropertyTypes`.
+- Target ES2024 for Node 22+ and modern browser compatibility.
 - Place a JSDoc type import block at the top of each file when needed:
   ```js
   /**

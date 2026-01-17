@@ -1,26 +1,48 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    // Target ES2024 for Node 22+ and modern browsers
+    "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+
+    // Enable gradual TypeScript migration
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
+
+    // Strict type checking
     "strict": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Module interop
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "lib": ["ES2022", "DOM"],
+    "isolatedModules": true,
+
+    // Quality checks
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Environment libs for Node 22+ and DOM
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["vitest/globals", "node"]
   },
   "include": [
     "app/**/*.js",
+    "app/**/*.ts",
     "bin/**/*.js",
+    "bin/**/*.ts",
     "server/**/*.js",
+    "server/**/*.ts",
     "scripts/**/*.js",
+    "scripts/**/*.ts",
     "test/**/*.js",
+    "test/**/*.ts",
+    "types/**/*.ts",
     "vitest.config.mjs"
   ],
-  "exclude": ["app/main.bundle.js", "app/main.bundle.js.map"]
+  "exclude": ["app/main.bundle.js", "app/main.bundle.js.map", "node_modules"]
 }
