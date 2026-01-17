@@ -74,6 +74,8 @@ Never update `CHANGES.md`.
   - `app/state.ts` - Global app state store with subscription support
   - `app/ws.ts` - WebSocket client with auto-reconnect and message correlation
   - `app/main.ts` - Main app bootstrap/orchestration module
+  - `server/logging.ts` - Debug logger helper for Node server/CLI
+  - `server/config.ts` - Server runtime configuration (host, port, paths)
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

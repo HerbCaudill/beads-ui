@@ -6,9 +6,9 @@ import createDebug from "debug"
 /**
  * Create a namespaced logger for Node runtime.
  *
- * @param {string} ns - Module namespace suffix (e.g., 'ws', 'watcher').
+ * @param ns - Module namespace suffix (e.g., 'ws', 'watcher').
  */
-export function debug(ns) {
+export function debug(ns: string): createDebug.Debugger {
   return createDebug(`beads-ui:${ns}`)
 }
 
@@ -16,7 +16,7 @@ export function debug(ns) {
  * Enable all `beads-ui:*` debug logs at runtime for Node/CLI.
  * Safe to call multiple times.
  */
-export function enableAllDebug() {
+export function enableAllDebug(): void {
   // `debug` exposes a global enable/disable API.
   // Enabling after loggers are created updates their `.enabled` state.
   createDebug.enable(process.env.DEBUG || "beads-ui:*")

@@ -1,5 +1,5 @@
 import { runBdJson } from "./bd.js"
-import { debug } from "./logging.js"
+import { debug } from "./logging.ts"
 
 const log = debug("list-adapters")
 

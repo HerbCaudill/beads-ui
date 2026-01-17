@@ -11,7 +11,7 @@
 import { mkdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { debug } from "../server/logging.js"
+import { debug } from "../server/logging.ts"
 
 /**
  * Build frontend bundle to `app/main.bundle.js` using esbuild.

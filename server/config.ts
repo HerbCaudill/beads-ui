@@ -1,6 +1,14 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
+export interface ServerConfig {
+  host: string
+  port: number
+  app_dir: string
+  root_dir: string
+  url: string
+}
+
 /**
  * Resolve runtime configuration for the server.
  * Notes:
@@ -8,10 +16,8 @@ import { fileURLToPath } from "node:url"
  * - `root_dir` represents the directory where the process was invoked
  * (i.e., the current working directory) so DB resolution follows the
  * caller's context rather than the install location.
- *
- * @returns {{ host: string, port: number, app_dir: string, root_dir: string, url: string }}
  */
-export function getConfig() {
+export function getConfig(): ServerConfig {
   const this_file = fileURLToPath(new URL(import.meta.url))
   const server_dir = path.dirname(this_file)
   const package_root = path.resolve(server_dir, "..")

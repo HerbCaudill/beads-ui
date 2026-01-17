@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { resolveDbPath } from "./db.js"
-import { debug } from "./logging.js"
+import { debug } from "./logging.ts"
 
 const log = debug("bd")
 

@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { resolveDbPath } from "./db.js"
-import { debug } from "./logging.js"
+import { debug } from "./logging.ts"
 
 /**
  * Watch the resolved beads SQLite DB file and invoke a callback after a debounce window.
