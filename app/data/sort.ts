@@ -3,17 +3,12 @@
  * Centralizes sorting so views and stores stay consistent.
  */
 
-/**
- * @import { IssueLite } from '../../types/index.js'
- */
+import type { IssueLite, IssueLiteComparator } from "../../types/index.js"
 
 /**
  * Compare by priority asc, then created_at asc, then id asc.
- *
- * @param {IssueLite} a
- * @param {IssueLite} b
  */
-export function cmpPriorityThenCreated(a, b) {
+export const cmpPriorityThenCreated: IssueLiteComparator = (a: IssueLite, b: IssueLite): number => {
   const pa = a.priority ?? 2
   const pb = b.priority ?? 2
   if (pa !== pb) {
@@ -35,11 +30,8 @@ export function cmpPriorityThenCreated(a, b) {
 
 /**
  * Compare by closed_at desc, then id asc for stability.
- *
- * @param {IssueLite} a
- * @param {IssueLite} b
  */
-export function cmpClosedDesc(a, b) {
+export const cmpClosedDesc: IssueLiteComparator = (a: IssueLite, b: IssueLite): number => {
   const ca = a.closed_at ?? 0
   const cb = b.closed_at ?? 0
   if (ca !== cb) {
