@@ -2,55 +2,99 @@
  * Minimal app state store with subscription.
  */
 import { debug } from "./utils/logging.js"
+import type { ViewName } from "./router.js"
+
+// Re-export ViewName for consumers who import from state
+export type { ViewName }
 
 /**
- * @typedef {'all'|'open'|'in_progress'|'closed'|'ready'} StatusFilter
+ * Status filter for issue lists.
  */
+export type StatusFilter = "all" | "open" | "in_progress" | "closed" | "ready"
 
 /**
- * @typedef {{ status: StatusFilter, search: string, type: string }} Filters
+ * Active filters for issue lists.
  */
+export interface Filters {
+  status: StatusFilter
+  search: string
+  type: string
+}
 
 /**
- * @typedef {'issues'|'epics'|'board'} ViewName
+ * Closed filter for board view.
  */
+export type ClosedFilter = "today" | "3" | "7"
 
 /**
- * @typedef {'today'|'3'|'7'} ClosedFilter
+ * Board-specific state.
  */
+export interface BoardState {
+  closed_filter: ClosedFilter
+}
 
 /**
- * @typedef {{ closed_filter: ClosedFilter }} BoardState
+ * Information about a workspace.
  */
+export interface WorkspaceInfo {
+  /** Full path to workspace */
+  path: string
+  /** Path to the database file */
+  database: string
+  /** Process ID of the daemon */
+  pid?: number
+  /** Version of beads */
+  version?: string
+}
 
 /**
- * @typedef {Object} WorkspaceInfo
- * @property {string} path - Full path to workspace
- * @property {string} database - Path to the database file
- * @property {number} [pid] - Process ID of the daemon
- * @property {string} [version] - Version of beads
+ * Workspace state.
  */
+export interface WorkspaceState {
+  /** Currently active workspace */
+  current: WorkspaceInfo | null
+  /** All available workspaces */
+  available: WorkspaceInfo[]
+}
 
 /**
- * @typedef {Object} WorkspaceState
- * @property {WorkspaceInfo | null} current - Currently active workspace
- * @property {WorkspaceInfo[]} available - All available workspaces
+ * Application state.
  */
+export interface AppState {
+  selected_id: string | null
+  view: ViewName
+  filters: Filters
+  board: BoardState
+  workspace: WorkspaceState
+}
 
 /**
- * @typedef {{ selected_id: string | null, view: ViewName, filters: Filters, board: BoardState, workspace: WorkspaceState }} AppState
+ * Patch type for setState, allowing partial updates.
  */
+export interface StatePatch {
+  selected_id?: string | null
+  view?: ViewName
+  filters?: Partial<Filters>
+  board?: Partial<BoardState>
+  workspace?: Partial<WorkspaceState>
+}
+
+/**
+ * Store interface returned by createStore.
+ */
+export interface Store {
+  getState: () => AppState
+  setState: (patch: StatePatch) => void
+  subscribe: (fn: (s: AppState) => void) => () => void
+}
 
 /**
  * Create a simple store for application state.
- *
- * @param {Partial<AppState>} [initial]
- * @returns {{ getState: () => AppState, setState: (patch: { selected_id?: string | null, filters?: Partial<Filters>, workspace?: Partial<WorkspaceState> }) => void, subscribe: (fn: (s: AppState) => void) => () => void }}
  */
-export function createStore(initial = {}) {
+export function createStore(initial: Partial<AppState> = {}): Store {
   const log = debug("state")
-  /** @type {AppState} */
-  let state = {
+
+  let state: AppState = {
     selected_id: initial.selected_id ?? null,
     view: initial.view ?? "issues",
     filters: {
@@ -74,10 +118,9 @@ export function createStore(initial = {}) {
     },
   }
 
-  /** @type {Set<(s: AppState) => void>} */
-  const subs = new Set()
+  const subs = new Set<(s: AppState) => void>()
 
-  function emit() {
+  function emit(): void {
     for (const fn of Array.from(subs)) {
       try {
         fn(state)
@@ -93,16 +136,13 @@ export function createStore(initial = {}) {
     },
     /**
      * Update state. Nested filters can be partial.
-     *
-     * @param {{ selected_id?: string | null, filters?: Partial<Filters>, board?: Partial<BoardState>, workspace?: Partial<WorkspaceState> }} patch
      */
-    setState(patch) {
-      /** @type {AppState} */
-      const next = {
+    setState(patch: StatePatch) {
+      const next: AppState = {
         ...state,
         ...patch,
-        filters: { ...state.filters, ...(patch.filters || {}) },
-        board: { ...state.board, ...(patch.board || {}) },
+        filters: { ...state.filters, ...(patch.filters ?? {}) },
+        board: { ...state.board, ...(patch.board ?? {}) },
         workspace: {
           current:
             patch.workspace?.current !== undefined ?
@@ -139,7 +179,7 @@ export function createStore(initial = {}) {
       })
       emit()
     },
-    subscribe(fn) {
+    subscribe(fn: (s: AppState) => void) {
       subs.add(fn)
       return () => subs.delete(fn)
     },

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { createHashRouter, parseHash, parseView } from "./router.ts"
-import { createStore } from "./state.js"
+import { createStore } from "./state.ts"
 
 describe("router", () => {
   test("parseHash extracts id", () => {

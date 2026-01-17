@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createStore } from "./state.js"
+import { createStore } from "./state.ts"
 
 describe("state store", () => {
   test("get/set/subscribe works and dedupes unchanged", () => {
