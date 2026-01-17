@@ -3,7 +3,7 @@
  */
 import { html, render } from "lit-html"
 import { createListSelectors } from "./data/list-selectors.js"
-import { createDataLayer } from "./data/providers.js"
+import { createDataLayer } from "./data/providers.ts"
 import { createSubscriptionIssueStores } from "./data/subscription-issue-stores.js"
 import { createSubscriptionStore } from "./data/subscriptions-store.js"
 import { createHashRouter, parseHash, parseView } from "./router.js"

@@ -65,6 +65,9 @@ Never update `CHANGES.md`.
   mode).
 - Use `.ts` files **only** for interface and type definitions. These files must
   not contain runtime code or side effects.
+- **TypeScript Migration (in progress)**: Converting modules from `.js` to `.ts`
+  with full runtime code. Converted modules:
+  - `app/data/providers.ts` - Data layer for issue mutations
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

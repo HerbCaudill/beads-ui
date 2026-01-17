@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createDataLayer } from "./providers.js"
+import { createDataLayer } from "./providers.ts"
 
 /**
  * @returns {{ calls: { type: string, payload: any }[], send: (type: string, payload?: any) => Promise<any> }}

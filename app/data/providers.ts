@@ -1,33 +1,67 @@
-/**
- * @import { MessageType } from '../protocol.js'
- */
+import type { MessageType } from "../../types/protocol.js"
 import { debug } from "../utils/logging.js"
+
+/**
+ * Input type for updating an issue.
+ * All fields except `id` are optional - only provided fields will be updated.
+ */
+export interface UpdateIssueInput {
+  /** Issue ID (required). */
+  id: string
+  /** Issue title. */
+  title?: string
+  /** Acceptance criteria. */
+  acceptance?: string
+  /** Notes. */
+  notes?: string
+  /** Design notes. */
+  design?: string
+  /** Issue status. */
+  status?: "open" | "in_progress" | "closed"
+  /** Priority level (lower = higher priority). */
+  priority?: number
+  /** Assignee username. */
+  assignee?: string
+}
+
+/**
+ * Transport function signature for sending messages to the server.
+ */
+export type Transport = (type: MessageType, payload?: unknown) => Promise<unknown>
+
+/**
+ * Data layer interface returned by createDataLayer.
+ */
+export interface DataLayer {
+  /** Update issue fields by dispatching specific mutations. */
+  updateIssue: (input: UpdateIssueInput) => Promise<unknown>
+}
 
 /**
  * Data layer: typed wrappers around the ws transport for mutations and
  * single-issue fetch. List reads have been removed in favor of push-only
  * stores and selectors (see docs/adr/001-push-only-lists.md).
  *
- * @param {(type: MessageType, payload?: unknown) => Promise<unknown>} transport - Request/response function.
- * @returns {{ updateIssue: (input: { id: string, title?: string, acceptance?: string, notes?: string, design?: string, status?: 'open'|'in_progress'|'closed', priority?: number, assignee?: string }) => Promise<unknown> }}
+ * @param transport - Request/response function for WebSocket communication.
+ * @returns Data layer with mutation methods.
  */
-export function createDataLayer(transport) {
+export function createDataLayer(transport: Transport): DataLayer {
   const log = debug("data")
+
   /**
    * Update issue fields by dispatching specific mutations.
    * Supported fields: title, acceptance, notes, design, status, priority, assignee.
    * Returns the updated issue on success.
    *
-   * @param {{ id: string, title?: string, acceptance?: string, notes?: string, design?: string, status?: 'open'|'in_progress'|'closed', priority?: number, assignee?: string }} input
-   * @returns {Promise<unknown>}
+   * @param input - Fields to update on the issue.
+   * @returns Promise resolving to the last update result.
    */
-  async function updateIssue(input) {
+  async function updateIssue(input: UpdateIssueInput): Promise<unknown> {
     const { id } = input
 
     log("updateIssue %s %o", id, Object.keys(input))
 
-    /** @type {unknown} */
-    let last = null
+    let last: unknown = null
     if (typeof input.title === "string") {
       last = await transport("edit-text", {
         id,
