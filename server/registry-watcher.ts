@@ -1,25 +1,71 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { debug } from "./logging.ts"
+import { debug } from "./logging.js"
 
 const log = debug("registry-watcher")
 
 /**
+ * Entry stored in the in-memory workspace registry.
+ */
+export interface InMemoryWorkspaceEntry {
+  path: string
+  database: string
+  pid: number
+  version: string
+}
+
+/**
+ * Entry stored in the file-based registry (~/.beads/registry.json).
+ */
+export interface RegistryEntry {
+  workspace_path: string
+  socket_path: string
+  database_path: string
+  pid: number
+  version: string
+  started_at: string
+}
+
+/**
+ * Workspace info returned by getAvailableWorkspaces.
+ */
+export interface WorkspaceInfo {
+  path: string
+  database: string
+  pid: number
+  version: string
+}
+
+/**
+ * Options for the registry watcher.
+ */
+export interface WatchRegistryOptions {
+  /** Debounce window in milliseconds. Defaults to 500ms. */
+  debounce_ms?: number
+}
+
+/**
+ * Handle returned by watchRegistry for controlling the watcher.
+ */
+export interface WatchRegistryHandle {
+  /** Close the watcher and cancel pending callbacks. */
+  close(): void
+}
+
+/**
  * In-memory registry of workspaces registered dynamically via the API.
  * These supplement the file-based registry at ~/.beads/registry.json.
- *
- * @type {Map<string, { path: string, database: string, pid: number, version: string }>}
  */
-const inMemoryWorkspaces = new Map()
+const inMemoryWorkspaces = new Map<string, InMemoryWorkspaceEntry>()
 
 /**
  * Register a workspace dynamically (in-memory).
  * This allows `bdui start` to register workspaces when the server is already running.
  *
- * @param {{ path: string, database: string }} workspace
+ * @param workspace - Workspace information to register.
  */
-export function registerWorkspace(workspace) {
+export function registerWorkspace(workspace: { path: string; database: string }): void {
   const normalized = path.resolve(workspace.path)
   log("registering workspace: %s (db: %s)", normalized, workspace.database)
   inMemoryWorkspaces.set(normalized, {
@@ -33,43 +79,33 @@ export function registerWorkspace(workspace) {
 /**
  * Get all dynamically registered workspaces (in-memory only).
  *
- * @returns {Array<{ path: string, database: string, pid: number, version: string }>}
+ * @returns Array of in-memory workspace entries.
  */
-export function getInMemoryWorkspaces() {
+export function getInMemoryWorkspaces(): InMemoryWorkspaceEntry[] {
   return Array.from(inMemoryWorkspaces.values())
 }
 
 /**
- * @typedef {Object} RegistryEntry
- * @property {string} workspace_path
- * @property {string} socket_path
- * @property {string} database_path
- * @property {number} pid
- * @property {string} version
- * @property {string} started_at
- */
-
-/**
  * Get the path to the global beads registry file.
  *
- * @returns {string}
+ * @returns Absolute path to ~/.beads/registry.json.
  */
-export function getRegistryPath() {
+export function getRegistryPath(): string {
   return path.join(os.homedir(), ".beads", "registry.json")
 }
 
 /**
  * Read and parse the registry file.
  *
- * @returns {RegistryEntry[]}
+ * @returns Array of registry entries, or empty array if file doesn't exist or is invalid.
  */
-export function readRegistry() {
+export function readRegistry(): RegistryEntry[] {
   const registry_path = getRegistryPath()
   try {
     const content = fs.readFileSync(registry_path, "utf8")
-    const data = JSON.parse(content)
+    const data = JSON.parse(content) as unknown
     if (Array.isArray(data)) {
-      return data
+      return data as RegistryEntry[]
     }
     return []
   } catch {
@@ -81,10 +117,10 @@ export function readRegistry() {
  * Find the registry entry that matches the given root directory.
  * Matches if the root_dir is the same as or a subdirectory of the workspace_path.
  *
- * @param {string} root_dir
- * @returns {RegistryEntry | null}
+ * @param root_dir - Directory to search for.
+ * @returns Matching registry entry or null if not found.
  */
-export function findWorkspaceEntry(root_dir) {
+export function findWorkspaceEntry(root_dir: string): RegistryEntry | null {
   const entries = readRegistry()
   const normalized = path.resolve(root_dir)
 
@@ -110,9 +146,9 @@ export function findWorkspaceEntry(root_dir) {
  * Get all available workspaces from both the file-based registry and
  * dynamically registered in-memory workspaces.
  *
- * @returns {Array<{ path: string, database: string, pid: number, version: string }>}
+ * @returns Combined array of workspace info from file and memory.
  */
-export function getAvailableWorkspaces() {
+export function getAvailableWorkspaces(): WorkspaceInfo[] {
   const entries = readRegistry()
   const fileWorkspaces = entries.map(entry => ({
     path: entry.workspace_path,
@@ -131,22 +167,23 @@ export function getAvailableWorkspaces() {
 /**
  * Watch the global beads registry file and invoke callback when it changes.
  *
- * @param {(entries: RegistryEntry[]) => void} onChange
- * @param {{ debounce_ms?: number }} [options]
- * @returns {{ close: () => void }}
+ * @param onChange - Callback invoked with updated entries when registry changes.
+ * @param options - Watcher configuration options.
+ * @returns Handle to close the watcher.
  */
-export function watchRegistry(onChange, options = {}) {
+export function watchRegistry(
+  onChange: (entries: RegistryEntry[]) => void,
+  options: WatchRegistryOptions = {},
+): WatchRegistryHandle {
   const debounce_ms = options.debounce_ms ?? 500
   const registry_path = getRegistryPath()
   const registry_dir = path.dirname(registry_path)
   const registry_file = path.basename(registry_path)
 
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let timer
-  /** @type {fs.FSWatcher | undefined} */
-  let watcher
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let watcher: fs.FSWatcher | undefined
 
-  const schedule = () => {
+  const schedule = (): void => {
     if (timer) {
       clearTimeout(timer)
     }
@@ -183,7 +220,7 @@ export function watchRegistry(onChange, options = {}) {
   }
 
   return {
-    close() {
+    close(): void {
       if (timer) {
         clearTimeout(timer)
         timer = undefined

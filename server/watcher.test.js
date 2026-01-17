@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { watchDb } from "./watcher.js"
+import { watchDb } from "./watcher.ts"
 
 /** @type {{ dir: string, cb: (event: string, filename?: string) => void, w: { close: () => void } }[]} */
 const watchers = []

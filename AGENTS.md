@@ -78,6 +78,8 @@ Never update `CHANGES.md`.
   - `server/config.ts` - Server runtime configuration (host, port, paths)
   - `server/db.ts` - Database path resolution with precedence (flag, env, nearest, home-default)
   - `server/validators.ts` - Input validation for subscription protocol payloads
+  - `server/watcher.ts` - File watcher for SQLite DB changes with debounce/cooldown
+  - `server/registry-watcher.ts` - Workspace registry watcher and in-memory workspace management
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types

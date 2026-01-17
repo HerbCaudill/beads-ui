@@ -4,7 +4,7 @@
 import express from "express"
 import fs from "node:fs"
 import path from "node:path"
-import { registerWorkspace } from "./registry-watcher.js"
+import { registerWorkspace } from "./registry-watcher.ts"
 
 /**
  * Create and configure the Express application.
