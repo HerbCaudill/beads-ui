@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { createSubscriptionIssueStore } from "./subscription-issue-store.js"
+import type { SnapshotMsg, UpsertMsg, DeleteMsg } from "../../types/subscription-issue-store.js"
+import type { Issue } from "../../types/issues.js"
 
 describe("subscription issue store", () => {
   test("applies snapshot and returns sorted snapshot", () => {
@@ -23,9 +25,9 @@ describe("subscription issue store", () => {
           updated_at: 20_000,
           closed_at: null,
         },
-      ],
-    })
-    const snap = /** @type {any[]} */ (store.snapshot())
+      ] as Issue[],
+    } as SnapshotMsg)
+    const snap = store.snapshot()
     expect(Array.isArray(snap)).toBe(true)
     expect(snap.map(it => it.id)).toEqual(["A", "B"])
     expect(store.size()).toBe(2)
@@ -45,8 +47,8 @@ describe("subscription issue store", () => {
           updated_at: 10_000,
           closed_at: null,
         },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
     const before = store.getById("X")
     expect(before?.title).toBe("x")
     store.applyPush({
@@ -59,8 +61,8 @@ describe("subscription issue store", () => {
         created_at: 10_000,
         updated_at: 10_060,
         closed_at: null,
-      },
-    })
+      } as Issue,
+    } as UpsertMsg)
     const after = store.getById("X")
     expect(after?.title).toBe("X!")
     expect(after).toBe(before) // identity preserved
@@ -80,8 +82,8 @@ describe("subscription issue store", () => {
           updated_at: 10_600,
           closed_at: null,
         },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
     // stale revision
     store.applyPush({
       type: "upsert",
@@ -93,8 +95,8 @@ describe("subscription issue store", () => {
         created_at: 10_000,
         updated_at: 10_540,
         closed_at: null,
-      },
-    })
+      } as Issue,
+    } as UpsertMsg)
     expect(store.getById("X")?.title).toBe("x")
     // equal revision is ignored
     store.applyPush({
@@ -107,8 +109,8 @@ describe("subscription issue store", () => {
         created_at: 10_000,
         updated_at: 10_660,
         closed_at: null,
-      },
-    })
+      } as Issue,
+    } as UpsertMsg)
     expect(store.getById("X")?.title).toBe("x")
     // higher revision but stale timestamp is ignored
     store.applyPush({
@@ -121,8 +123,8 @@ describe("subscription issue store", () => {
         created_at: 10_000,
         updated_at: 10_000,
         closed_at: null,
-      },
-    })
+      } as Issue,
+    } as UpsertMsg)
     expect(store.getById("X")?.title).toBe("x")
   })
 
@@ -135,12 +137,12 @@ describe("subscription issue store", () => {
       issues: [
         { id: "A", created_at: 10_000, updated_at: 10_000, closed_at: null },
         { id: "B", created_at: 10_000, updated_at: 10_000, closed_at: null },
-      ],
-    })
-    store.applyPush({ type: "delete", id: "s1", revision: 2, issue_id: "A" })
+      ] as Issue[],
+    } as SnapshotMsg)
+    store.applyPush({ type: "delete", id: "s1", revision: 2, issue_id: "A" } as DeleteMsg)
     expect(store.size()).toBe(1)
     expect(store.getById("A")).toBeUndefined()
-    const ids = /** @type {any[]} */ (store.snapshot()).map(x => x.id)
+    const ids = store.snapshot().map(x => x.id)
     expect(ids).toEqual(["B"])
   })
 
@@ -154,8 +156,8 @@ describe("subscription issue store", () => {
       type: "snapshot",
       id: "s1",
       revision: 1,
-      issues: [{ id: "A", created_at: 10_000, updated_at: 10_000, closed_at: null }],
-    })
+      issues: [{ id: "A", created_at: 10_000, updated_at: 10_000, closed_at: null }] as Issue[],
+    } as SnapshotMsg)
     store.applyPush({
       type: "upsert",
       id: "s1",
@@ -166,8 +168,8 @@ describe("subscription issue store", () => {
         created_at: 10_000,
         updated_at: 10_060,
         closed_at: null,
-      },
-    })
+      } as Issue,
+    } as UpsertMsg)
     expect(count).toBe(2)
   })
 
@@ -182,8 +184,8 @@ describe("subscription issue store", () => {
       type: "snapshot",
       id: "s1",
       revision: 1,
-      issues: [{ id: "A", created_at: 10_000, updated_at: 10_000, closed_at: null }],
-    })
+      issues: [{ id: "A", created_at: 10_000, updated_at: 10_000, closed_at: null }] as Issue[],
+    } as SnapshotMsg)
     expect(hit).toBe(0)
     expect(store.size()).toBe(0)
   })

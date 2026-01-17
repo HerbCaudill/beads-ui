@@ -1,20 +1,19 @@
 import { describe, expect, test } from "vitest"
-import { createListSelectors } from "./list-selectors.js"
+import { createListSelectors, type IssueStores } from "./list-selectors.js"
 import { createSubscriptionIssueStore } from "./subscription-issue-store.js"
+import type { SubscriptionIssueStore, SnapshotMsg } from "../../types/subscription-issue-store.js"
+import type { Issue, IssueLite } from "../../types/issues.js"
 
 /**
  * Minimal per-subscription stores facade for tests.
  */
-function createTestIssueStores() {
-  /** @type {Map<string, ReturnType<typeof createSubscriptionIssueStore>>} */
-  const stores = new Map()
-  /** @type {Set<() => void>} */
-  const listeners = new Set()
+function createTestIssueStores(): IssueStores & {
+  getStore: (id: string) => SubscriptionIssueStore
+} {
+  const stores = new Map<string, SubscriptionIssueStore>()
+  const listeners = new Set<() => void>()
 
-  /**
-   * @param {string} id
-   */
-  function getStore(id) {
+  function getStore(id: string): SubscriptionIssueStore {
     let s = stores.get(id)
     if (!s) {
       s = createSubscriptionIssueStore(id)
@@ -35,18 +34,15 @@ function createTestIssueStores() {
 
   return {
     getStore,
-    /**
-     * @param {string} id
-     */
-    snapshotFor(id) {
-      return getStore(id).snapshot()
+    snapshotFor(id: string) {
+      // Cast to IssueLite[] since the store returns Issue[] which is compatible
+      return getStore(id).snapshot() as unknown as IssueLite[]
     },
-    /**
-     * @param {() => void} fn
-     */
-    subscribe(fn) {
+    subscribe(fn: () => void) {
       listeners.add(fn)
-      return () => listeners.delete(fn)
+      return () => {
+        listeners.delete(fn)
+      }
     },
   }
 }
@@ -56,7 +52,7 @@ function createTestIssueStores() {
  */
 function setup() {
   const issueStores = createTestIssueStores()
-  const selectors = createListSelectors(/** @type {any} */ (issueStores))
+  const selectors = createListSelectors(issueStores)
   return { issueStores, selectors }
 }
 
@@ -97,8 +93,8 @@ describe("list-selectors", () => {
           updated_at: 11_000,
           closed_at: null,
         },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
 
     const out = selectors.selectIssuesFor("tab:issues").map(x => x.id)
     // priority asc: B,C first (1), then A (2); within same priority sort by created asc
@@ -134,8 +130,8 @@ describe("list-selectors", () => {
           updated_at: 11_000,
           closed_at: null,
         },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
     // In progress
     issueStores.getStore("tab:board:in-progress").applyPush({
       type: "snapshot",
@@ -145,8 +141,8 @@ describe("list-selectors", () => {
         { id: "P1", created_at: 8_000, updated_at: 8_000, closed_at: null },
         { id: "P2", created_at: 9_000, updated_at: 9_000, closed_at: null },
         { id: "P3", created_at: 7_000, updated_at: 7_000, closed_at: null },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
     // Closed
     issueStores.getStore("tab:board:closed").applyPush({
       type: "snapshot",
@@ -156,8 +152,8 @@ describe("list-selectors", () => {
         { id: "C1", created_at: 1_000, closed_at: 5_000, updated_at: 20_000 },
         { id: "C2", created_at: 1_100, closed_at: 6_000, updated_at: 20_000 },
         { id: "C3", created_at: 900, closed_at: 4_000, updated_at: 7_300 },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
 
     const ready = selectors.selectBoardColumn("tab:board:ready", "ready").map(x => x.id)
     expect(ready).toEqual(["R2", "R3", "R1"])
@@ -199,8 +195,8 @@ describe("list-selectors", () => {
             },
           ],
         },
-      ],
-    })
+      ] as Issue[],
+    } as SnapshotMsg)
     const out = selectors.selectEpicChildren("42").map(x => x.id)
     expect(out).toEqual(["E2", "E1"])
   })
@@ -217,7 +213,7 @@ describe("list-selectors", () => {
       id: "tab:issues",
       revision: 1,
       issues: [],
-    })
+    } as SnapshotMsg)
     expect(calls).toBe(1)
     off()
   })

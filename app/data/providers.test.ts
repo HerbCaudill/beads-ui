@@ -1,18 +1,20 @@
 import { describe, expect, test } from "vitest"
-import { createDataLayer } from "./providers.ts"
+import { createDataLayer, type Transport } from "./providers.ts"
 
-/**
- * @returns {{ calls: { type: string, payload: any }[], send: (type: string, payload?: any) => Promise<any> }}
- */
-function makeTransportRecorder() {
-  /** @type {{ type: string, payload: any }[]} */
-  const calls = []
+interface TransportCall {
+  type: string
+  payload: unknown
+}
+
+interface TransportRecorder {
+  calls: TransportCall[]
+  send: Transport
+}
+
+function makeTransportRecorder(): TransportRecorder {
+  const calls: TransportCall[] = []
   return {
     calls,
-    /**
-     * @param {string} type
-     * @param {any} [payload]
-     */
     async send(type, payload) {
       calls.push({ type, payload })
       // default fake payloads
@@ -28,7 +30,7 @@ function makeTransportRecorder() {
         type === "edit-text" ||
         type === "update-assignee"
       ) {
-        return { id: payload?.id || "X" }
+        return { id: (payload as { id?: string })?.id || "X" }
       }
       return null
     },

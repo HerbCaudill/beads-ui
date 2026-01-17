@@ -1,13 +1,17 @@
 import { describe, expect, test, vi } from "vitest"
-import { createSubscriptionStore } from "./subscriptions-store.js"
+import {
+  createSubscriptionStore,
+  type SubscriptionTransport,
+  type SubscriptionDelta,
+} from "./subscriptions-store.js"
+import type { SubscriptionSpec } from "../../types/list-adapters.js"
 
 describe("client subscription store", () => {
   test("applies delta sequences to itemsById", async () => {
-    /** @type {(type: any, payload?: any) => Promise<any>} */
-    const send = async () => ({ ok: true })
+    const send: SubscriptionTransport = async () => ({ ok: true })
     const store = createSubscriptionStore(send)
 
-    const spec = { type: "all-issues" }
+    const spec: SubscriptionSpec = { type: "all-issues" }
     const key = store._subKeyOf(spec)
     const unsub = await store.subscribeList("s1", spec)
 
@@ -34,9 +38,9 @@ describe("client subscription store", () => {
   })
 
   test("fans out deltas to multiple subscribers of same key", async () => {
-    const send = async () => ({ ok: true })
+    const send: SubscriptionTransport = async () => ({ ok: true })
     const store = createSubscriptionStore(send)
-    const spec = { type: "in-progress-issues" }
+    const spec: SubscriptionSpec = { type: "in-progress-issues" }
     const key = store._subKeyOf(spec)
 
     const unsub1 = await store.subscribeList("s1", spec)
@@ -56,9 +60,9 @@ describe("client subscription store", () => {
   })
 
   test("unsubscribe clears local store and mapping", async () => {
-    const send = async () => ({ ok: true })
+    const send: SubscriptionTransport = async () => ({ ok: true })
     const store = createSubscriptionStore(send)
-    const spec = { type: "blocked-issues" }
+    const spec: SubscriptionSpec = { type: "blocked-issues" }
     const key = store._subKeyOf(spec)
 
     const unsub = await store.subscribeList("sZ", spec)
@@ -75,7 +79,7 @@ describe("client subscription store", () => {
       throw { code: "bd_error", message: "boom", details: { exit_code: 1 } }
     })
     const store = createSubscriptionStore(send)
-    const spec = { type: "all-issues" }
+    const spec: SubscriptionSpec = { type: "all-issues" }
 
     await expect(store.subscribeList("err-1", spec)).rejects.toMatchObject({
       message: "boom",
