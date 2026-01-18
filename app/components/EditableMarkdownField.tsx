@@ -11,10 +11,9 @@
  * - Ctrl+Enter (or Cmd+Enter on Mac) to save
  * - Escape to cancel
  */
-import DOMPurify from "dompurify"
-import { marked } from "marked"
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { renderMarkdown } from "../utils/markdown.js"
 import { useDetailContext } from "./DetailView.js"
 
 /**
@@ -46,17 +45,6 @@ export interface EditableMarkdownFieldProps {
    * Optional test ID for testing.
    */
   testId?: string
-}
-
-/**
- * Render Markdown safely as HTML using marked and DOMPurify.
- *
- * @param markdown - Markdown source text
- * @returns Sanitized HTML string
- */
-function renderMarkdownToHtml(markdown: string): string {
-  const parsed = marked.parse(markdown) as string
-  return DOMPurify.sanitize(parsed)
 }
 
 /**
@@ -234,7 +222,7 @@ export function EditableMarkdownField({
   }
 
   // Render read mode
-  const renderedHtml = hasContent ? renderMarkdownToHtml(value) : ""
+  const renderedHtml = hasContent ? renderMarkdown(value) : ""
 
   return (
     <div className={containerClass} data-testid={testId}>

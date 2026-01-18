@@ -1,4 +1,3 @@
-import { html, render } from "lit-html"
 import { describe, expect, test } from "vitest"
 import { renderMarkdown } from "./markdown.js"
 
@@ -6,16 +5,15 @@ describe("utils/markdown", () => {
   test("renders empty input", () => {
     const host = document.createElement("div")
 
-    render(html`<div id="root">${renderMarkdown("")}</div>`, host)
+    host.innerHTML = renderMarkdown("")
 
-    const root = host.querySelector("#root") as HTMLDivElement
-    expect(root.textContent).toBe("")
+    expect(host.textContent).toBe("")
   })
 
   test("renders headings", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("# Title\n\n### Sub")}</div>`, host)
+    host.innerHTML = renderMarkdown("# Title\n\n### Sub")
 
     const h1 = host.querySelector("h1")
     const h3 = host.querySelector("h3")
@@ -26,7 +24,7 @@ describe("utils/markdown", () => {
   test("renders paragraphs with and without blank lines", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("First line\ncontinues\n\nSecond para")}</div>`, host)
+    host.innerHTML = renderMarkdown("First line\ncontinues\n\nSecond para")
 
     const ps = host.querySelectorAll("p")
     expect(ps.length).toBe(2)
@@ -37,7 +35,7 @@ describe("utils/markdown", () => {
   test("renders unordered list items", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("- a\n- b")}</div>`, host)
+    host.innerHTML = renderMarkdown("- a\n- b")
 
     const items = host.querySelectorAll("ul li")
     expect(items.length).toBe(2)
@@ -48,7 +46,7 @@ describe("utils/markdown", () => {
   test("renders ordered list items", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("1. a\n2. b")}</div>`, host)
+    host.innerHTML = renderMarkdown("1. a\n2. b")
 
     const items = host.querySelectorAll("ol li")
     expect(items.length).toBe(2)
@@ -59,7 +57,7 @@ describe("utils/markdown", () => {
   test("renders fenced code block", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("```\nline1\nline2\n```")}</div>`, host)
+    host.innerHTML = renderMarkdown("```\nline1\nline2\n```")
 
     const code = host.querySelector("pre > code") as HTMLElement
     expect((code.textContent ?? "").trimEnd()).toBe("line1\nline2")
@@ -68,7 +66,7 @@ describe("utils/markdown", () => {
   test("renders inline code", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("text `code` end")}</div>`, host)
+    host.innerHTML = renderMarkdown("text `code` end")
 
     const code = host.querySelector("p code") as HTMLElement
     expect(code.textContent).toBe("code")
@@ -77,11 +75,8 @@ describe("utils/markdown", () => {
   test("renders http and mailto links", () => {
     const host = document.createElement("div")
 
-    render(
-      html`<div>
-        ${renderMarkdown("[web](https://example.com) and [mail](mailto:test@example.com)")}
-      </div>`,
-      host,
+    host.innerHTML = renderMarkdown(
+      "[web](https://example.com) and [mail](mailto:test@example.com)",
     )
 
     const hrefs = Array.from(host.querySelectorAll("a")).map(a => a.getAttribute("href"))
@@ -91,7 +86,7 @@ describe("utils/markdown", () => {
   test("sanitizes unsafe link schemes", () => {
     const host = document.createElement("div")
 
-    render(html`<div>${renderMarkdown("x [danger](javascript:alert(1)) y")}</div>`, host)
+    host.innerHTML = renderMarkdown("x [danger](javascript:alert(1)) y")
 
     const hrefs = Array.from(host.querySelectorAll("a")).map(a => a.getAttribute("href") ?? "")
     // DOMPurify removes/neutralizes javascript: links

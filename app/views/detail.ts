@@ -1,5 +1,6 @@
 // Issue Detail view implementation (lit-html based)
 import { html, render, TemplateResult } from "lit-html"
+import { unsafeHTML } from "lit-html/directives/unsafe-html.js"
 import { parseView } from "../router.js"
 import { issueHashFor } from "../utils/issue-url.js"
 import { debug } from "../utils/logging.js"
@@ -924,7 +925,7 @@ export function createDetailView(
             if (text.trim() === "") {
               return html`<div class="muted">Description</div>`
             }
-            return renderMarkdown(text)
+            return unsafeHTML(renderMarkdown(text))
           })()}
         </div>`
 
@@ -966,7 +967,7 @@ export function createDetailView(
                 @keydown=${onAcceptEditableKeydown}
               >
                 ${has ?
-                  renderMarkdown(text)
+                  unsafeHTML(renderMarkdown(text))
                 : html`<div class="muted">Add acceptance criteria…</div>`}
               </div>`
           })()}
@@ -1002,7 +1003,9 @@ export function createDetailView(
                 @click=${onNotesEdit}
                 @keydown=${onNotesEditableKeydown}
               >
-                ${has ? renderMarkdown(text) : html`<div class="muted">Add notes…</div>`}
+                ${has ?
+                  unsafeHTML(renderMarkdown(text))
+                : html`<div class="muted">Add notes…</div>`}
               </div>`
           })()}
         </div>`
@@ -1075,7 +1078,9 @@ export function createDetailView(
                 @click=${onDesignEdit}
                 @keydown=${onDesignEditableKeydown}
               >
-                ${has ? renderMarkdown(text) : html`<div class="muted">Add design…</div>`}
+                ${has ?
+                  unsafeHTML(renderMarkdown(text))
+                : html`<div class="muted">Add design…</div>`}
               </div>`
           })()}
         </div>`
