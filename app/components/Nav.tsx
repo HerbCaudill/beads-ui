@@ -5,7 +5,6 @@
  * This is a React port of app/views/nav.ts.
  */
 import { useCallback } from "react"
-import { useSyncExternalStore } from "react"
 
 import { useAppStore, type ViewName } from "../store/index.js"
 
@@ -15,11 +14,7 @@ import { useAppStore, type ViewName } from "../store/index.js"
  * @returns The current view name.
  */
 function useCurrentView(): ViewName {
-  return useSyncExternalStore(
-    callback => useAppStore.subscribe(callback),
-    () => useAppStore.getState().view,
-    () => useAppStore.getState().view,
-  )
+  return useAppStore(state => state.view)
 }
 
 /**

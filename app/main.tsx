@@ -15,11 +15,46 @@
  * - Preference persistence
  * - Theme initialization
  */
-import { StrictMode } from "react"
+import { Component, StrictMode, type ErrorInfo, type ReactNode } from "react"
 import { createRoot } from "react-dom/client"
 import type { SubscriptionSpec } from "../types/list-adapters.js"
 import type { SnapshotMsg, UpsertMsg, DeleteMsg } from "../types/subscription-issue-store.js"
 import { App } from "./components/App.js"
+
+/** Error boundary to catch and display React errors. */
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): { hasError: boolean; error: Error } {
+    return { hasError: true, error }
+  }
+
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error("ErrorBoundary caught:", error, errorInfo)
+  }
+
+  override render(): ReactNode {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 20, color: "red", fontFamily: "monospace" }}>
+          <h2>React Error</h2>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {this.state.error?.message}
+            {"\n\n"}
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 import { createListSelectors } from "./data/list-selectors.js"
 import { type Transport } from "./data/providers.js"
 import {
@@ -948,7 +983,9 @@ function init(): void {
   if (reactRoot) {
     createRoot(reactRoot).render(
       <StrictMode>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </StrictMode>,
     )
   }

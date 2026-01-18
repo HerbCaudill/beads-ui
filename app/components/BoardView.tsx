@@ -9,7 +9,7 @@
  *
  * Supports drag-and-drop between columns and keyboard navigation.
  */
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 import { useAppStore, type ClosedFilter } from "../store/index.js"
 import { BoardColumn } from "./BoardColumn.js"
@@ -25,11 +25,7 @@ export interface BoardViewProps {
  * @returns The current closed filter value.
  */
 function useClosedFilter(): ClosedFilter {
-  return useSyncExternalStore(
-    callback => useAppStore.subscribe(callback),
-    () => useAppStore.getState().board.closed_filter,
-    () => useAppStore.getState().board.closed_filter,
-  )
+  return useAppStore(state => state.board.closed_filter)
 }
 
 /**

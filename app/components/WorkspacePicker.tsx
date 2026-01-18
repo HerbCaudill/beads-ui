@@ -5,7 +5,6 @@
  * This is a React port of app/views/workspace-picker.ts.
  */
 import { useCallback, useState } from "react"
-import { useSyncExternalStore } from "react"
 
 import { useAppStore, type WorkspaceState } from "../store/index.js"
 
@@ -28,11 +27,7 @@ function getProjectName(workspace_path: string): string {
  * @returns The current workspace state.
  */
 function useWorkspace(): WorkspaceState {
-  return useSyncExternalStore(
-    callback => useAppStore.subscribe(callback),
-    () => useAppStore.getState().workspace,
-    () => useAppStore.getState().workspace,
-  )
+  return useAppStore(state => state.workspace)
 }
 
 /**

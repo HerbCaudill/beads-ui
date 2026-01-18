@@ -13,7 +13,7 @@
  * - #issues-root - Issues list view
  * - #detail-panel - Issue detail view (dialog)
  */
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { useFatalError, useFatalErrorActions, useWorkspaceChange } from "../hooks/index.js"
@@ -73,11 +73,7 @@ const REACT_FATAL_ERROR_DIALOG = true
  * @returns The current view name.
  */
 function useCurrentView(): ViewName {
-  return useSyncExternalStore(
-    callback => useAppStore.subscribe(callback),
-    () => useAppStore.getState().view,
-    () => useAppStore.getState().view,
-  )
+  return useAppStore(state => state.view)
 }
 
 /**
@@ -86,11 +82,7 @@ function useCurrentView(): ViewName {
  * @returns The currently selected issue ID, or null if none selected.
  */
 function useSelectedId(): string | null {
-  return useSyncExternalStore(
-    callback => useAppStore.subscribe(callback),
-    () => useAppStore.getState().selected_id,
-    () => useAppStore.getState().selected_id,
-  )
+  return useAppStore(state => state.selected_id)
 }
 
 /**

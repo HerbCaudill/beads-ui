@@ -4,7 +4,7 @@
  * read-only snapshots for rendering.
  */
 
-import type { IssueLite } from "../../types/issues.js"
+import type { Issue, IssueLite } from "../../types/issues.js"
 import type {
   SubscriptionIssueStore,
   SubscriptionIssueStoreOptions,
@@ -66,6 +66,9 @@ export function createSubscriptionIssueStores(): SubscriptionIssueStoresRegistry
   const keyById = new Map<string, string>()
   const listeners = new Set<() => void>()
   const storeUnsubs = new Map<string, () => void>()
+  // Cache for snapshotFor to preserve reference equality when underlying data hasn't changed
+  /** @type {Map<string, { source: readonly Issue[]; sliced: IssueLite[] }>} */
+  const snapshotCache = new Map<string, { source: readonly Issue[]; sliced: IssueLite[] }>()
 
   function emit(): void {
     for (const fn of Array.from(listeners)) {
@@ -94,6 +97,7 @@ export function createSubscriptionIssueStores(): SubscriptionIssueStoresRegistry
     // underlying store to reset revision state and avoid ignoring a fresh
     // snapshot with a lower revision (different server list).
     if (hasStore && prevKey && nextKey && prevKey !== nextKey) {
+      snapshotCache.delete(clientId)
       const prevStore = storesById.get(clientId)
       if (prevStore) {
         try {
@@ -129,6 +133,7 @@ export function createSubscriptionIssueStores(): SubscriptionIssueStoresRegistry
   function unregister(clientId: string): void {
     log("unregister %s", clientId)
     keyById.delete(clientId)
+    snapshotCache.delete(clientId)
     const store = storesById.get(clientId)
     if (store) {
       store.dispose()
@@ -153,7 +158,19 @@ export function createSubscriptionIssueStores(): SubscriptionIssueStoresRegistry
     },
     snapshotFor(clientId: string): IssueLite[] {
       const s = storesById.get(clientId)
-      return s ? (s.snapshot().slice() as IssueLite[]) : []
+      if (!s) {
+        return []
+      }
+      const source = s.snapshot()
+      const cached = snapshotCache.get(clientId)
+      // Return cached slice if underlying snapshot reference hasn't changed
+      if (cached && cached.source === source) {
+        return cached.sliced
+      }
+      // Create new slice and cache it
+      const sliced = source.slice() as IssueLite[]
+      snapshotCache.set(clientId, { source, sliced })
+      return sliced
     },
     subscribe(fn: () => void): () => void {
       listeners.add(fn)
