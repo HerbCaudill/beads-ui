@@ -120,10 +120,10 @@ describe("DetailView", () => {
 
       render(<DetailView issueId="test-1" onNavigate={mockNavigate} testId="detail-view" />)
 
-      // Check for section test IDs (DetailHeader is now a real component)
+      // Check for section test IDs (DetailHeader and DetailProperties are now real components)
       expect(screen.getByTestId("detail-header")).toBeDefined()
+      expect(screen.getByTestId("detail-properties")).toBeDefined()
       // The rest are still placeholders
-      expect(screen.getByTestId("detail-properties-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-description-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-design-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-notes-placeholder")).toBeDefined()
@@ -140,9 +140,15 @@ describe("DetailView", () => {
 
       render(<DetailView issueId="test-1" onNavigate={mockNavigate} />)
 
-      expect(screen.getByText("bug")).toBeDefined()
-      expect(screen.getByText("open")).toBeDefined()
-      expect(screen.getByText("P1")).toBeDefined()
+      // Type badge renders capitalized
+      expect(screen.getByText("Bug")).toBeDefined()
+      // Status is rendered via select with label
+      expect(screen.getByDisplayValue("Open")).toBeDefined()
+      // Priority is rendered via select (no "P1" format anymore)
+      const prioritySelect = document.querySelector("select.badge--priority") as HTMLSelectElement
+      expect(prioritySelect).toBeDefined()
+      expect(prioritySelect.value).toBe("1")
+      // Assignee is shown
       expect(screen.getByText("charlie")).toBeDefined()
     })
 

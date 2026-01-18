@@ -13,12 +13,14 @@
  * The component uses React context to provide issue data and transport function
  * to child components, enabling them to read and update issue data.
  */
-import { createContext, useContext, useMemo } from "react"
+import { createContext, useCallback, useContext, useMemo, useState } from "react"
 
 import type { IssueDetail, Comment, DependencyRef } from "../../types/issues.js"
 import { useIssueStore } from "../hooks/index.js"
 import { useTransport, type TransportFn } from "../hooks/use-transport.js"
+import { parseView, type ViewName } from "../router.js"
 import { DetailHeader } from "./DetailHeader.js"
+import { DetailProperties } from "./DetailProperties.js"
 
 /**
  * Context value for DetailView children.
@@ -67,39 +69,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for DetailProperties.
- *
- * Will be replaced with the actual DetailProperties component in a subsequent issue.
- */
-function DetailPropertiesPlaceholder({ issue }: { issue: IssueDetail }): React.JSX.Element {
-  return (
-    <div className="props-card" data-testid="detail-properties-placeholder">
-      <div className="props-card__header">
-        <div className="props-card__title">Properties</div>
-      </div>
-      <div className="prop">
-        <div className="label">Type</div>
-        <div className="value">
-          {(issue as IssueDetail & { issue_type?: string }).issue_type || "—"}
-        </div>
-      </div>
-      <div className="prop">
-        <div className="label">Status</div>
-        <div className="value">{issue.status || "open"}</div>
-      </div>
-      <div className="prop">
-        <div className="label">Priority</div>
-        <div className="value">P{issue.priority ?? 2}</div>
-      </div>
-      <div className="prop">
-        <div className="label">Assignee</div>
-        <div className="value">{issue.assignee || "Unassigned"}</div>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -227,6 +196,64 @@ function CommentSectionPlaceholder({ comments }: { comments: Comment[] }): React
 }
 
 /**
+ * Props for the DeleteConfirmDialog component.
+ */
+interface DeleteConfirmDialogProps {
+  /** Whether the dialog is open. */
+  isOpen: boolean
+  /** The ID of the issue to delete. */
+  issueId: string
+  /** The title of the issue to delete. */
+  issueTitle: string
+  /** Handler called when the user confirms deletion. */
+  onConfirm: () => void
+  /** Handler called when the user cancels deletion. */
+  onCancel: () => void
+}
+
+/**
+ * DeleteConfirmDialog component.
+ *
+ * Renders a confirmation dialog for deleting an issue.
+ * Will be replaced with a full component in a subsequent issue.
+ */
+function DeleteConfirmDialog({
+  isOpen,
+  issueId,
+  issueTitle,
+  onConfirm,
+  onCancel,
+}: DeleteConfirmDialogProps): React.JSX.Element | null {
+  if (!isOpen) return null
+
+  return (
+    <dialog
+      open
+      id="delete-confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      data-testid="delete-confirm-dialog"
+    >
+      <div className="delete-confirm">
+        <h2 className="delete-confirm__title">Delete Issue</h2>
+        <p className="delete-confirm__message">
+          Are you sure you want to delete issue <strong>{issueId}</strong> —{" "}
+          <strong>{issueTitle || "(no title)"}</strong>? This action cannot be undone.
+        </p>
+        <div className="delete-confirm__actions">
+          <button type="button" className="btn" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn danger" onClick={onConfirm}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </dialog>
+  )
+}
+
+/**
  * DetailView container component.
  *
  * Renders the full issue detail view with all sections. Uses React context to
@@ -244,6 +271,9 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
   // Subscribe to issue store for this specific issue
   const client_id = `detail:${issueId}`
   const issues = useIssueStore(client_id)
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Find the specific issue from the store
   const issue = useMemo(() => {
@@ -263,6 +293,40 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
     }),
     [issue, transport, onNavigate],
   )
+
+  /**
+   * Handle delete button click - opens the confirmation dialog.
+   */
+  const handleDeleteClick = useCallback((): void => {
+    setIsDeleteDialogOpen(true)
+  }, [])
+
+  /**
+   * Handle delete confirmation.
+   */
+  const handleDeleteConfirm = useCallback(async (): Promise<void> => {
+    if (!issue) return
+
+    setIsDeleteDialogOpen(false)
+
+    try {
+      await transport("delete-issue", { id: issue.id })
+      // Navigate back to the current view (list or board)
+      const currentHash = typeof window !== "undefined" ? window.location.hash || "" : ""
+      const view: ViewName = parseView(currentHash)
+      onNavigate(`#/${view}`)
+    } catch (error) {
+      console.error("Failed to delete issue:", error)
+      // The transport layer should handle showing error toast
+    }
+  }, [issue, transport, onNavigate])
+
+  /**
+   * Handle delete cancellation.
+   */
+  const handleDeleteCancel = useCallback((): void => {
+    setIsDeleteDialogOpen(false)
+  }, [])
 
   // Loading state
   if (!issue) {
@@ -315,13 +379,22 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
 
           {/* Sidebar */}
           <div className="detail-side">
-            <DetailPropertiesPlaceholder issue={issue} />
+            <DetailProperties onDelete={handleDeleteClick} testId="detail-properties" />
             <LabelsSectionPlaceholder labels={labels} />
             <DependencyListPlaceholder title="Dependencies" items={dependencies} />
             <DependencyListPlaceholder title="Dependents" items={dependents} />
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <DeleteConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        issueId={issue.id}
+        issueTitle={issue.title || ""}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </DetailContext.Provider>
   )
 }
