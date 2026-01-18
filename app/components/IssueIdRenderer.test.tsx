@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the IssueIdRenderer component.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { IssueIdRenderer } from "./IssueIdRenderer.js"
@@ -21,7 +19,6 @@ describe("IssueIdRenderer", () => {
   })
 
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

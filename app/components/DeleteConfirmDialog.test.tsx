@@ -1,16 +1,13 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the DeleteConfirmDialog React component.
  */
-import { cleanup, render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog.js"
 
 describe("DeleteConfirmDialog", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

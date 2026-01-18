@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the DependencyList React component.
  */
-import { cleanup, render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi, beforeEach } from "vitest"
 
 import { DependencyList } from "./DependencyList.js"
@@ -77,7 +75,7 @@ describe("DependencyList", () => {
   })
 
   afterEach(() => {
-    cleanup()
+    vi.clearAllMocks()
   })
 
   describe("rendering", () => {

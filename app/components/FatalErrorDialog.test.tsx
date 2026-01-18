@@ -1,16 +1,13 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the FatalErrorDialog React component.
  */
-import { cleanup, render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { FatalErrorDialog } from "./FatalErrorDialog.js"
 
 describe("FatalErrorDialog", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

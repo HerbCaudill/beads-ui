@@ -2,7 +2,7 @@
  * Tests for the React EpicsView component.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
-import { render, cleanup, screen } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 
 import { EpicsView } from "./EpicsView.js"
 import {
@@ -80,7 +80,6 @@ describe("EpicsView (React)", () => {
   })
 
   afterEach(() => {
-    cleanup()
     clearIssueStoresInstance()
     clearIssueStoresRegistryInstance()
     clearListSelectorsInstance()

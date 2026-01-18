@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the WorkspacePicker React component.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { WorkspacePicker } from "./WorkspacePicker.js"
@@ -24,7 +22,6 @@ describe("WorkspacePicker", () => {
   })
 
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

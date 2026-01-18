@@ -2,7 +2,7 @@
  * Tests for the React App shell component.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { render, cleanup } from "@testing-library/react"
+import { render } from "@testing-library/react"
 
 import { useAppStore } from "../store/index.js"
 import { App } from "./App.js"
@@ -100,7 +100,6 @@ describe("App component", () => {
   })
 
   afterEach(() => {
-    cleanup()
     document.body.innerHTML = ""
     clearIssueStoresInstance()
     clearIssueStoresRegistryInstance()

@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the DetailHeader React component.
  */
-import { cleanup, render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { DetailHeader } from "./DetailHeader.js"
@@ -54,7 +52,6 @@ function renderWithContext(ui: React.ReactElement, contextValue: Partial<DetailC
 
 describe("DetailHeader", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

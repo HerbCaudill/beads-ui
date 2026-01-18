@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the ListView React component.
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ListView } from "./ListView.js"
@@ -102,7 +100,6 @@ describe("ListView", () => {
   })
 
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
     clearListSelectorsInstance()
     clearTransportInstance()

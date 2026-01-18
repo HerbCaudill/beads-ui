@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the EditableMarkdownField React component.
  */
-import { cleanup, render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { EditableMarkdownField } from "./EditableMarkdownField.js"
@@ -54,7 +52,6 @@ function renderWithContext(ui: React.ReactElement, contextValue: Partial<DetailC
 
 describe("EditableMarkdownField", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the BoardView React component.
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { BoardView } from "./BoardView.js"
@@ -58,7 +56,6 @@ describe("BoardView", () => {
   })
 
   afterEach(() => {
-    cleanup()
     clearListSelectorsInstance()
     clearTransportInstance()
     vi.clearAllMocks()

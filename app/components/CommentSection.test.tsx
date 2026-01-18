@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the CommentSection React component.
  */
-import { cleanup, render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { CommentSection } from "./CommentSection.js"
@@ -67,7 +65,6 @@ function renderWithContext(ui: React.ReactElement, contextValue: Partial<DetailC
 
 describe("CommentSection", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 

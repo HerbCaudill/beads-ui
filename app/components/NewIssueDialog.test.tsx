@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the NewIssueDialog component.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { clearTransportInstance, setTransportInstance } from "../hooks/use-transport.js"
@@ -29,7 +27,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  cleanup()
   vi.clearAllMocks()
   clearTransportInstance()
   window.localStorage.clear()

@@ -1,9 +1,7 @@
 /**
- * @vitest-environment jsdom
- *
  * Tests for the LabelsSection React component.
  */
-import { cleanup, render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { LabelsSection } from "./LabelsSection.js"
@@ -54,7 +52,6 @@ function renderWithContext(ui: React.ReactElement, contextValue: Partial<DetailC
 
 describe("LabelsSection", () => {
   afterEach(() => {
-    cleanup()
     vi.clearAllMocks()
   })
 
