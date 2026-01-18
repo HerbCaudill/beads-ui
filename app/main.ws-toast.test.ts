@@ -1,5 +1,6 @@
-import { describe, expect, test, vi } from "vitest"
+import { describe, expect, test, vi, beforeEach } from "vitest"
 import { bootstrap } from "./main.tsx"
+import { useToastStore } from "./store/toast-store.js"
 
 // Mock ws client factory to inject a controllable client
 interface MockWsClient {
@@ -19,6 +20,11 @@ vi.mock("./ws.ts", () => ({
 }))
 
 describe("main websocket toast notifications", () => {
+  beforeEach(() => {
+    // Clear toast store before each test
+    useToastStore.setState({ toasts: [] })
+  })
+
   test("shows toast on connection loss and on reconnect", async () => {
     vi.useFakeTimers()
     CLIENT = {
@@ -50,20 +56,25 @@ describe("main websocket toast notifications", () => {
     bootstrap(root)
     await Promise.resolve()
 
-    // Simulate reconnecting -> toast appears
+    // Simulate reconnecting -> toast appears in store
     CLIENT.triggerConn("reconnecting")
     await Promise.resolve()
-    const lost = document.querySelector(".toast") as HTMLElement
-    expect(lost).not.toBeNull()
-    expect((lost.textContent || "").toLowerCase()).toContain("connection lost")
+    const lostToast = useToastStore
+      .getState()
+      .toasts.find(t => t.text.toLowerCase().includes("connection lost"))
+    expect(lostToast).toBeDefined()
+    expect(lostToast?.variant).toBe("error")
 
-    // Simulate open after disconnect -> success toast
+    // Simulate open after disconnect -> success toast in store
     CLIENT.triggerConn("open")
     await Promise.resolve()
-    const toasts = Array.from(document.querySelectorAll(".toast"))
-    expect(toasts.some(t => (t.textContent || "").toLowerCase().includes("reconnected"))).toBe(true)
+    const reconnectedToast = useToastStore
+      .getState()
+      .toasts.find(t => t.text.toLowerCase().includes("reconnected"))
+    expect(reconnectedToast).toBeDefined()
+    expect(reconnectedToast?.variant).toBe("success")
 
-    // Let timers flush auto-dismiss to avoid leaking DOM between tests
+    // Let timers flush auto-dismiss to avoid leaking state between tests
     await vi.advanceTimersByTimeAsync(5000)
     vi.useRealTimers()
   })

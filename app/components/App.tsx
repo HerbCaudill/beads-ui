@@ -27,6 +27,7 @@ import { IssueDialog } from "./IssueDialog.js"
 import { ListView } from "./ListView.js"
 import { Nav } from "./Nav.js"
 import { NewIssueDialog } from "./NewIssueDialog.js"
+import { ToastContainer } from "./Toast.js"
 import { WorkspacePicker } from "./WorkspacePicker.js"
 
 /**
@@ -316,6 +317,9 @@ export function App(): React.JSX.Element {
           testId="new-issue-dialog"
         />
       )}
+
+      {/* Toast notifications - rendered at root level */}
+      <ToastContainer testId="toast-container" />
     </>
   )
 }
