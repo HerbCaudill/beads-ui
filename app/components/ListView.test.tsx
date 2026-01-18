@@ -298,4 +298,89 @@ describe("ListView", () => {
       expect(dep_indicator).toBeDefined()
     })
   })
+
+  describe("keyboard navigation", () => {
+    it("ArrowDown selects next issue", () => {
+      useAppStore.setState({ selected_id: "test-1" })
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      const listView = screen.getByTestId("list-view")
+      fireEvent.keyDown(listView, { key: "ArrowDown" })
+
+      // Check store was updated
+      expect(useAppStore.getState().selected_id).toBe("test-2")
+    })
+
+    it("ArrowUp selects previous issue", () => {
+      useAppStore.setState({ selected_id: "test-2" })
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      const listView = screen.getByTestId("list-view")
+      fireEvent.keyDown(listView, { key: "ArrowUp" })
+
+      expect(useAppStore.getState().selected_id).toBe("test-1")
+    })
+
+    it("Enter navigates to selected issue", () => {
+      useAppStore.setState({ selected_id: "test-2" })
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      const listView = screen.getByTestId("list-view")
+      fireEvent.keyDown(listView, { key: "Enter" })
+
+      expect(mock_navigate).toHaveBeenCalledWith("test-2")
+    })
+
+    it("ArrowDown at end stays on last issue", () => {
+      useAppStore.setState({ selected_id: "test-3" })
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      const listView = screen.getByTestId("list-view")
+      fireEvent.keyDown(listView, { key: "ArrowDown" })
+
+      expect(useAppStore.getState().selected_id).toBe("test-3")
+    })
+
+    it("ArrowUp at start stays on first issue", () => {
+      useAppStore.setState({ selected_id: "test-1" })
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      const listView = screen.getByTestId("list-view")
+      fireEvent.keyDown(listView, { key: "ArrowUp" })
+
+      expect(useAppStore.getState().selected_id).toBe("test-1")
+    })
+
+    it("ArrowDown moves focus to same column in next row when inside a cell", () => {
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      // Focus the editable title in the first row
+      const first_title = screen.getByText("First issue")
+      first_title.focus()
+      expect(document.activeElement).toBe(first_title)
+
+      // Press ArrowDown
+      fireEvent.keyDown(first_title, { key: "ArrowDown", bubbles: true })
+
+      // Should now be focused on second row's title
+      const second_title = screen.getByText("Second issue")
+      expect(document.activeElement).toBe(second_title)
+    })
+
+    it("does not intercept ArrowDown inside select controls", () => {
+      render(<ListView onNavigate={mock_navigate} testId="list-view" />)
+
+      // Focus a status select
+      const status_selects = screen.getAllByRole("combobox")
+      const first_status = status_selects.find(el => el.classList.contains("badge--status"))
+
+      if (first_status) {
+        first_status.focus()
+        fireEvent.keyDown(first_status, { key: "ArrowDown", bubbles: true })
+
+        // Focus should remain on the select (native behavior preserved)
+        expect(document.activeElement).toBe(first_status)
+      }
+    })
+  })
 })
