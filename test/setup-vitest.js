@@ -1,12 +1,10 @@
-/* global console */
-// Suppress Lit dev-mode warning in Vitest
-// Provided snippet: overrides console.warn but forwards all other messages
-const { warn } = console
-console.warn = /** @type {function(...*): void} */ (
-  (...args) => {
-    // Filter out the noisy Lit dev-mode banner in tests
-    if (!args[0].startsWith("Lit is in dev mode.")) {
-      warn.call(console, ...args)
-    }
-  }
-)
+/**
+ * Vitest setup for React testing with jsdom environment
+ *
+ * @testing-library/react automatically calls cleanup() after each test
+ * when a global `afterEach` function is available (provided by vitest).
+ * No explicit configuration is needed.
+ *
+ * If additional setup is needed in the future (e.g., custom matchers,
+ * global mocks), add them here.
+ */
