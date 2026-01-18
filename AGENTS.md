@@ -89,6 +89,10 @@ Never update `CHANGES.md`.
   - `app/main.tsx` - React entry point, bootstraps both Lit and React roots
   - `app/main-lit.ts` - Lit-html based UI (legacy, being migrated to React)
   - React components render into `#react-root`; Lit views render into `#app`
+- State management:
+  - `app/state.ts` - Legacy lit-html store (simple pub/sub pattern)
+  - `app/store/index.ts` - Zustand store for React migration with subscribeWithSelector middleware
+  - During migration, both stores coexist; lit-html store adapter syncs to Zustand store
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 
