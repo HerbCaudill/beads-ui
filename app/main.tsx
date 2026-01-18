@@ -7,15 +7,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { bootstrap as bootstrapLit, initTheme } from "./main-lit.js"
-
-/**
- * React application root component.
- *
- * Currently a placeholder that will be expanded as components migrate from Lit.
- */
-function App(): JSX.Element {
-  return <></>
-}
+import { App } from "./components/App.js"
 
 /**
  * Initialize the application.

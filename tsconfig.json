@@ -5,6 +5,9 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
+    // React JSX transform (automatic runtime)
+    "jsx": "react-jsx",
+
     // TypeScript-only (migration complete)
     "noEmit": true,
     "allowImportingTsExtensions": true,
@@ -31,6 +34,7 @@
   },
   "include": [
     "app/**/*.ts",
+    "app/**/*.tsx",
     "bin/**/*.ts",
     "server/**/*.ts",
     "scripts/**/*.ts",

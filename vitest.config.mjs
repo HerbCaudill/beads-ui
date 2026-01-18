@@ -16,7 +16,7 @@ export default defineConfig({
         test: {
           name: "jsdom",
           setupFiles: ["test/setup-vitest.js"],
-          include: ["app/**/*.test.{js,ts}"],
+          include: ["app/**/*.test.{js,ts,jsx,tsx}"],
           environment: "jsdom",
           restoreMocks: true,
         },
