@@ -11,7 +11,7 @@
  * - #issues-root - Issues list view
  * - #detail-panel - Issue detail view (dialog)
  */
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
 
 import { useAppStore, type ViewName } from "../store/index.js"
@@ -21,6 +21,7 @@ import { DetailView } from "./DetailView.js"
 import { EpicsView } from "./EpicsView.js"
 import { IssueDialog } from "./IssueDialog.js"
 import { ListView } from "./ListView.js"
+import { NewIssueDialog } from "./NewIssueDialog.js"
 
 /**
  * Configuration for which views are rendered by React vs Lit.
@@ -39,6 +40,11 @@ const REACT_VIEWS: Record<ViewName, boolean> = {
  * Set to true once the React DetailView is ready to replace the Lit version.
  */
 const REACT_DETAIL = true
+
+/**
+ * Whether to render the new issue dialog with React.
+ */
+const REACT_NEW_ISSUE_DIALOG = true
 
 /**
  * Hook to subscribe to Zustand store for the current view.
@@ -108,6 +114,75 @@ function ViewPortal({
 export function App(): React.JSX.Element {
   const view = useCurrentView()
   const selectedId = useSelectedId()
+  const [newIssueDialogOpen, setNewIssueDialogOpen] = useState(false)
+
+  /**
+   * Open the new issue dialog.
+   */
+  const openNewIssueDialog = useCallback((): void => {
+    setNewIssueDialogOpen(true)
+  }, [])
+
+  /**
+   * Close the new issue dialog.
+   */
+  const closeNewIssueDialog = useCallback((): void => {
+    setNewIssueDialogOpen(false)
+  }, [])
+
+  /**
+   * Handle new issue created - navigate to the new issue.
+   */
+  const handleNewIssueCreated = useCallback((id: string): void => {
+    const current_view = useAppStore.getState().view
+    const hash = issueHashFor(current_view, id)
+    window.location.hash = hash
+    // Also set the selected_id to open the detail dialog
+    useAppStore.getState().setSelectedId(id)
+  }, [])
+
+  // Listen for new issue button click and keyboard shortcut
+  useEffect(() => {
+    if (!REACT_NEW_ISSUE_DIALOG) return
+
+    // Button click handler
+    const btn = document.getElementById("new-issue-btn")
+    const handleClick = (): void => {
+      openNewIssueDialog()
+    }
+    btn?.addEventListener("click", handleClick)
+
+    // Keyboard shortcut handler ("n" key)
+    const handleKeydown = (ev: KeyboardEvent): void => {
+      // Ignore if typing in an input or dialog is already open
+      const target = ev.target as HTMLElement | null
+      const tagName = target?.tagName?.toLowerCase() || ""
+      const isEditable =
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select" ||
+        target?.isContentEditable === true
+      const dialogOpen = document.querySelector("dialog[open]") !== null
+
+      if (
+        ev.key === "n" &&
+        !ev.ctrlKey &&
+        !ev.metaKey &&
+        !ev.altKey &&
+        !isEditable &&
+        !dialogOpen
+      ) {
+        ev.preventDefault()
+        openNewIssueDialog()
+      }
+    }
+    document.addEventListener("keydown", handleKeydown)
+
+    return () => {
+      btn?.removeEventListener("click", handleClick)
+      document.removeEventListener("keydown", handleKeydown)
+    }
+  }, [openNewIssueDialog])
 
   /**
    * Navigate to an issue by updating the URL hash.
@@ -193,6 +268,16 @@ export function App(): React.JSX.Element {
             )}
           </IssueDialog>
         </DetailPortal>
+      )}
+
+      {/* New issue dialog - rendered directly, not via portal */}
+      {REACT_NEW_ISSUE_DIALOG && (
+        <NewIssueDialog
+          isOpen={newIssueDialogOpen}
+          onClose={closeNewIssueDialog}
+          onCreated={handleNewIssueCreated}
+          testId="new-issue-dialog"
+        />
       )}
     </>
   )
