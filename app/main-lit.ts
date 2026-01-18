@@ -19,7 +19,8 @@ import {
 } from "./data/subscription-issue-stores.js"
 import { createSubscriptionStore, type SubscriptionStore } from "./data/subscriptions-store.js"
 import { createHashRouter, parseHash, parseView } from "./router.js"
-import { createStore } from "./state.js"
+import { createLitStoreAdapter } from "./store/lit-adapter.js"
+import { useAppStore } from "./store/index.js"
 import { createActivityIndicator } from "./utils/activity-indicator.js"
 import { debug } from "./utils/logging.js"
 import { showToast } from "./utils/toast.js"
@@ -697,11 +698,13 @@ export function bootstrap(root_element: HTMLElement): void {
       log("board prefs parse error: %o", err)
     }
 
-    const store = createStore({
+    // Initialize Zustand store with persisted values before creating the adapter
+    useAppStore.getState().setState({
       filters: persisted_filters,
       view: last_view,
       board: persisted_board,
     })
+    const store = createLitStoreAdapter()
     const router = createHashRouter(store)
     router.start()
 

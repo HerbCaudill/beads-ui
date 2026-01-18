@@ -90,10 +90,10 @@ Never update `CHANGES.md`.
   - `app/main-lit.ts` - Lit-html based UI (legacy, being migrated to React)
   - React components render into `#react-root`; Lit views render into `#app`
 - State management:
-  - `app/state.ts` - Legacy lit-html store interface (simple pub/sub pattern)
-  - `app/store/index.ts` - Zustand store for React migration with subscribeWithSelector middleware
-  - `app/store/lit-adapter.ts` - Adapter that wraps Zustand store with legacy Store interface
-  - During migration, both stores coexist; lit-html views use the adapter to sync with Zustand
+  - `app/store/index.ts` - Zustand store (single source of truth) with subscribeWithSelector middleware
+  - `app/store/lit-adapter.ts` - Adapter wrapping Zustand with legacy Store interface for lit-html views
+  - `app/state.ts` - Legacy store interface definition (no longer instantiated directly)
+  - main-lit.ts initializes Zustand with persisted values, then creates the lit adapter
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 
