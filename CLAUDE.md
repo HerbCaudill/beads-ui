@@ -113,6 +113,7 @@ Never update `CHANGES.md`.
   - `IssueRow.tsx` - Table row with inline editing for issues
   - `DetailView.tsx` - Container component for issue detail view with React context
   - `DetailHeader.tsx` - Editable title header for detail view (click/Enter to edit, Escape to cancel)
+  - `DeleteConfirmDialog.tsx` - Confirmation dialog for issue deletion with Cancel/Delete buttons
   - `IssueIdButton.tsx` - Clickable ID button with copy-to-clipboard functionality
   - `TypeBadge.tsx` - Badge displaying issue type with styling
   - `PriorityBadge.tsx` - Badge displaying priority level with emoji and styling

@@ -20,6 +20,7 @@ import { useIssueStore } from "../hooks/index.js"
 import { useTransport, type TransportFn } from "../hooks/use-transport.js"
 import { parseView, type ViewName } from "../router.js"
 import { CommentSection } from "./CommentSection.js"
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog.js"
 import { DependencyList } from "./DependencyList.js"
 import { DetailHeader } from "./DetailHeader.js"
 import { DetailProperties } from "./DetailProperties.js"
@@ -73,64 +74,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Props for the DeleteConfirmDialog component.
- */
-interface DeleteConfirmDialogProps {
-  /** Whether the dialog is open. */
-  isOpen: boolean
-  /** The ID of the issue to delete. */
-  issueId: string
-  /** The title of the issue to delete. */
-  issueTitle: string
-  /** Handler called when the user confirms deletion. */
-  onConfirm: () => void
-  /** Handler called when the user cancels deletion. */
-  onCancel: () => void
-}
-
-/**
- * DeleteConfirmDialog component.
- *
- * Renders a confirmation dialog for deleting an issue.
- * Will be replaced with a full component in a subsequent issue.
- */
-function DeleteConfirmDialog({
-  isOpen,
-  issueId,
-  issueTitle,
-  onConfirm,
-  onCancel,
-}: DeleteConfirmDialogProps): React.JSX.Element | null {
-  if (!isOpen) return null
-
-  return (
-    <dialog
-      open
-      id="delete-confirm-dialog"
-      role="alertdialog"
-      aria-modal="true"
-      data-testid="delete-confirm-dialog"
-    >
-      <div className="delete-confirm">
-        <h2 className="delete-confirm__title">Delete Issue</h2>
-        <p className="delete-confirm__message">
-          Are you sure you want to delete issue <strong>{issueId}</strong> —{" "}
-          <strong>{issueTitle || "(no title)"}</strong>? This action cannot be undone.
-        </p>
-        <div className="delete-confirm__actions">
-          <button type="button" className="btn" onClick={onCancel}>
-            Cancel
-          </button>
-          <button type="button" className="btn danger" onClick={onConfirm}>
-            Delete
-          </button>
-        </div>
-      </div>
-    </dialog>
-  )
 }
 
 /**
