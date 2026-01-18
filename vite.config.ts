@@ -1,6 +1,9 @@
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
+// Server port for WebSocket proxy (can be overridden via BEADS_SERVER_PORT env var)
+const serverPort = process.env.BEADS_SERVER_PORT || "3000"
+
 /**
  * Vite configuration for the React-based frontend.
  *
@@ -14,7 +17,7 @@ export default defineConfig({
     proxy: {
       // Use exact path to avoid catching /ws.ts imports
       "^/ws$": {
-        target: "ws://127.0.0.1:3000",
+        target: `ws://127.0.0.1:${serverPort}`,
         ws: true,
       },
     },
