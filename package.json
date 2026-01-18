@@ -19,7 +19,7 @@
   },
   "scripts": {
     "test:all": "pnpm typecheck && pnpm test",
-    "start": "node server/index.ts --debug",
+    "start": "tsx server/index.ts --debug",
     "dev": "concurrently -k -n server,vite -c blue,green \"pnpm start\" \"vite\"",
     "dev:vite": "vite",
     "build": "vite build",
@@ -60,6 +60,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "prettier": "^3.7.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.15"

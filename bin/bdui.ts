@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Thin CLI entry for `bdui`.
  * Delegates to `server/cli/index.ts` and sets the process exit code.
