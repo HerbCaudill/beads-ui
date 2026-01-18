@@ -2,7 +2,7 @@
  * React hook for accessing workspace management functionality.
  *
  * Provides React components with the ability to switch workspaces.
- * The workspace change handler is injected from main-bootstrap.ts so React components
+ * The workspace change handler is injected from main.tsx so React components
  * can trigger workspace switches.
  */
 import { useCallback } from "react"
@@ -18,7 +18,7 @@ let workspaceChangeHandler: WorkspaceChangeFn | null = null
 /**
  * Set the workspace change handler.
  *
- * Called by main-bootstrap.ts after setting up workspace management.
+ * Called by main.tsx after setting up workspace management.
  * This allows React components to trigger workspace switches.
  *
  * @param handler - The workspace change handler function.

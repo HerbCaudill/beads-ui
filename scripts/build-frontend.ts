@@ -21,7 +21,7 @@ async function run(): Promise<void> {
   const this_file = fileURLToPath(new URL(import.meta.url))
   const repo_root = path.resolve(path.dirname(this_file), "..")
   const app_dir = path.join(repo_root, "app")
-  const entry = path.join(app_dir, "main-bootstrap.ts")
+  const entry = path.join(app_dir, "main.tsx")
   const outfile = path.join(app_dir, "main.bundle.js")
 
   // Ensure output directory exists when running from a fresh checkout

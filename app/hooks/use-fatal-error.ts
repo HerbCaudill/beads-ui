@@ -3,7 +3,7 @@
  *
  * Provides a way to show fatal error dialogs from anywhere in the app.
  * The state is managed via module-level variables that can be set from
- * main-bootstrap.ts and read by React components.
+ * main.tsx and read by React components.
  */
 import { useCallback, useSyncExternalStore } from "react"
 

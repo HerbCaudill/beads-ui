@@ -2,7 +2,7 @@
  * React hook for accessing the WebSocket transport function.
  *
  * Provides React components with the ability to send WebSocket messages.
- * The transport instance is injected from main-bootstrap.ts so React components
+ * The transport instance is injected from main.tsx so React components
  * can communicate with the server using the shared transport.
  */
 import { useCallback } from "react"
@@ -20,7 +20,7 @@ let transportInstance: TransportFn | null = null
 /**
  * Set the transport function instance.
  *
- * Called by main-bootstrap.ts after creating the WebSocket client and transport.
+ * Called by main.tsx after creating the WebSocket client and transport.
  * This allows React components to send messages using the shared transport.
  *
  * @param transport - The transport function instance.

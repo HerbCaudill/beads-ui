@@ -85,21 +85,19 @@ Never update `CHANGES.md`.
   annotation to specify the intended type. This applies to both `let` and
   `const` when inference is ambiguous.
 - Use braces for all control flow statements, even single-line bodies.
-- Frontend entry points:
-  - `app/main.tsx` - React entry point, bootstraps both React roots and the bootstrap module
-  - `app/main-bootstrap.ts` - Bootstrap module handling WebSocket, subscriptions, transport, routing
-  - React components render into portal containers created by main-bootstrap.ts
+- Frontend entry point:
+  - `app/main.tsx` - React entry point that bootstraps WebSocket, subscriptions, transport, routing, and React root
+  - React components render into portal containers created by main.tsx
 - State management:
   - `app/store/index.ts` - Zustand store (single source of truth) with subscribeWithSelector middleware
-  - `app/state.ts` - Legacy store interface definition (slated for removal)
-  - main-bootstrap.ts initializes Zustand with persisted values, creates a local store adapter for routing
+  - main.tsx initializes Zustand with persisted values, creates a local store adapter for routing
 - React data hooks (`app/hooks/`):
   - `use-issue-stores.ts` - Hook for accessing subscription issue stores (useIssueStore, useIssue)
   - `useListSelectors.ts` - Hook for sorted/filtered issues (useIssuesFor, useBoardColumn, useEpicChildren)
   - `use-transport.ts` - Hook for WebSocket transport function (useTransport)
   - `use-subscriptions.ts` - Hook for managing WebSocket subscriptions (useSubscription)
   - `index.ts` - Re-exports all hooks and setter functions
-  - main-bootstrap.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance, setSubscriptionsInstance, setIssueStoresRegistryInstance after creating instances
+  - main.tsx calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance, setSubscriptionsInstance, setIssueStoresRegistryInstance after creating instances
 - React components (`app/components/`):
   - `App.tsx` - Main React shell using portals to render views into existing DOM containers
   - `EpicsView.tsx` - Epics view showing expandable epics with children (migrated from lit-html)

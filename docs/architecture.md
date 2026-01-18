@@ -35,8 +35,7 @@ push‑only data flow used between the browser SPA and the local Node.js server.
 ## Components and Responsibilities
 
 - UI (app/)
-  - `app/main.tsx`: React entry point, bootstraps both React roots and the bootstrap module
-  - `app/main-bootstrap.ts`: Bootstrap module handling WebSocket, subscriptions, transport, routing
+  - `app/main.tsx`: React entry point that bootstraps WebSocket, subscriptions, transport, routing, and React root
   - Components: React components in `app/components/` render views (ListView, DetailView, BoardView, EpicsView)
   - Transport: `app/ws.ts` persistent client with reconnect, correlation, and
     event dispatcher

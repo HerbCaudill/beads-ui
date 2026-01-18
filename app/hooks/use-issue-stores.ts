@@ -2,7 +2,7 @@
  * React hook for accessing subscription issue stores.
  *
  * Wraps the subscription-issue-stores registry with useSyncExternalStore
- * for efficient React rendering. Allows main-bootstrap.ts to inject the instance
+ * for efficient React rendering. Allows main.tsx to inject the instance
  * so React components can access the shared data stores.
  */
 import { useSyncExternalStore, useCallback } from "react"
@@ -16,7 +16,7 @@ let registryInstance: SubscriptionIssueStoresRegistry | null = null
 /**
  * Set the subscription issue stores registry instance.
  *
- * Called by main-bootstrap.ts after creating the registry. This allows React
+ * Called by main.tsx after creating the registry. This allows React
  * components to access the shared data stores.
  *
  * @param registry - The subscription issue stores registry instance.
