@@ -16,6 +16,7 @@ import { createPortal } from "react-dom"
 
 import { useAppStore, type ViewName } from "../store/index.js"
 import { issueHashFor } from "../utils/issue-url.js"
+import { BoardView } from "./BoardView.js"
 import { EpicsView } from "./EpicsView.js"
 
 /**
@@ -27,7 +28,7 @@ import { EpicsView } from "./EpicsView.js"
 const REACT_VIEWS: Record<ViewName, boolean> = {
   issues: false,
   epics: true, // Migrated to React
-  board: false,
+  board: true, // Migrated to React
 }
 
 /**
@@ -106,8 +107,7 @@ export function App(): React.JSX.Element {
       {/* Board view portal */}
       {REACT_VIEWS.board && (
         <ViewPortal container_id="board-root" visible={view === "board"}>
-          {/* BoardView will be added here when migrated */}
-          <div data-testid="react-board-placeholder">Board view (React)</div>
+          <BoardView onNavigate={handleNavigate} />
         </ViewPortal>
       )}
 
