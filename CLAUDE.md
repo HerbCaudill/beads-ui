@@ -108,6 +108,8 @@ Never update `CHANGES.md`.
   - `IssueRow.tsx` - Table row with inline editing for issues
   - `IssueIdButton.tsx` - Clickable ID button with copy-to-clipboard functionality
   - `TypeBadge.tsx` - Badge displaying issue type with styling
+  - `PriorityBadge.tsx` - Badge displaying priority level with emoji and styling
+  - `BoardCard.tsx` - Draggable card for kanban board with issue details
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 
