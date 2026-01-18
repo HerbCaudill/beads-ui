@@ -1,8 +1,42 @@
-import { describe, expect, test } from "vitest"
-import { createHashRouter, parseHash, parseView } from "./router.ts"
-import { createStore } from "./state.ts"
+import { beforeEach, describe, expect, test } from "vitest"
+import { createHashRouter, parseHash, parseView, type RouterStore } from "./router.ts"
+import { useAppStore } from "./store/index.ts"
+
+/**
+ * Create a RouterStore adapter for the Zustand store.
+ */
+function createRouterStore(): RouterStore {
+  return {
+    getState: () => {
+      const state = useAppStore.getState()
+      return { selected_id: state.selected_id, view: state.view }
+    },
+    setState: patch => {
+      const actions = useAppStore.getState()
+      if (patch.selected_id !== undefined) {
+        actions.setSelectedId(patch.selected_id)
+      }
+      if (patch.view !== undefined) {
+        actions.setView(patch.view)
+      }
+    },
+  }
+}
 
 describe("router", () => {
+  beforeEach(() => {
+    // Reset the store state before each test
+    useAppStore.setState({
+      selected_id: null,
+      view: "issues",
+      filters: { status: "all", search: "", type: "" },
+      board: { closed_filter: "today" },
+      workspace: { current: null, available: [] },
+    })
+    // Reset hash
+    window.location.hash = ""
+  })
+
   test("parseHash extracts id", () => {
     expect(parseHash("#/issues?issue=UI-5")).toBe("UI-5")
     expect(parseHash("#/issue/UI-5")).toBe("UI-5")
@@ -11,7 +45,7 @@ describe("router", () => {
 
   test("router updates store and gotoIssue updates hash", () => {
     document.body.innerHTML = "<div></div>"
-    const store = createStore()
+    const store = createRouterStore()
     const router = createHashRouter(store)
     router.start()
 

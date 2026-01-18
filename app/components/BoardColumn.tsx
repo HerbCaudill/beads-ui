@@ -11,7 +11,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 
 import type { BoardColumnMode } from "../data/list-selectors.js"
 import { useBoardColumn, useTransport } from "../hooks/index.js"
-import type { ClosedFilter } from "../state.js"
+import type { ClosedFilter } from "../store/index.js"
 import { showToast } from "../utils/toast.js"
 import { BoardCard } from "./BoardCard.js"
 
