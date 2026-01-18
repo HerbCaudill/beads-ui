@@ -112,12 +112,18 @@ Never update `CHANGES.md`.
 - Do not modify implementation code to make tests pass; adjust the test or fix
   the underlying issue instead.
 
+## Build Scripts
+
+- `pnpm dev` - Start Vite dev server with hot module replacement
+- `pnpm build` - Build production bundle with Vite (outputs to `dist/`)
+- `pnpm preview` - Preview production build locally
+- `pnpm start` - Start production server (serves from `dist/`)
+
 ## Pre‑Handoff Validation
 
-- Run type checks: `npm run tsc`
-- Run tests: `npm test`
-- Run eslint: `npm run lint`
-- Run prettier: `npm run prettier:write`
+- Run type checks: `pnpm typecheck`
+- Run tests: `pnpm test`
+- Run format: `pnpm format`
 
 ## Landing the Plane (Session Completion)
 

@@ -35,7 +35,7 @@ export function getConfig(): ServerConfig {
   return {
     host: host_value,
     port: port_value,
-    app_dir: path.resolve(package_root, "app"),
+    app_dir: path.resolve(package_root, "dist"),
     root_dir,
     url: `http://${host_value}:${port_value}`,
   }

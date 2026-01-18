@@ -20,7 +20,9 @@
   "scripts": {
     "test:all": "pnpm typecheck && pnpm test",
     "start": "node server/index.ts --debug",
-    "build": "node scripts/build-frontend.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -63,10 +65,7 @@
     "vitest": "^4.0.15"
   },
   "files": [
-    "app/index.html",
-    "app/styles.css",
-    "app/main.bundle.js",
-    "app/main.bundle.js.map",
+    "dist",
     "bin",
     "server",
     "types",

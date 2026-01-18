@@ -3,5 +3,3 @@ coverage
 dist
 .beads
 CHANGES.md
-app/main.bundle.js
-app/main.bundle.js.map

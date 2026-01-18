@@ -39,5 +39,5 @@
     "vitest.config.mjs",
     "vite.config.ts"
   ],
-  "exclude": ["app/main.bundle.js", "app/main.bundle.js.map", "node_modules"]
+  "exclude": ["dist", "node_modules"]
 }

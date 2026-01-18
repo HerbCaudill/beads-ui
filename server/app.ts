@@ -1,5 +1,4 @@
 import express, { type Express, type Request, type Response } from "express"
-import fs from "node:fs"
 import path from "node:path"
 import { registerWorkspace } from "./registry-watcher.js"
 import type { ServerConfig } from "./config.js"
@@ -43,46 +42,7 @@ export function createApp(config: ServerConfig): Express {
     res.status(200).json({ ok: true, registered: workspace_path })
   })
 
-  if (
-    !fs.statSync(path.resolve(config.app_dir, "main.bundle.js"), {
-      throwIfNoEntry: false,
-    })
-  ) {
-    /**
-     * On-demand bundle for the browser using esbuild.
-     */
-    app.get("/main.bundle.js", async (_req: Request, res: Response) => {
-      try {
-        const esbuild = await import("esbuild")
-        const entry = path.join(config.app_dir, "main.js")
-        const result = await esbuild.build({
-          entryPoints: [entry],
-          bundle: true,
-          format: "esm",
-          platform: "browser",
-          target: "es2020",
-          sourcemap: "inline",
-          minify: false,
-          write: false,
-        })
-        const out = result.outputFiles && result.outputFiles[0]
-        if (!out) {
-          res.status(500).type("text/plain").send("Bundle failed: no output")
-          return
-        }
-        res.setHeader("Content-Type", "application/javascript; charset=utf-8")
-        res.setHeader("Cache-Control", "no-store")
-        res.send(out.text)
-      } catch (err) {
-        res
-          .status(500)
-          .type("text/plain")
-          .send("Bundle error: " + (err && (err as Error).message))
-      }
-    })
-  }
-
-  // Static assets from /app
+  // Static assets from dist (built by Vite)
   app.use(express.static(config.app_dir))
 
   // Root serves index.html explicitly (even if static would catch it)
