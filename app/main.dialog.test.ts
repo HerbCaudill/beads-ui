@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.ts"
+import { bootstrap } from "./main-lit.ts"
 
 // Provide a minimal dialog polyfill for jsdom environments
 if (typeof HTMLDialogElement !== "undefined") {

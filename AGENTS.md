@@ -61,7 +61,7 @@ Never update `CHANGES.md`.
   - Use `PascalCase` only for class constructors or imported class symbols.
 - Use `UPPER_SNAKE_CASE` for **constants**.
 - Use `kebab-case` for **file and directory names**.
-- Use `.ts` files for all code. The codebase is fully TypeScript.
+- Use `.ts` files for all code, `.tsx` for React components. The codebase is fully TypeScript.
 - Shared types live in `types/`:
   - `index.ts` - Central export point for all types
   - `issues.ts` - Issue, Comment, Dependency types
@@ -85,6 +85,10 @@ Never update `CHANGES.md`.
   annotation to specify the intended type. This applies to both `let` and
   `const` when inference is ambiguous.
 - Use braces for all control flow statements, even single-line bodies.
+- Frontend entry points:
+  - `app/main.tsx` - React entry point, bootstraps both Lit and React roots
+  - `app/main-lit.ts` - Lit-html based UI (legacy, being migrated to React)
+  - React components render into `#react-root`; Lit views render into `#app`
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 

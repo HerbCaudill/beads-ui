@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.ts"
+import { bootstrap } from "./main-lit.ts"
 import { createWsClient } from "./ws.ts"
 import type { MessageType } from "./protocol.js"
 

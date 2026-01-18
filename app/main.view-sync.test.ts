@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.ts"
+import { bootstrap } from "./main-lit.ts"
 
 // Mock WS client before importing the app
 vi.mock("./ws.ts", () => ({

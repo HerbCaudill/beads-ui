@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.ts"
+import { bootstrap } from "./main-lit.ts"
 
 // Mock the Board view to manipulate DOM content deterministically
 vi.mock("./views/board.js", () => ({

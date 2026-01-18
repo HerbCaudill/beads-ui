@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest"
-import { bootstrap } from "./main.ts"
+import { bootstrap } from "./main-lit.ts"
 
 // Polyfill <dialog> for jsdom
 if (typeof HTMLDialogElement !== "undefined") {
