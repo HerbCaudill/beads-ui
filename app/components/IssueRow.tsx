@@ -14,7 +14,6 @@ import { TypeBadge } from "./TypeBadge.js"
 
 /**
  * Issue data for row rendering.
- * Matches the IssueRowData interface used by lit-html views.
  */
 export interface IssueRowData {
   id: string

@@ -3,7 +3,7 @@
  *
  * Wraps the subscription-issue-stores registry with useSyncExternalStore
  * for efficient React rendering. Allows main-bootstrap.ts to inject the instance
- * so React components can access the same data as lit-html views.
+ * so React components can access the shared data stores.
  */
 import { useSyncExternalStore, useCallback } from "react"
 
@@ -17,7 +17,7 @@ let registryInstance: SubscriptionIssueStoresRegistry | null = null
  * Set the subscription issue stores registry instance.
  *
  * Called by main-bootstrap.ts after creating the registry. This allows React
- * components to access the same data stores as lit-html views.
+ * components to access the shared data stores.
  *
  * @param registry - The subscription issue stores registry instance.
  */
