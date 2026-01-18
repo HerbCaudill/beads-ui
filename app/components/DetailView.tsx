@@ -22,6 +22,7 @@ import { parseView, type ViewName } from "../router.js"
 import { DetailHeader } from "./DetailHeader.js"
 import { DetailProperties } from "./DetailProperties.js"
 import { EditableMarkdownField } from "./EditableMarkdownField.js"
+import { LabelsSection } from "./LabelsSection.js"
 
 /**
  * Context value for DetailView children.
@@ -70,34 +71,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for LabelsSection.
- *
- * Will be replaced with the actual LabelsSection component in a subsequent issue.
- */
-function LabelsSectionPlaceholder({ labels }: { labels: string[] }): React.JSX.Element {
-  return (
-    <div className="props-card labels" data-testid="detail-labels-placeholder">
-      <div>
-        <div className="props-card__title">Labels</div>
-      </div>
-      <ul>
-        {labels.map(label => (
-          <li key={label}>
-            <span className="badge" title={label}>
-              {label}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="props-card__footer">
-        <input type="text" placeholder="Label" disabled />
-        <button disabled>Add</button>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -357,7 +330,7 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
           {/* Sidebar */}
           <div className="detail-side">
             <DetailProperties onDelete={handleDeleteClick} testId="detail-properties" />
-            <LabelsSectionPlaceholder labels={labels} />
+            <LabelsSection labels={labels} testId="detail-labels" />
             <DependencyListPlaceholder title="Dependencies" items={dependencies} />
             <DependencyListPlaceholder title="Dependents" items={dependents} />
           </div>
