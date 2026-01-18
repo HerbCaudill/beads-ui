@@ -9,7 +9,7 @@
  * - #epics-root - Epics view (will be migrated first)
  * - #board-root - Board view
  * - #issues-root - Issues list view
- * - #detail-panel - Issue detail view
+ * - #detail-panel - Issue detail view (dialog)
  */
 import { useCallback, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
@@ -17,7 +17,9 @@ import { createPortal } from "react-dom"
 import { useAppStore, type ViewName } from "../store/index.js"
 import { issueHashFor } from "../utils/issue-url.js"
 import { BoardView } from "./BoardView.js"
+import { DetailView } from "./DetailView.js"
 import { EpicsView } from "./EpicsView.js"
+import { IssueDialog } from "./IssueDialog.js"
 import { ListView } from "./ListView.js"
 
 /**
@@ -33,6 +35,12 @@ const REACT_VIEWS: Record<ViewName, boolean> = {
 }
 
 /**
+ * Whether to render the detail view with React.
+ * Set to true once the React DetailView is ready to replace the Lit version.
+ */
+const REACT_DETAIL = true
+
+/**
  * Hook to subscribe to Zustand store for the current view.
  *
  * @returns The current view name.
@@ -42,6 +50,19 @@ function useCurrentView(): ViewName {
     callback => useAppStore.subscribe(callback),
     () => useAppStore.getState().view,
     () => useAppStore.getState().view,
+  )
+}
+
+/**
+ * Hook to subscribe to Zustand store for the selected issue ID.
+ *
+ * @returns The currently selected issue ID, or null if none selected.
+ */
+function useSelectedId(): string | null {
+  return useSyncExternalStore(
+    callback => useAppStore.subscribe(callback),
+    () => useAppStore.getState().selected_id,
+    () => useAppStore.getState().selected_id,
   )
 }
 
@@ -86,6 +107,7 @@ function ViewPortal({
  */
 export function App(): React.JSX.Element {
   const view = useCurrentView()
+  const selectedId = useSelectedId()
 
   /**
    * Navigate to an issue by updating the URL hash.
@@ -95,6 +117,40 @@ export function App(): React.JSX.Element {
     const hash = issueHashFor(current_view, id)
     window.location.hash = hash
   }, [])
+
+  /**
+   * Handle detail dialog close.
+   * Clears the selected_id and navigates back to the current view.
+   */
+  const handleDialogClose = useCallback((): void => {
+    const current_view = useAppStore.getState().view
+    useAppStore.getState().setSelectedId(null)
+    // Navigate to current view (this clears the issue from URL)
+    window.location.hash = `#/${current_view}`
+  }, [])
+
+  /**
+   * Handle navigation from within the detail view.
+   * Supports both navigating to another issue and closing the dialog.
+   */
+  const handleDetailNavigate = useCallback(
+    (target: string): void => {
+      // If target starts with #/ and has no issue param, it's a close action
+      if (target.startsWith("#/") && !target.includes("?issue=")) {
+        const viewMatch = target.match(/^#\/(\w+)/)
+        if (viewMatch) {
+          const targetView = viewMatch[1] as ViewName
+          useAppStore.getState().setSelectedId(null)
+          useAppStore.getState().setView(targetView)
+          window.location.hash = `#/${targetView}`
+          return
+        }
+      }
+      // Otherwise, navigate to the issue
+      handleNavigate(target)
+    },
+    [handleNavigate],
+  )
 
   return (
     <>
@@ -118,6 +174,55 @@ export function App(): React.JSX.Element {
           <ListView onNavigate={handleNavigate} />
         </ViewPortal>
       )}
+
+      {/* Issue detail dialog - rendered via portal to detail-panel */}
+      {REACT_DETAIL && (
+        <DetailPortal selectedId={selectedId}>
+          <IssueDialog
+            isOpen={selectedId !== null}
+            issueId={selectedId}
+            onClose={handleDialogClose}
+            testId="issue-dialog"
+          >
+            {selectedId && (
+              <DetailView
+                issueId={selectedId}
+                onNavigate={handleDetailNavigate}
+                testId="detail-view"
+              />
+            )}
+          </IssueDialog>
+        </DetailPortal>
+      )}
     </>
   )
+}
+
+/**
+ * Portal for the detail view dialog.
+ *
+ * Renders into #detail-panel when an issue is selected.
+ * The portal container visibility is managed by main-lit.ts.
+ *
+ * @param props - Props including children and selected issue ID.
+ */
+function DetailPortal({
+  children,
+  selectedId,
+}: {
+  children: React.ReactNode
+  selectedId: string | null
+}): React.ReactPortal | null {
+  const container = document.getElementById("detail-panel")
+  if (!container) {
+    return null
+  }
+
+  // Always render the portal when selectedId exists
+  // The IssueDialog handles open/close state
+  if (!selectedId) {
+    return null
+  }
+
+  return createPortal(children, container)
 }
