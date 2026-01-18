@@ -15,10 +15,11 @@
  */
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
 
-import type { IssueDetail, Comment } from "../../types/issues.js"
+import type { IssueDetail } from "../../types/issues.js"
 import { useIssueStore } from "../hooks/index.js"
 import { useTransport, type TransportFn } from "../hooks/use-transport.js"
 import { parseView, type ViewName } from "../router.js"
+import { CommentSection } from "./CommentSection.js"
 import { DependencyList } from "./DependencyList.js"
 import { DetailHeader } from "./DetailHeader.js"
 import { DetailProperties } from "./DetailProperties.js"
@@ -72,35 +73,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for CommentSection.
- *
- * Will be replaced with the actual CommentSection component in a subsequent issue.
- */
-function CommentSectionPlaceholder({ comments }: { comments: Comment[] }): React.JSX.Element {
-  return (
-    <div className="comments" data-testid="detail-comments-placeholder">
-      <div className="props-card__title">Comments</div>
-      {comments.length === 0 ?
-        <div className="muted">No comments yet</div>
-      : comments.map(comment => (
-          <div key={comment.id} className="comment-item">
-            <div className="comment-header">
-              <span className="comment-author">{comment.author || "Unknown"}</span>
-              <span className="comment-date">{comment.created_at || ""}</span>
-            </div>
-            <div className="comment-text">{comment.text}</div>
-          </div>
-        ))
-      }
-      <div className="comment-input">
-        <textarea placeholder="Add a comment..." rows={3} disabled />
-        <button disabled>Add Comment</button>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -291,7 +263,7 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
               className="acceptance"
               testId="detail-acceptance"
             />
-            <CommentSectionPlaceholder comments={comments} />
+            <CommentSection comments={comments} testId="detail-comments" />
           </div>
 
           {/* Sidebar */}

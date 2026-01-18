@@ -133,8 +133,8 @@ describe("DetailView", () => {
       // DependencyList is now a real component
       expect(screen.getByTestId("detail-dependencies")).toBeDefined()
       expect(screen.getByTestId("detail-dependents")).toBeDefined()
-      // Still placeholder
-      expect(screen.getByTestId("detail-comments-placeholder")).toBeDefined()
+      // CommentSection is now a real component
+      expect(screen.getByTestId("detail-comments")).toBeDefined()
     })
 
     it("renders properties section with correct values", () => {
