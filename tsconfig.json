@@ -36,7 +36,8 @@
     "scripts/**/*.ts",
     "test/**/*.ts",
     "types/**/*.ts",
-    "vitest.config.mjs"
+    "vitest.config.mjs",
+    "vite.config.ts"
   ],
   "exclude": ["app/main.bundle.js", "app/main.bundle.js.map", "node_modules"]
 }
