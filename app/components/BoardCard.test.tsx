@@ -107,4 +107,18 @@ describe("BoardCard", () => {
     const card = screen.getByRole("listitem")
     expect(card.getAttribute("data-issue-id")).toBe("UI-123")
   })
+
+  it("uses default tabIndex of -1", () => {
+    render(<BoardCard issue={mock_issue} onNavigate={navigate_spy} />)
+
+    const card = screen.getByRole("listitem")
+    expect(card.getAttribute("tabindex")).toBe("-1")
+  })
+
+  it("accepts custom tabIndex prop", () => {
+    render(<BoardCard issue={mock_issue} onNavigate={navigate_spy} tabIndex={0} />)
+
+    const card = screen.getByRole("listitem")
+    expect(card.getAttribute("tabindex")).toBe("0")
+  })
 })

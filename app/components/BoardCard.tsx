@@ -21,6 +21,8 @@ export interface BoardCardProps {
   issue: IssueLite
   /** Handler for navigating to the issue detail. */
   onNavigate: (id: string) => void
+  /** Tab index for keyboard navigation (roving tabindex pattern). */
+  tabIndex?: number
 }
 
 /**
@@ -28,7 +30,7 @@ export interface BoardCardProps {
  *
  * @param props - Component props.
  */
-export function BoardCard({ issue, onNavigate }: BoardCardProps): React.JSX.Element {
+export function BoardCard({ issue, onNavigate, tabIndex = -1 }: BoardCardProps): React.JSX.Element {
   const [is_dragging, setIsDragging] = useState(false)
 
   /**
@@ -82,7 +84,7 @@ export function BoardCard({ issue, onNavigate }: BoardCardProps): React.JSX.Elem
       className={class_name}
       data-issue-id={issue.id}
       role="listitem"
-      tabIndex={-1}
+      tabIndex={tabIndex}
       draggable
       aria-label={`Issue ${title}`}
       onClick={handleClick}
