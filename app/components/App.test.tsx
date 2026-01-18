@@ -158,12 +158,16 @@ describe("App component", () => {
     expect(epics_root?.textContent).toBe("")
   })
 
-  it("renders neither board nor epics when view is issues", () => {
+  it("renders ListView when view is issues", () => {
     // Set view before rendering
     useAppStore.setState({ view: "issues" })
     render(<App />)
 
-    // Neither view should render
+    // ListView should render in issues-root
+    const issues_root = document.getElementById("issues-root")
+    expect(issues_root?.querySelector(".panel__body")).toBeDefined()
+
+    // Neither board nor epics should render
     const board_root = document.getElementById("board-root")
     const epics_root = document.getElementById("epics-root")
     expect(board_root?.textContent).toBe("")

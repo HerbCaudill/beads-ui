@@ -18,6 +18,7 @@ import { useAppStore, type ViewName } from "../store/index.js"
 import { issueHashFor } from "../utils/issue-url.js"
 import { BoardView } from "./BoardView.js"
 import { EpicsView } from "./EpicsView.js"
+import { ListView } from "./ListView.js"
 
 /**
  * Configuration for which views are rendered by React vs Lit.
@@ -26,7 +27,7 @@ import { EpicsView } from "./EpicsView.js"
  * This allows incremental migration one view at a time.
  */
 const REACT_VIEWS: Record<ViewName, boolean> = {
-  issues: false,
+  issues: true, // Migrated to React
   epics: true, // Migrated to React
   board: true, // Migrated to React
 }
@@ -114,8 +115,7 @@ export function App(): React.JSX.Element {
       {/* Issues list view portal */}
       {REACT_VIEWS.issues && (
         <ViewPortal container_id="issues-root" visible={view === "issues"}>
-          {/* ListView will be added here when migrated */}
-          <div data-testid="react-issues-placeholder">Issues view (React)</div>
+          <ListView onNavigate={handleNavigate} />
         </ViewPortal>
       )}
     </>
