@@ -6,7 +6,7 @@
  */
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { bootstrap as bootstrapLit, initTheme } from "./main-lit.js"
+import { bootstrap as bootstrapLit, initTheme } from "./main-bootstrap.js"
 import { App } from "./components/App.js"
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { bootstrap } from "./main-lit.ts"
+import { bootstrap } from "./main-bootstrap.ts"
 
 describe("app/main (jsdom)", () => {
   test("renders two-panel shell into root", () => {

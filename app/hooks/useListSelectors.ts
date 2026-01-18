@@ -2,8 +2,8 @@
  * React hook for accessing list selectors.
  *
  * Wraps list-selectors with useSyncExternalStore for efficient React rendering.
- * Allows main-lit.ts to inject the instance so React components can access
- * filtered/sorted data using the same selectors as lit-html views.
+ * Allows main-bootstrap.ts to inject the instance so React components can access
+ * filtered/sorted data.
  */
 import { useSyncExternalStore, useCallback } from "react"
 
@@ -16,8 +16,8 @@ let selectorsInstance: ListSelectors | null = null
 /**
  * Set the list selectors instance.
  *
- * Called by main-lit.ts after creating the selectors. This allows React
- * components to access the same sorted/filtered data as lit-html views.
+ * Called by main-bootstrap.ts after creating the selectors. This allows React
+ * components to access filtered/sorted data.
  *
  * @param selectors - The list selectors instance.
  */

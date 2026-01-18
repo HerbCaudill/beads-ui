@@ -2,37 +2,34 @@
  * Main app bootstrap/orchestration module.
  *
  * This module initializes the SPA shell, wires up WebSocket connections,
- * manages subscriptions, and orchestrates view rendering.
+ * manages subscriptions, and sets up the data layer for React components.
+ *
+ * Note: View rendering is now handled by React components in App.tsx.
+ * This module focuses on:
+ * - Creating the DOM shell structure
+ * - WebSocket connection and event routing
+ * - Subscription management
+ * - Transport and data layer setup
+ * - Workspace management
+ * - Router initialization
+ * - Preference persistence
  */
-import { html, render } from "lit-html"
-import type { MessageType } from "./protocol.js"
 import type { SubscriptionSpec } from "../types/list-adapters.js"
 import type { SnapshotMsg, UpsertMsg, DeleteMsg } from "../types/subscription-issue-store.js"
-import type { AppState, Store, ViewName, StatusFilter } from "./state.js"
-import type { HashRouter } from "./router.js"
-import type { WsClient } from "../types/ws-client.js"
+import type { ViewName, StatusFilter } from "./state.js"
 import { createListSelectors } from "./data/list-selectors.js"
-import { createDataLayer, type Transport } from "./data/providers.js"
+import { type Transport } from "./data/providers.js"
 import {
   createSubscriptionIssueStores,
   type SubscriptionIssueStoresRegistry,
 } from "./data/subscription-issue-stores.js"
-import { createSubscriptionStore, type SubscriptionStore } from "./data/subscriptions-store.js"
-import { createHashRouter, parseHash, parseView } from "./router.js"
+import { createSubscriptionStore } from "./data/subscriptions-store.js"
+import { createHashRouter } from "./router.js"
 import { createLitStoreAdapter } from "./store/lit-adapter.js"
 import { useAppStore } from "./store/index.js"
 import { createActivityIndicator } from "./utils/activity-indicator.js"
 import { debug } from "./utils/logging.js"
 import { showToast } from "./utils/toast.js"
-import { createBoardView } from "./views/board.js"
-import { createDetailView } from "./views/detail.js"
-import { createEpicsView } from "./views/epics.js"
-import { createFatalErrorDialog } from "./views/fatal-error-dialog.js"
-import { createIssueDialog } from "./views/issue-dialog.js"
-import { createListView } from "./views/list.js"
-import { createTopNav } from "./views/nav.js"
-import { createNewIssueDialog } from "./views/new-issue-dialog.js"
-import { createWorkspacePicker } from "./views/workspace-picker.js"
 import { createWsClient } from "./ws.js"
 import {
   setIssueStoresInstance,
@@ -61,12 +58,6 @@ type UnsubscribeFn = (() => Promise<void>) | null
 
 // SubscriptionIssueStoresRegistry is imported from subscription-issue-stores.js
 
-/** Type for the activity indicator instance. */
-type ActivityIndicator = ReturnType<typeof createActivityIndicator>
-
-/** Type for the fatal error dialog instance. */
-type FatalErrorDialog = ReturnType<typeof createFatalErrorDialog>
-
 /**
  * Bootstrap the SPA shell with two panels.
  *
@@ -76,28 +67,45 @@ export function bootstrap(root_element: HTMLElement): void {
   const log = debug("main")
   log("bootstrap start")
 
-  // Render route shells (nav is mounted in header)
-  const shell = html`
-    <section id="issues-root" class="route issues">
-      <aside id="list-panel" class="panel"></aside>
-    </section>
-    <section id="epics-root" class="route epics" hidden></section>
-    <section id="board-root" class="route board" hidden></section>
-    <section id="detail-panel" class="route detail" hidden></section>
-  `
-  render(shell, root_element)
+  // Create route shells using vanilla DOM (replaces lit-html render)
+  // React components render into these containers via portals
+  const issues_section = document.createElement("section")
+  issues_section.id = "issues-root"
+  issues_section.className = "route issues"
 
-  const nav_mount = document.getElementById("top-nav")
+  const list_panel = document.createElement("aside")
+  list_panel.id = "list-panel"
+  list_panel.className = "panel"
+  issues_section.appendChild(list_panel)
+
+  const epics_section = document.createElement("section")
+  epics_section.id = "epics-root"
+  epics_section.className = "route epics"
+  epics_section.hidden = true
+
+  const board_section = document.createElement("section")
+  board_section.id = "board-root"
+  board_section.className = "route board"
+  board_section.hidden = true
+
+  const detail_section = document.createElement("section")
+  detail_section.id = "detail-panel"
+  detail_section.className = "route detail"
+  detail_section.hidden = true
+
+  root_element.appendChild(issues_section)
+  root_element.appendChild(epics_section)
+  root_element.appendChild(board_section)
+  root_element.appendChild(detail_section)
+
   const issues_root = document.getElementById("issues-root") as HTMLElement | null
   const epics_root = document.getElementById("epics-root") as HTMLElement | null
   const board_root = document.getElementById("board-root") as HTMLElement | null
-  const list_mount = document.getElementById("list-panel") as HTMLElement | null
   const detail_mount = document.getElementById("detail-panel") as HTMLElement | null
 
-  if (list_mount && issues_root && epics_root && board_root && detail_mount) {
+  if (issues_root && epics_root && board_root && detail_mount) {
     const header_loading = document.getElementById("header-loading") as HTMLElement | null
     const activity = createActivityIndicator(header_loading)
-    const fatal_dialog = createFatalErrorDialog(root_element)
 
     /**
      * Show a blocking dialog when a backend command fails.
@@ -131,8 +139,6 @@ export function bootstrap(root_element: HTMLElement): void {
 
       // Show via React fatal error dialog
       showFatalError(title, message, detail)
-      // Also show via Lit dialog (will be removed when React migration is complete)
-      fatal_dialog.open(title, message, detail)
     }
 
     const client = createWsClient()
@@ -742,71 +748,15 @@ export function bootstrap(root_element: HTMLElement): void {
     // Expose to React hooks
     setTransportInstance(transport)
 
-    // Top navigation (optional mount)
-    if (nav_mount) {
-      createTopNav(nav_mount, store, router)
-    }
-
-    // Workspace picker (mount now that store exists)
-    const workspace_mount = document.getElementById("workspace-picker")
-    if (workspace_mount) {
-      createWorkspacePicker(workspace_mount, store, handleWorkspaceChange)
-    }
     // Expose workspace change handler to React
     setWorkspaceChangeHandler(handleWorkspaceChange)
     // Load workspaces after WebSocket is connected
     void loadWorkspaces()
 
-    // Global New Issue dialog (UI-106) mounted at root so it is always visible
-    const new_issue_dialog = createNewIssueDialog(
-      root_element,
-      (type, payload) => tracked_send(type, payload),
-      router,
-      store,
-    )
-    // Header button
-    try {
-      const btn_new = document.getElementById("new-issue-btn") as HTMLButtonElement | null
-      if (btn_new) {
-        btn_new.addEventListener("click", () => new_issue_dialog.open())
-      }
-    } catch {
-      // ignore missing header
-    }
+    // Note: Navigation, workspace picker, new issue dialog, list view,
+    // detail view, board view, and epics view are now handled by React
+    // components in App.tsx via portals.
 
-    // Local transport shim: for list-issues, serve from local listSelectors;
-    // otherwise forward to ws transport for mutations/show.
-    /**
-     * Transport for the list view.
-     *
-     * @param type - Message type.
-     * @param payload - Message payload.
-     */
-    const listTransport = async (type: MessageType, payload: unknown): Promise<unknown> => {
-      if (type === "list-issues") {
-        try {
-          return listSelectors.selectIssuesFor("tab:issues")
-        } catch (err) {
-          log("list selectors failed: %o", err)
-          return []
-        }
-      }
-      return transport(type, payload)
-    }
-
-    const issues_view = createListView(
-      list_mount,
-      listTransport as (type: string, payload?: unknown) => Promise<unknown>,
-      (hash: string) => {
-        const id = parseHash(hash)
-        if (id) {
-          router.gotoIssue(id)
-        }
-      },
-      store,
-      subscriptions,
-      sub_issue_stores,
-    )
     // Persist filter changes to localStorage
     store.subscribe(s => {
       const data = {
@@ -823,133 +773,6 @@ export function bootstrap(root_element: HTMLElement): void {
         JSON.stringify({ closed_filter: s.board.closed_filter }),
       )
     })
-    void issues_view.load()
-
-    // Dialog for issue details (UI-104)
-    const dialog = createIssueDialog(detail_mount, store, () => {
-      // Close: clear selection and return to current view
-      const s = store.getState()
-      store.setState({ selected_id: null })
-      try {
-        const v: ViewName = s.view || "issues"
-        router.gotoView(v)
-      } catch {
-        // ignore
-      }
-    })
-
-    let detail: ReturnType<typeof createDetailView> | null = null
-    // Mount details into the dialog body only
-    detail = createDetailView(
-      dialog.getMount(),
-      transport as (type: string, payload?: unknown) => Promise<unknown>,
-      (hash: string) => {
-        const id = parseHash(hash)
-        if (id) {
-          router.gotoIssue(id)
-        } else {
-          // No issue ID - navigate to view (closes dialog)
-          const view = parseView(hash)
-          router.gotoView(view)
-        }
-      },
-      sub_issue_stores,
-    )
-
-    // If router already set a selected id (deep-link), open dialog now
-    const initial_id = store.getState().selected_id
-    if (initial_id) {
-      detail_mount.hidden = false
-      dialog.open(initial_id)
-      if (detail) {
-        void detail.load(initial_id)
-      }
-      // Ensure detail subscription is active on initial deep-link
-      const client_id = `detail:${initial_id}`
-      const spec: SubscriptionSpec = { type: "issue-detail", params: { id: initial_id } }
-      // Register store first to avoid dropping the initial snapshot
-      try {
-        sub_issue_stores.register(client_id, spec)
-      } catch (err) {
-        log("register detail store failed: %o", err)
-      }
-      void subscriptions.subscribeList(client_id, spec).catch(err => {
-        log("detail subscribe failed: %o", err)
-        showFatalFromError(err, "issue details")
-      })
-    }
-
-    // Open/close dialog based on selected_id (always dialog; no page variant)
-    let unsub_detail: UnsubscribeFn = null
-    store.subscribe(s => {
-      const id = s.selected_id
-      if (id) {
-        detail_mount.hidden = false
-        dialog.open(id)
-        if (detail) {
-          void detail.load(id)
-        }
-        // Wire per-issue subscription for detail
-        const client_id = `detail:${id}`
-        const spec: SubscriptionSpec = { type: "issue-detail", params: { id } }
-        // Ensure per-subscription issue store exists before subscribing
-        try {
-          sub_issue_stores.register(client_id, spec)
-        } catch {
-          // ignore
-        }
-        // Subscribe server-side
-        void subscriptions
-          .subscribeList(client_id, spec)
-          .then(unsub => {
-            // Unsubscribe previous if any
-            if (unsub_detail) {
-              void unsub_detail().catch(() => {})
-            }
-            unsub_detail = unsub
-          })
-          .catch(err => {
-            log("detail subscribe failed: %o", err)
-            showFatalFromError(err, "issue details")
-          })
-      } else {
-        try {
-          dialog.close()
-        } catch {
-          // ignore
-        }
-        if (detail) {
-          detail.clear()
-        }
-        detail_mount.hidden = true
-        if (unsub_detail) {
-          void unsub_detail().catch(() => {})
-          unsub_detail = null
-        }
-      }
-    })
-
-    // Removed: issues-changed handling. All views re-render from
-    // per-subscription stores which are updated by snapshot/upsert/delete.
-
-    // Toggle route shells on view/detail change and persist
-    const data = createDataLayer(transport)
-    const epics_view = createEpicsView(
-      epics_root,
-      data,
-      (id: string) => router.gotoIssue(id),
-      subscriptions,
-      sub_issue_stores,
-    )
-    const board_view = createBoardView(
-      board_root,
-      data,
-      (id: string) => router.gotoIssue(id),
-      store,
-      subscriptions,
-      sub_issue_stores,
-      transport as (type: string, payload: unknown) => Promise<unknown>,
-    )
 
     // Expose activity debug info globally for diagnostics
     // @ts-expect-error - Debug global
@@ -961,6 +784,9 @@ export function bootstrap(root_element: HTMLElement): void {
 
     /**
      * Manage route visibility and list subscriptions per view.
+     *
+     * React components handle the actual view rendering; this just manages
+     * the DOM section visibility and ensures subscriptions are active.
      *
      * @param s - Current app state.
      */
@@ -974,44 +800,18 @@ export function bootstrap(root_element: HTMLElement): void {
         issues_root.hidden = s.view !== "issues"
         epics_root.hidden = s.view !== "epics"
         board_root.hidden = s.view !== "board"
-        // detail_mount visibility handled in subscription above
+        // detail_mount visibility is controlled by React IssueDialog component
       }
       // Ensure subscriptions for the active tab before loading the view to
       // avoid empty initial renders due to racing list-delta.
       ensureTabSubscriptions(s)
-      if (!s.selected_id && s.view === "epics") {
-        void epics_view.load()
-      }
-      if (!s.selected_id && s.view === "board") {
-        void board_view.load()
-      }
       window.localStorage.setItem("beads-ui.view", s.view)
     }
     store.subscribe(onRouteChange)
     // Ensure initial state is reflected (fixes reload on #/epics)
     onRouteChange(store.getState())
 
-    // Removed redundant filter-change subscription: handled by ensureTabSubscriptions
-
-    // Keyboard shortcuts: Ctrl/Cmd+N opens new issue; Ctrl/Cmd+Enter submits inside dialog
-    window.addEventListener("keydown", ev => {
-      const is_modifier = ev.ctrlKey || ev.metaKey
-      const key = String(ev.key || "").toLowerCase()
-      const target = ev.target as HTMLElement
-      const tag = target && target.tagName ? String(target.tagName).toLowerCase() : ""
-      const is_editable =
-        tag === "input" ||
-        tag === "textarea" ||
-        tag === "select" ||
-        (target && typeof target.isContentEditable === "boolean" && target.isContentEditable)
-      if (is_modifier && key === "n") {
-        // Do not hijack when typing in inputs; common UX
-        if (!is_editable) {
-          ev.preventDefault()
-          new_issue_dialog.open()
-        }
-      }
-    })
+    // Note: Keyboard shortcuts for new issue dialog are handled by React in App.tsx
   }
 }
 

@@ -2,8 +2,8 @@
  * React hook for accessing workspace management functionality.
  *
  * Provides React components with the ability to switch workspaces.
- * The workspace change handler is injected from main-lit.ts so React components
- * can trigger workspace switches using the same logic as lit-html views.
+ * The workspace change handler is injected from main-bootstrap.ts so React components
+ * can trigger workspace switches.
  */
 import { useCallback } from "react"
 
@@ -18,9 +18,8 @@ let workspaceChangeHandler: WorkspaceChangeFn | null = null
 /**
  * Set the workspace change handler.
  *
- * Called by main-lit.ts after setting up workspace management.
- * This allows React components to trigger workspace switches using
- * the same handler as lit-html views.
+ * Called by main-bootstrap.ts after setting up workspace management.
+ * This allows React components to trigger workspace switches.
  *
  * @param handler - The workspace change handler function.
  */

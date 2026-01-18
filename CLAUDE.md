@@ -86,21 +86,21 @@ Never update `CHANGES.md`.
   `const` when inference is ambiguous.
 - Use braces for all control flow statements, even single-line bodies.
 - Frontend entry points:
-  - `app/main.tsx` - React entry point, bootstraps both Lit and React roots
-  - `app/main-lit.ts` - Lit-html based UI (legacy, being migrated to React)
-  - React components render into `#react-root`; Lit views render into `#app`
+  - `app/main.tsx` - React entry point, bootstraps both React roots and the bootstrap module
+  - `app/main-bootstrap.ts` - Bootstrap module handling WebSocket, subscriptions, transport, routing
+  - React components render into portal containers created by main-bootstrap.ts
 - State management:
   - `app/store/index.ts` - Zustand store (single source of truth) with subscribeWithSelector middleware
-  - `app/store/lit-adapter.ts` - Adapter wrapping Zustand with legacy Store interface for lit-html views
-  - `app/state.ts` - Legacy store interface definition (no longer instantiated directly)
-  - main-lit.ts initializes Zustand with persisted values, then creates the lit adapter
+  - `app/store/lit-adapter.ts` - Adapter wrapping Zustand with Store interface for router
+  - `app/state.ts` - Legacy store interface definition
+  - main-bootstrap.ts initializes Zustand with persisted values, then creates the store adapter for routing
 - React data hooks (`app/hooks/`):
   - `use-issue-stores.ts` - Hook for accessing subscription issue stores (useIssueStore, useIssue)
   - `useListSelectors.ts` - Hook for sorted/filtered issues (useIssuesFor, useBoardColumn, useEpicChildren)
   - `use-transport.ts` - Hook for WebSocket transport function (useTransport)
   - `use-subscriptions.ts` - Hook for managing WebSocket subscriptions (useSubscription)
   - `index.ts` - Re-exports all hooks and setter functions
-  - main-lit.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance, setSubscriptionsInstance, setIssueStoresRegistryInstance after creating instances
+  - main-bootstrap.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance, setSubscriptionsInstance, setIssueStoresRegistryInstance after creating instances
 - React components (`app/components/`):
   - `App.tsx` - Main React shell using portals to render views into existing DOM containers
   - `EpicsView.tsx` - Epics view showing expandable epics with children (migrated from lit-html)

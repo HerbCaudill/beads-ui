@@ -2,7 +2,7 @@
  * React hook for managing WebSocket subscriptions.
  *
  * Provides React components with the ability to subscribe to server-side lists.
- * The subscription store and issue stores instances are injected from main-lit.ts.
+ * The subscription store and issue stores instances are injected from main-bootstrap.ts.
  */
 import { useCallback, useEffect, useRef } from "react"
 
@@ -19,7 +19,7 @@ let issueStoresRegistryInstance: SubscriptionIssueStoresRegistry | null = null
 /**
  * Set the subscription store instance.
  *
- * Called by main-lit.ts after creating the subscription store. This allows
+ * Called by main-bootstrap.ts after creating the subscription store. This allows
  * React components to subscribe to server-side lists.
  *
  * @param store - The subscription store instance.
@@ -45,7 +45,7 @@ export function clearSubscriptionsInstance(): void {
 /**
  * Set the issue stores registry instance for subscriptions.
  *
- * Called by main-lit.ts after creating the registry. This allows
+ * Called by main-bootstrap.ts after creating the registry. This allows
  * React components to register/unregister stores when subscribing.
  *
  * @param registry - The issue stores registry instance.

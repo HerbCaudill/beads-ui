@@ -2,7 +2,7 @@
  * React hooks index file.
  *
  * Re-exports setter functions and hooks for React components to access
- * shared data layers initialized in main-lit.ts.
+ * shared data layers initialized in main-bootstrap.ts.
  */
 
 // Issue stores

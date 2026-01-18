@@ -332,7 +332,7 @@ export function App(): React.JSX.Element {
  * Portal for the detail view dialog.
  *
  * Renders into #detail-panel when an issue is selected.
- * The portal container visibility is managed by main-lit.ts.
+ * The portal container visibility is managed by main-bootstrap.ts.
  *
  * @param props - Props including children and selected issue ID.
  */
