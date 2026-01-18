@@ -34,6 +34,11 @@ import { createTopNav } from "./views/nav.js"
 import { createNewIssueDialog } from "./views/new-issue-dialog.js"
 import { createWorkspacePicker } from "./views/workspace-picker.js"
 import { createWsClient } from "./ws.js"
+import {
+  setIssueStoresInstance,
+  setListSelectorsInstance,
+  setTransportInstance,
+} from "./hooks/index.js"
 
 /** Persisted filter preferences shape. */
 interface PersistedFilters {
@@ -129,6 +134,8 @@ export function bootstrap(root_element: HTMLElement): void {
     const subscriptions = createSubscriptionStore(tracked_send)
     // Per-subscription stores (source of truth)
     const sub_issue_stores = createSubscriptionIssueStores()
+    // Expose to React hooks
+    setIssueStoresInstance(sub_issue_stores)
     // Route per-subscription push envelopes to the owning store
     client.on("snapshot", (payload: unknown) => {
       const p = payload as { id?: string; type?: string }
@@ -168,6 +175,8 @@ export function bootstrap(root_element: HTMLElement): void {
     })
     // Derived list selectors: render from per-subscription snapshots
     const listSelectors = createListSelectors(sub_issue_stores)
+    // Expose to React hooks
+    setListSelectorsInstance(listSelectors)
 
     // --- Subscription state (hoisted for closure access) ---
     let unsub_issues_tab: UnsubscribeFn = null
@@ -721,6 +730,8 @@ export function bootstrap(root_element: HTMLElement): void {
         return []
       }
     }
+    // Expose to React hooks
+    setTransportInstance(transport)
 
     // Top navigation (optional mount)
     if (nav_mount) {

@@ -94,6 +94,12 @@ Never update `CHANGES.md`.
   - `app/store/lit-adapter.ts` - Adapter wrapping Zustand with legacy Store interface for lit-html views
   - `app/state.ts` - Legacy store interface definition (no longer instantiated directly)
   - main-lit.ts initializes Zustand with persisted values, then creates the lit adapter
+- React data hooks (`app/hooks/`):
+  - `use-issue-stores.ts` - Hook for accessing subscription issue stores (useIssueStore, useIssue)
+  - `useListSelectors.ts` - Hook for sorted/filtered issues (useIssuesFor, useBoardColumn, useEpicChildren)
+  - `use-transport.ts` - Hook for WebSocket transport function (useTransport)
+  - `index.ts` - Re-exports all hooks and setter functions
+  - main-lit.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance after creating instances
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 
