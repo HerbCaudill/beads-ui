@@ -35,13 +35,12 @@ push‑only data flow used between the browser SPA and the local Node.js server.
 ## Components and Responsibilities
 
 - UI (app/)
-  - `app/main.js`: bootstraps shell, creates store/router, wires WS client,
-    refreshes on push
-  - Views: `app/views/list.js`, `app/views/detail.js` render issues and allow
-    edits
-  - Transport: `app/ws.js` persistent client with reconnect, correlation, and
+  - `app/main.tsx`: React entry point, bootstraps both React roots and the bootstrap module
+  - `app/main-bootstrap.ts`: Bootstrap module handling WebSocket, subscriptions, transport, routing
+  - Components: React components in `app/components/` render views (ListView, DetailView, BoardView, EpicsView)
+  - Transport: `app/ws.ts` persistent client with reconnect, correlation, and
     event dispatcher
-  - Protocol: `app/protocol.js` shared message shapes, version, helpers, and
+  - Protocol: `app/protocol.ts` shared message shapes, version, helpers, and
     type guards
 
 - Server (server/)
