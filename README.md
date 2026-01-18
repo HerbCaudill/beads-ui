@@ -55,9 +55,8 @@ These can also be set via CLI options: `bdui start --host 0.0.0.0 --port 8080`
 - The codebase uses the `debug` package with namespaces like `beads-ui:*`.
 - Enable logs in the browser by running in DevTools:
   - `localStorage.debug = 'beads-ui:*'` then reload the page
-- Enable logs for Node/CLI (server, build scripts) by setting `DEBUG`:
+- Enable logs for Node/CLI (server) by setting `DEBUG`:
   - `DEBUG=beads-ui:* bdui start`
-  - `DEBUG=beads-ui:* node scripts/build-frontend.ts`
 
 ## License
 
