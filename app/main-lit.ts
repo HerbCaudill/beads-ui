@@ -36,7 +36,9 @@ import { createWorkspacePicker } from "./views/workspace-picker.js"
 import { createWsClient } from "./ws.js"
 import {
   setIssueStoresInstance,
+  setIssueStoresRegistryInstance,
   setListSelectorsInstance,
+  setSubscriptionsInstance,
   setTransportInstance,
 } from "./hooks/index.js"
 
@@ -136,6 +138,8 @@ export function bootstrap(root_element: HTMLElement): void {
     const sub_issue_stores = createSubscriptionIssueStores()
     // Expose to React hooks
     setIssueStoresInstance(sub_issue_stores)
+    setIssueStoresRegistryInstance(sub_issue_stores)
+    setSubscriptionsInstance(subscriptions)
     // Route per-subscription push envelopes to the owning store
     client.on("snapshot", (payload: unknown) => {
       const p = payload as { id?: string; type?: string }

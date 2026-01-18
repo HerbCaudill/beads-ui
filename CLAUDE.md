@@ -98,8 +98,16 @@ Never update `CHANGES.md`.
   - `use-issue-stores.ts` - Hook for accessing subscription issue stores (useIssueStore, useIssue)
   - `useListSelectors.ts` - Hook for sorted/filtered issues (useIssuesFor, useBoardColumn, useEpicChildren)
   - `use-transport.ts` - Hook for WebSocket transport function (useTransport)
+  - `use-subscriptions.ts` - Hook for managing WebSocket subscriptions (useSubscription)
   - `index.ts` - Re-exports all hooks and setter functions
-  - main-lit.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance after creating instances
+  - main-lit.ts calls setIssueStoresInstance, setListSelectorsInstance, setTransportInstance, setSubscriptionsInstance, setIssueStoresRegistryInstance after creating instances
+- React components (`app/components/`):
+  - `App.tsx` - Main React shell using portals to render views into existing DOM containers
+  - `EpicsView.tsx` - Epics view showing expandable epics with children (migrated from lit-html)
+  - `EpicGroup.tsx` - Single epic group with expandable children list
+  - `IssueRow.tsx` - Table row with inline editing for issues
+  - `IssueIdButton.tsx` - Clickable ID button with copy-to-clipboard functionality
+  - `TypeBadge.tsx` - Badge displaying issue type with styling
 - Use optional chaining (`?.`, `??`, etc.) only when a value is **intentionally
   nullable**. Prefer explicit type narrowing to guarantee value safety.
 

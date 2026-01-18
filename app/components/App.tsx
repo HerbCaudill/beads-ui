@@ -11,9 +11,12 @@
  * - #issues-root - Issues list view
  * - #detail-panel - Issue detail view
  */
-import { useSyncExternalStore } from "react"
+import { useCallback, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
+
 import { useAppStore, type ViewName } from "../store/index.js"
+import { issueHashFor } from "../utils/issue-url.js"
+import { EpicsView } from "./EpicsView.js"
 
 /**
  * Configuration for which views are rendered by React vs Lit.
@@ -23,7 +26,7 @@ import { useAppStore, type ViewName } from "../store/index.js"
  */
 const REACT_VIEWS: Record<ViewName, boolean> = {
   issues: false,
-  epics: false,
+  epics: true, // Migrated to React
   board: false,
 }
 
@@ -82,13 +85,21 @@ function ViewPortal({
 export function App(): React.JSX.Element {
   const view = useCurrentView()
 
+  /**
+   * Navigate to an issue by updating the URL hash.
+   */
+  const handleNavigate = useCallback((id: string): void => {
+    const current_view = useAppStore.getState().view
+    const hash = issueHashFor(current_view, id)
+    window.location.hash = hash
+  }, [])
+
   return (
     <>
       {/* Epics view portal */}
       {REACT_VIEWS.epics && (
         <ViewPortal container_id="epics-root" visible={view === "epics"}>
-          {/* EpicsView will be added here when migrated */}
-          <div data-testid="react-epics-placeholder">Epics view (React)</div>
+          <EpicsView onNavigate={handleNavigate} />
         </ViewPortal>
       )}
 

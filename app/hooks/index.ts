@@ -36,3 +36,15 @@ export {
   useTransportAvailable,
   type TransportFn,
 } from "./use-transport.js"
+
+// Subscriptions
+export {
+  setSubscriptionsInstance,
+  clearSubscriptionsInstance,
+  getSubscriptionsInstance,
+  setIssueStoresRegistryInstance,
+  clearIssueStoresRegistryInstance,
+  getIssueStoresRegistryInstance,
+  useSubscription,
+  useSubscriptionsAvailable,
+} from "./use-subscriptions.js"
