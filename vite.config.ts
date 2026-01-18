@@ -12,7 +12,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/ws": {
+      // Use exact path to avoid catching /ws.ts imports
+      "^/ws$": {
         target: "ws://127.0.0.1:3000",
         ws: true,
       },
