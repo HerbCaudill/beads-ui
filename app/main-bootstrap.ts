@@ -16,7 +16,6 @@
  */
 import type { SubscriptionSpec } from "../types/list-adapters.js"
 import type { SnapshotMsg, UpsertMsg, DeleteMsg } from "../types/subscription-issue-store.js"
-import type { ViewName, StatusFilter } from "./state.js"
 import { createListSelectors } from "./data/list-selectors.js"
 import { type Transport } from "./data/providers.js"
 import {
@@ -24,9 +23,14 @@ import {
   type SubscriptionIssueStoresRegistry,
 } from "./data/subscription-issue-stores.js"
 import { createSubscriptionStore } from "./data/subscriptions-store.js"
-import { createHashRouter } from "./router.js"
-import { createLitStoreAdapter } from "./store/lit-adapter.js"
-import { useAppStore } from "./store/index.js"
+import { createHashRouter, type RouterStore } from "./router.js"
+import {
+  useAppStore,
+  type AppState,
+  type StatePatch,
+  type StatusFilter,
+  type ViewName,
+} from "./store/index.js"
 import { createActivityIndicator } from "./utils/activity-indicator.js"
 import { debug } from "./utils/logging.js"
 import { showToast } from "./utils/toast.js"
@@ -55,6 +59,75 @@ interface PersistedBoard {
 
 /** Unsubscribe function returned by list subscriptions. */
 type UnsubscribeFn = (() => Promise<void>) | null
+
+/**
+ * Store interface for bootstrap - wraps Zustand for router and subscriptions.
+ */
+interface BootstrapStore extends RouterStore {
+  getState: () => AppState
+  setState: (patch: StatePatch) => void
+  subscribe: (fn: (s: AppState) => void) => () => void
+}
+
+/**
+ * Create a store adapter that wraps Zustand for use by the router and
+ * state subscriptions in the bootstrap module.
+ */
+function createStoreAdapter(): BootstrapStore {
+  return {
+    getState(): AppState {
+      const state = useAppStore.getState()
+      return {
+        selected_id: state.selected_id,
+        view: state.view,
+        filters: state.filters,
+        board: state.board,
+        workspace: state.workspace,
+      }
+    },
+
+    setState(patch: StatePatch): void {
+      useAppStore.getState().setState(patch)
+    },
+
+    subscribe(fn: (s: AppState) => void): () => void {
+      // Subscribe to relevant state changes using Zustand's subscribeWithSelector
+      return useAppStore.subscribe(
+        state => ({
+          selected_id: state.selected_id,
+          view: state.view,
+          filters: state.filters,
+          board: state.board,
+          workspace: state.workspace,
+        }),
+        (selected, _previous) => {
+          fn(selected)
+        },
+        { equalityFn: shallowEqualAppState },
+      )
+    },
+  }
+}
+
+/**
+ * Shallow equality comparison for app state objects.
+ */
+function shallowEqualAppState(a: AppState, b: AppState): boolean {
+  if (a === b) return true
+  if (a.selected_id !== b.selected_id) return false
+  if (a.view !== b.view) return false
+  if (
+    a.filters.status !== b.filters.status ||
+    a.filters.search !== b.filters.search ||
+    a.filters.type !== b.filters.type
+  ) {
+    return false
+  }
+  if (a.board.closed_filter !== b.board.closed_filter) return false
+  if (a.workspace.current?.path !== b.workspace.current?.path) return false
+  if (a.workspace.available.length !== b.workspace.available.length) return false
+  return true
+}
 
 // SubscriptionIssueStoresRegistry is imported from subscription-issue-stores.js
 
@@ -728,7 +801,7 @@ export function bootstrap(root_element: HTMLElement): void {
       view: last_view,
       board: persisted_board,
     })
-    const store = createLitStoreAdapter()
+    const store = createStoreAdapter()
     const router = createHashRouter(store)
     router.start()
 

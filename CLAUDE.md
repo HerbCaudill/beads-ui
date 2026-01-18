@@ -91,9 +91,8 @@ Never update `CHANGES.md`.
   - React components render into portal containers created by main-bootstrap.ts
 - State management:
   - `app/store/index.ts` - Zustand store (single source of truth) with subscribeWithSelector middleware
-  - `app/store/lit-adapter.ts` - Adapter wrapping Zustand with Store interface for router
-  - `app/state.ts` - Legacy store interface definition
-  - main-bootstrap.ts initializes Zustand with persisted values, then creates the store adapter for routing
+  - `app/state.ts` - Legacy store interface definition (slated for removal)
+  - main-bootstrap.ts initializes Zustand with persisted values, creates a local store adapter for routing
 - React data hooks (`app/hooks/`):
   - `use-issue-stores.ts` - Hook for accessing subscription issue stores (useIssueStore, useIssue)
   - `useListSelectors.ts` - Hook for sorted/filtered issues (useIssuesFor, useBoardColumn, useEpicChildren)
