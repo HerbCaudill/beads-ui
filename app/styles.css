@@ -81,6 +81,7 @@ body {
   color: var(--fg);
   background: var(--bg);
   font-family:
+    "IBM Plex Sans",
     -apple-system,
     system-ui,
     Segoe UI,
@@ -1758,8 +1759,8 @@ html[data-theme="dark"] {
 }
 .mono {
   font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    monospace;
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-variant-ligatures: none;
 }
 
@@ -1954,8 +1955,8 @@ html[data-theme="dark"] {
 .dependent-count {
   color: var(--muted);
   font-family:
-    ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo,
-    Consolas, "Courier New", monospace;
+    "IBM Plex Mono", ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono",
+    "Roboto Mono", Menlo, Consolas, "Courier New", monospace;
 }
 .dep-count:hover,
 .dependent-count:hover {
