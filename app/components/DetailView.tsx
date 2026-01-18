@@ -21,6 +21,7 @@ import { useTransport, type TransportFn } from "../hooks/use-transport.js"
 import { parseView, type ViewName } from "../router.js"
 import { DetailHeader } from "./DetailHeader.js"
 import { DetailProperties } from "./DetailProperties.js"
+import { EditableMarkdownField } from "./EditableMarkdownField.js"
 
 /**
  * Context value for DetailView children.
@@ -69,39 +70,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for EditableMarkdownField.
- *
- * Used for description, design, notes, and acceptance criteria fields.
- * Will be replaced with the actual component in a subsequent issue.
- */
-function EditableMarkdownFieldPlaceholder({
-  label,
-  value,
-  placeholder,
-}: {
-  label: string
-  value: string
-  placeholder: string
-}): React.JSX.Element {
-  const hasContent = value.trim().length > 0
-  return (
-    <div className={label.toLowerCase()} data-testid={`detail-${label.toLowerCase()}-placeholder`}>
-      {hasContent && <div className="props-card__title">{label}</div>}
-      <div
-        className="md editable"
-        tabIndex={0}
-        role="button"
-        aria-label={`Edit ${label.toLowerCase()}`}
-      >
-        {hasContent ?
-          <div>{value}</div>
-        : <div className="muted">{placeholder}</div>}
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -354,25 +322,34 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
           {/* Main content area */}
           <div className="detail-main">
             <DetailHeader testId="detail-header" />
-            <EditableMarkdownFieldPlaceholder
-              label="Description"
+            <EditableMarkdownField
+              field="description"
               value={description}
+              label="Description"
               placeholder="Description"
+              testId="detail-description"
             />
-            <EditableMarkdownFieldPlaceholder
-              label="Design"
+            <EditableMarkdownField
+              field="design"
               value={design}
+              label="Design"
               placeholder="Add design..."
+              testId="detail-design"
             />
-            <EditableMarkdownFieldPlaceholder
-              label="Notes"
+            <EditableMarkdownField
+              field="notes"
               value={notes}
+              label="Notes"
               placeholder="Add notes..."
+              testId="detail-notes"
             />
-            <EditableMarkdownFieldPlaceholder
-              label="Acceptance"
+            <EditableMarkdownField
+              field="acceptance"
               value={acceptance}
+              label="Acceptance Criteria"
               placeholder="Add acceptance criteria..."
+              className="acceptance"
+              testId="detail-acceptance"
             />
             <CommentSectionPlaceholder comments={comments} />
           </div>

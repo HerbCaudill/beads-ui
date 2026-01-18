@@ -120,14 +120,15 @@ describe("DetailView", () => {
 
       render(<DetailView issueId="test-1" onNavigate={mockNavigate} testId="detail-view" />)
 
-      // Check for section test IDs (DetailHeader and DetailProperties are now real components)
+      // Check for section test IDs (DetailHeader, DetailProperties, and EditableMarkdownFields are now real components)
       expect(screen.getByTestId("detail-header")).toBeDefined()
       expect(screen.getByTestId("detail-properties")).toBeDefined()
-      // The rest are still placeholders
-      expect(screen.getByTestId("detail-description-placeholder")).toBeDefined()
-      expect(screen.getByTestId("detail-design-placeholder")).toBeDefined()
-      expect(screen.getByTestId("detail-notes-placeholder")).toBeDefined()
-      expect(screen.getByTestId("detail-acceptance-placeholder")).toBeDefined()
+      // EditableMarkdownField components
+      expect(screen.getByTestId("detail-description")).toBeDefined()
+      expect(screen.getByTestId("detail-design")).toBeDefined()
+      expect(screen.getByTestId("detail-notes")).toBeDefined()
+      expect(screen.getByTestId("detail-acceptance")).toBeDefined()
+      // Still placeholders
       expect(screen.getByTestId("detail-labels-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-dependencies-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-dependents-placeholder")).toBeDefined()
