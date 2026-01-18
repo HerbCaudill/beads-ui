@@ -51,3 +51,24 @@ export {
 
 // List data
 export { useListData, useFilterActions, type ListData, type FilterActions } from "./useListData.js"
+
+// Workspace actions
+export {
+  setWorkspaceChangeHandler,
+  clearWorkspaceChangeHandler,
+  getWorkspaceChangeHandler,
+  useWorkspaceChange,
+  useWorkspaceChangeAvailable,
+  type WorkspaceChangeFn,
+} from "./use-workspace-actions.js"
+
+// Fatal error dialog
+export {
+  showFatalError,
+  dismissFatalError,
+  getFatalErrorState,
+  clearFatalErrorState,
+  useFatalError,
+  useFatalErrorActions,
+  type FatalErrorState,
+} from "./use-fatal-error.js"

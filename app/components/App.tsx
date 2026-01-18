@@ -6,6 +6,8 @@
  * where both frameworks coexist during the transition.
  *
  * Portal targets:
+ * - #top-nav - Navigation tabs
+ * - #workspace-picker - Workspace picker dropdown
  * - #epics-root - Epics view (will be migrated first)
  * - #board-root - Board view
  * - #issues-root - Issues list view
@@ -14,14 +16,18 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
 
+import { useFatalError, useFatalErrorActions, useWorkspaceChange } from "../hooks/index.js"
 import { useAppStore, type ViewName } from "../store/index.js"
 import { issueHashFor } from "../utils/issue-url.js"
 import { BoardView } from "./BoardView.js"
 import { DetailView } from "./DetailView.js"
 import { EpicsView } from "./EpicsView.js"
+import { FatalErrorDialog } from "./FatalErrorDialog.js"
 import { IssueDialog } from "./IssueDialog.js"
 import { ListView } from "./ListView.js"
+import { Nav } from "./Nav.js"
 import { NewIssueDialog } from "./NewIssueDialog.js"
+import { WorkspacePicker } from "./WorkspacePicker.js"
 
 /**
  * Configuration for which views are rendered by React vs Lit.
@@ -45,6 +51,21 @@ const REACT_DETAIL = true
  * Whether to render the new issue dialog with React.
  */
 const REACT_NEW_ISSUE_DIALOG = true
+
+/**
+ * Whether to render the navigation with React.
+ */
+const REACT_NAV = true
+
+/**
+ * Whether to render the workspace picker with React.
+ */
+const REACT_WORKSPACE_PICKER = true
+
+/**
+ * Whether to render the fatal error dialog with React.
+ */
+const REACT_FATAL_ERROR_DIALOG = true
 
 /**
  * Hook to subscribe to Zustand store for the current view.
@@ -115,6 +136,9 @@ export function App(): React.JSX.Element {
   const view = useCurrentView()
   const selectedId = useSelectedId()
   const [newIssueDialogOpen, setNewIssueDialogOpen] = useState(false)
+  const fatalError = useFatalError()
+  const fatalErrorActions = useFatalErrorActions()
+  const handleWorkspaceChange = useWorkspaceChange()
 
   /**
    * Open the new issue dialog.
@@ -229,6 +253,27 @@ export function App(): React.JSX.Element {
 
   return (
     <>
+      {/* Navigation portal */}
+      {REACT_NAV && <NavPortal />}
+
+      {/* Workspace picker portal */}
+      {REACT_WORKSPACE_PICKER && (
+        <WorkspacePickerPortal onWorkspaceChange={handleWorkspaceChange} />
+      )}
+
+      {/* Fatal error dialog - rendered at root level, not via portal */}
+      {REACT_FATAL_ERROR_DIALOG && (
+        <FatalErrorDialog
+          isOpen={fatalError.isOpen}
+          title={fatalError.title}
+          message={fatalError.message}
+          detail={fatalError.detail}
+          onReload={fatalErrorActions.reload}
+          onDismiss={fatalErrorActions.dismiss}
+          testId="fatal-error-dialog"
+        />
+      )}
+
       {/* Epics view portal */}
       {REACT_VIEWS.epics && (
         <ViewPortal container_id="epics-root" visible={view === "epics"}>
@@ -310,4 +355,41 @@ function DetailPortal({
   }
 
   return createPortal(children, container)
+}
+
+/**
+ * Portal for the navigation component.
+ *
+ * Renders into #top-nav element in the header.
+ */
+function NavPortal(): React.ReactPortal | null {
+  const container = document.getElementById("top-nav")
+  if (!container) {
+    return null
+  }
+
+  return createPortal(<Nav testId="top-nav" />, container)
+}
+
+/**
+ * Portal for the workspace picker component.
+ *
+ * Renders into #workspace-picker element in the header.
+ *
+ * @param props - Props including workspace change handler.
+ */
+function WorkspacePickerPortal({
+  onWorkspaceChange,
+}: {
+  onWorkspaceChange: (workspace_path: string) => Promise<void>
+}): React.ReactPortal | null {
+  const container = document.getElementById("workspace-picker")
+  if (!container) {
+    return null
+  }
+
+  return createPortal(
+    <WorkspacePicker onWorkspaceChange={onWorkspaceChange} testId="workspace-picker" />,
+    container,
+  )
 }

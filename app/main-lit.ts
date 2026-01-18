@@ -40,6 +40,8 @@ import {
   setListSelectorsInstance,
   setSubscriptionsInstance,
   setTransportInstance,
+  setWorkspaceChangeHandler,
+  showFatalError,
 } from "./hooks/index.js"
 
 /** Persisted filter preferences shape. */
@@ -127,6 +129,9 @@ export function bootstrap(root_element: HTMLElement): void {
 
       const title = context && context.length > 0 ? `Failed to load ${context}` : "Request failed"
 
+      // Show via React fatal error dialog
+      showFatalError(title, message, detail)
+      // Also show via Lit dialog (will be removed when React migration is complete)
       fatal_dialog.open(title, message, detail)
     }
 
@@ -747,6 +752,8 @@ export function bootstrap(root_element: HTMLElement): void {
     if (workspace_mount) {
       createWorkspacePicker(workspace_mount, store, handleWorkspaceChange)
     }
+    // Expose workspace change handler to React
+    setWorkspaceChangeHandler(handleWorkspaceChange)
     // Load workspaces after WebSocket is connected
     void loadWorkspaces()
 
