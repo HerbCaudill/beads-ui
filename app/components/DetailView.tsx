@@ -15,10 +15,11 @@
  */
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
 
-import type { IssueDetail, Comment, DependencyRef } from "../../types/issues.js"
+import type { IssueDetail, Comment } from "../../types/issues.js"
 import { useIssueStore } from "../hooks/index.js"
 import { useTransport, type TransportFn } from "../hooks/use-transport.js"
 import { parseView, type ViewName } from "../router.js"
+import { DependencyList } from "./DependencyList.js"
 import { DetailHeader } from "./DetailHeader.js"
 import { DetailProperties } from "./DetailProperties.js"
 import { EditableMarkdownField } from "./EditableMarkdownField.js"
@@ -71,40 +72,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for DependencyList.
- *
- * Will be replaced with the actual DependencyList component in a subsequent issue.
- */
-function DependencyListPlaceholder({
-  title,
-  items,
-}: {
-  title: "Dependencies" | "Dependents"
-  items: DependencyRef[]
-}): React.JSX.Element {
-  const testId =
-    title === "Dependencies" ? "detail-dependencies-placeholder" : "detail-dependents-placeholder"
-  return (
-    <div className="props-card" data-testid={testId}>
-      <div>
-        <div className="props-card__title">{title}</div>
-      </div>
-      <ul>
-        {items.map(dep => (
-          <li key={dep.id}>
-            <span className="text-truncate">{dep.title || dep.id}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="props-card__footer">
-        <input type="text" placeholder="Issue ID" disabled />
-        <button disabled>Add</button>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -331,8 +298,12 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
           <div className="detail-side">
             <DetailProperties onDelete={handleDeleteClick} testId="detail-properties" />
             <LabelsSection labels={labels} testId="detail-labels" />
-            <DependencyListPlaceholder title="Dependencies" items={dependencies} />
-            <DependencyListPlaceholder title="Dependents" items={dependents} />
+            <DependencyList
+              title="Dependencies"
+              items={dependencies}
+              testId="detail-dependencies"
+            />
+            <DependencyList title="Dependents" items={dependents} testId="detail-dependents" />
           </div>
         </div>
       </div>

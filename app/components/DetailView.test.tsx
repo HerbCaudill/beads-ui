@@ -130,9 +130,10 @@ describe("DetailView", () => {
       expect(screen.getByTestId("detail-acceptance")).toBeDefined()
       // LabelsSection is now a real component
       expect(screen.getByTestId("detail-labels")).toBeDefined()
-      // Still placeholders
-      expect(screen.getByTestId("detail-dependencies-placeholder")).toBeDefined()
-      expect(screen.getByTestId("detail-dependents-placeholder")).toBeDefined()
+      // DependencyList is now a real component
+      expect(screen.getByTestId("detail-dependencies")).toBeDefined()
+      expect(screen.getByTestId("detail-dependents")).toBeDefined()
+      // Still placeholder
       expect(screen.getByTestId("detail-comments-placeholder")).toBeDefined()
     })
 
@@ -305,7 +306,7 @@ describe("DetailView", () => {
       render(<DetailView issueId="test-1" onNavigate={mockNavigate} />)
 
       // Dependencies section should exist but be empty
-      expect(screen.getByTestId("detail-dependencies-placeholder")).toBeDefined()
+      expect(screen.getByTestId("detail-dependencies")).toBeDefined()
     })
   })
 
