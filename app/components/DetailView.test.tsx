@@ -114,14 +114,15 @@ describe("DetailView", () => {
       expect(screen.getByText("Test Issue Title")).toBeDefined()
     })
 
-    it("renders all placeholder sections", () => {
+    it("renders all sections", () => {
       const issue = createMockIssue()
       setIssueStoresInstance(createMockRegistry([issue]))
 
       render(<DetailView issueId="test-1" onNavigate={mockNavigate} testId="detail-view" />)
 
-      // Check for placeholder test IDs
-      expect(screen.getByTestId("detail-header-placeholder")).toBeDefined()
+      // Check for section test IDs (DetailHeader is now a real component)
+      expect(screen.getByTestId("detail-header")).toBeDefined()
+      // The rest are still placeholders
       expect(screen.getByTestId("detail-properties-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-description-placeholder")).toBeDefined()
       expect(screen.getByTestId("detail-design-placeholder")).toBeDefined()

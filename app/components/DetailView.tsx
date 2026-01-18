@@ -18,6 +18,7 @@ import { createContext, useContext, useMemo } from "react"
 import type { IssueDetail, Comment, DependencyRef } from "../../types/issues.js"
 import { useIssueStore } from "../hooks/index.js"
 import { useTransport, type TransportFn } from "../hooks/use-transport.js"
+import { DetailHeader } from "./DetailHeader.js"
 
 /**
  * Context value for DetailView children.
@@ -66,23 +67,6 @@ export interface DetailViewProps {
   onNavigate: (id: string) => void
   /** Optional test ID for testing. */
   testId?: string
-}
-
-/**
- * Placeholder component for DetailHeader.
- *
- * Will be replaced with the actual DetailHeader component in a subsequent issue.
- */
-function DetailHeaderPlaceholder({ issue }: { issue: IssueDetail }): React.JSX.Element {
-  return (
-    <div className="detail-title" data-testid="detail-header-placeholder">
-      <h2>
-        <span className="editable" tabIndex={0} role="button" aria-label="Edit title">
-          {issue.title || "(no title)"}
-        </span>
-      </h2>
-    </div>
-  )
 }
 
 /**
@@ -305,7 +289,7 @@ export function DetailView({ issueId, onNavigate, testId }: DetailViewProps): Re
         <div className="detail-layout">
           {/* Main content area */}
           <div className="detail-main">
-            <DetailHeaderPlaceholder issue={issue} />
+            <DetailHeader testId="detail-header" />
             <EditableMarkdownFieldPlaceholder
               label="Description"
               value={description}
