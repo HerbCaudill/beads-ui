@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "debug": "^4.4.3",
-    "dompurify": "^3.3.0",
+    "dompurify": "^3.4.0",
     "express": "^5.2.1",
     "marked": "^17.0.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
