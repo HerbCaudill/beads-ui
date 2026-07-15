@@ -1,0 +1,36 @@
+{
+  "name": "@herbcaudill/beads",
+  "version": "0.1.0",
+  "description": "A polished local web manager for Beads tasks",
+  "license": "MIT",
+  "author": "Herb Caudill",
+  "bin": {
+    "beads": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "dev": "tsx src/cli.ts --dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@beads/server": "workspace:*",
+    "get-port": "^7.1.0",
+    "open": "^10.2.0"
+  },
+  "devDependencies": {
+    "@beads/ui": "workspace:*",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
