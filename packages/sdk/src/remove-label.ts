@@ -10,7 +10,7 @@ export async function removeLabel(
   label: string,
 ): Promise<void> {
   await options.runner({
-    args: ["label", "remove", issueId, label, "--json"],
+    args: ["label", "remove", "--json", "--", issueId, label],
     cwd: options.cwd,
   })
 }

@@ -12,7 +12,7 @@ export async function getIssue(
   issueId: string,
 ): Promise<IssueDetail | null> {
   const result = await options.runner({
-    args: ["show", issueId, "--json", "--include-comments", "--include-dependents"],
+    args: ["show", "--json", "--include-comments", "--include-dependents", "--", issueId],
     cwd: options.cwd,
   })
   const issues = parseBdJson(Schema.Array(IssueDetailSchema), result.stdout)

@@ -11,7 +11,7 @@ describe("dependencies", () => {
     await addDependency({ cwd: "/workspace", runner }, "bd-2", "bd-1", "related")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["dep", "add", "bd-2", "bd-1", "--type", "related", "--json"],
+      args: ["dep", "add", "--type=related", "--json", "--", "bd-2", "bd-1"],
       cwd: "/workspace",
     })
   })
@@ -22,7 +22,7 @@ describe("dependencies", () => {
     await removeDependency({ cwd: "/workspace", runner }, "bd-2", "bd-1")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["dep", "remove", "bd-2", "bd-1", "--json"],
+      args: ["dep", "remove", "--json", "--", "bd-2", "bd-1"],
       cwd: "/workspace",
     })
   })

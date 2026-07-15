@@ -12,7 +12,7 @@ export async function listComments(
   issueId: string,
 ): Promise<readonly Comment[]> {
   const result = await options.runner({
-    args: ["comments", issueId, "--json"],
+    args: ["comments", "--json", "--", issueId],
     cwd: options.cwd,
   })
 

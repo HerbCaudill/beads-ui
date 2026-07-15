@@ -15,16 +15,17 @@ export async function updateIssue(
 ): Promise<Issue> {
   const args = [
     "update",
-    issueId,
     "--json",
-    ...(input.title === undefined ? [] : ["--title", input.title]),
-    ...(input.description === undefined ? [] : ["--description", input.description]),
+    ...(input.title === undefined ? [] : [`--title=${input.title}`]),
+    ...(input.description === undefined ? [] : [`--description=${input.description}`]),
     ...(input.description === "" ? ["--allow-empty-description"] : []),
-    ...(input.status === undefined ? [] : ["--status", input.status]),
-    ...(input.priority === undefined ? [] : ["--priority", String(input.priority)]),
-    ...(input.type === undefined ? [] : ["--type", input.type]),
-    ...(input.assignee === undefined ? [] : ["--assignee", input.assignee]),
-    ...(input.parent === undefined ? [] : ["--parent", input.parent]),
+    ...(input.status === undefined ? [] : [`--status=${input.status}`]),
+    ...(input.priority === undefined ? [] : [`--priority=${input.priority}`]),
+    ...(input.type === undefined ? [] : [`--type=${input.type}`]),
+    ...(input.assignee === undefined ? [] : [`--assignee=${input.assignee}`]),
+    ...(input.parent === undefined ? [] : [`--parent=${input.parent}`]),
+    "--",
+    issueId,
   ]
   const result = await options.runner({ args, cwd: options.cwd })
   const issues = parseBdJson(Schema.NonEmptyArray(IssueSchema), result.stdout)

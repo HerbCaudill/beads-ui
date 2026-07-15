@@ -1,35 +1,108 @@
 #!/usr/bin/env node
 
-const issue = {
-  id: "bd-test.1",
-  title: "Packaged task manager works",
-  status: "open",
-  priority: 2,
-  issue_type: "task",
-  created_at: "2026-07-15T10:00:00Z",
-  updated_at: "2026-07-15T10:00:00Z",
-}
+const { readFileSync, writeFileSync } = await import("node:fs")
+const statePath = process.env.BEADS_TEST_STATE
+if (!statePath) throw new Error("BEADS_TEST_STATE is required")
+const state = JSON.parse(readFileSync(statePath, "utf8"))
+const args = process.argv.slice(2)
+const command = args[0]
+const subcommand = args[1]
+const marker = args.indexOf("--")
+const positionals = marker < 0 ? [] : args.slice(marker + 1)
+const now = "2026-07-15T11:00:00Z"
 
 if (process.argv.includes("--version")) {
   console.log("bd test")
-} else if (process.argv[2] === "status") {
+} else if (command === "status") {
+  const closed = state.issues.filter((issue) => issue.status === "closed").length
+  const open = state.issues.length - closed
   console.log(
     JSON.stringify({
       summary: {
         blocked_issues: 0,
-        closed_issues: 0,
+        closed_issues: closed,
         deferred_issues: 0,
         in_progress_issues: 0,
-        open_issues: 1,
-        ready_issues: 1,
-        total_issues: 1,
+        open_issues: open,
+        ready_issues: open,
+        total_issues: state.issues.length,
       },
     }),
   )
-} else if (process.argv[2] === "show") {
+} else if (command === "list") {
+  console.log(JSON.stringify(state.issues))
+} else if (command === "show") {
+  console.log(JSON.stringify(state.issues.filter((issue) => issue.id === positionals[0])))
+} else if (command === "create") {
+  const title = args.find((value) => value.startsWith("--title="))?.slice(8) ?? "Untitled"
+  const description = args.find((value) => value.startsWith("--description="))?.slice(14)
+  const labels = args
+    .find((value) => value.startsWith("--labels="))
+    ?.slice(9)
+    .split(",") ?? []
+  const issue = {
+    comments: [],
+    created_at: now,
+    dependencies: [],
+    description,
+    id: "bd-test.2",
+    issue_type: args.find((value) => value.startsWith("--type="))?.slice(7) ?? "task",
+    labels,
+    priority: Number(args.find((value) => value.startsWith("--priority="))?.slice(11) ?? 2),
+    status: "open",
+    title,
+    updated_at: now,
+  }
+  state.issues.push(issue)
+  writeFileSync(statePath, JSON.stringify(state))
+  console.log(JSON.stringify(issue))
+} else if (command === "update") {
+  const issue = state.issues.find((candidate) => candidate.id === positionals[0])
+  if (!issue) throw new Error("Issue not found")
+  const title = args.find((value) => value.startsWith("--title="))
+  const description = args.find((value) => value.startsWith("--description="))
+  if (title) issue.title = title.slice(8)
+  if (description) issue.description = description.slice(14)
+  issue.updated_at = now
+  writeFileSync(statePath, JSON.stringify(state))
   console.log(JSON.stringify([issue]))
-} else if (process.argv[2] === "list") {
-  console.log(JSON.stringify([issue]))
+} else if (command === "delete") {
+  state.issues = state.issues.filter((issue) => issue.id !== positionals[0])
+  writeFileSync(statePath, JSON.stringify(state))
+  console.log("{}")
+} else if (command === "label" && subcommand === "add") {
+  const issue = state.issues.find((candidate) => candidate.id === positionals[0])
+  if (!issue) throw new Error("Issue not found")
+  issue.labels = [...new Set([...issue.labels, positionals[1]])]
+  writeFileSync(statePath, JSON.stringify(state))
+  console.log("{}")
+} else if (command === "dep" && subcommand === "add") {
+  const issue = state.issues.find((candidate) => candidate.id === positionals[0])
+  const dependency = state.issues.find((candidate) => candidate.id === positionals[1])
+  if (!issue || !dependency) throw new Error("Issue not found")
+  issue.dependencies.push({
+    dependency_type: "blocks",
+    id: dependency.id,
+    issue_type: dependency.issue_type,
+    priority: dependency.priority,
+    status: dependency.status,
+    title: dependency.title,
+  })
+  writeFileSync(statePath, JSON.stringify(state))
+  console.log("{}")
+} else if (command === "comments" && subcommand === "add") {
+  const issue = state.issues.find((candidate) => candidate.id === positionals[0])
+  if (!issue) throw new Error("Issue not found")
+  const comment = {
+    author: "Test user",
+    created_at: now,
+    id: `comment-${issue.comments.length + 1}`,
+    issue_id: issue.id,
+    text: positionals[1],
+  }
+  issue.comments.push(comment)
+  writeFileSync(statePath, JSON.stringify(state))
+  console.log(JSON.stringify(comment))
 } else {
   console.log("{}")
 }

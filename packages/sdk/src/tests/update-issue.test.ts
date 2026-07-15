@@ -36,22 +36,16 @@ describe("updateIssue", () => {
     expect(runner).toHaveBeenCalledWith({
       args: [
         "update",
-        "bd-1",
         "--json",
-        "--title",
-        "Updated",
-        "--description",
-        "New description",
-        "--status",
-        "in_progress",
-        "--priority",
-        "0",
-        "--type",
-        "bug",
-        "--assignee",
-        "Herb",
-        "--parent",
-        "bd-epic",
+        "--title=Updated",
+        "--description=New description",
+        "--status=in_progress",
+        "--priority=0",
+        "--type=bug",
+        "--assignee=Herb",
+        "--parent=bd-epic",
+        "--",
+        "bd-1",
       ],
       cwd: "/workspace",
     })
@@ -77,7 +71,7 @@ describe("updateIssue", () => {
     await updateIssue({ cwd: "/workspace", runner }, "bd-1", { description: "" })
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["update", "bd-1", "--json", "--description", "", "--allow-empty-description"],
+      args: ["update", "--json", "--description=", "--allow-empty-description", "--", "bd-1"],
       cwd: "/workspace",
     })
   })

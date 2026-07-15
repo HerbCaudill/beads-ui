@@ -10,7 +10,7 @@ export async function removeDependency(
   dependsOnId: string,
 ): Promise<void> {
   await options.runner({
-    args: ["dep", "remove", issueId, dependsOnId, "--json"],
+    args: ["dep", "remove", "--json", "--", issueId, dependsOnId],
     cwd: options.cwd,
   })
 }

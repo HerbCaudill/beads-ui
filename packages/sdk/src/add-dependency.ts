@@ -12,7 +12,7 @@ export async function addDependency(
   type: DependencyType = "blocks",
 ): Promise<void> {
   await options.runner({
-    args: ["dep", "add", issueId, dependsOnId, "--type", type, "--json"],
+    args: ["dep", "add", `--type=${type}`, "--json", "--", issueId, dependsOnId],
     cwd: options.cwd,
   })
 }

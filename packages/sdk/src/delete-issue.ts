@@ -8,7 +8,7 @@ export async function deleteIssue(
   issueId: string,
 ): Promise<void> {
   await options.runner({
-    args: ["delete", issueId, "--force", "--json"],
+    args: ["delete", "--force", "--json", "--", issueId],
     cwd: options.cwd,
   })
 }

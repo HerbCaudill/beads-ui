@@ -2,6 +2,7 @@ import type { CommandRunner } from "@beads/sdk"
 import { createServer as createBeadsServer, type ServerOptions } from "@beads/server"
 import type { Server } from "node:http"
 
+import { closeServer } from "./close-server.js"
 import { listenOnLoopback } from "./listen-on-loopback.js"
 import { selectPort } from "./select-port.js"
 import type { CliOptions } from "./types.js"
@@ -29,7 +30,14 @@ export async function startApplication(
 
   dependencies.writeLine(`Beads manager: ${url}`)
   dependencies.writeLine(`Workspace: ${workspace}`)
-  if (options.openBrowser) await dependencies.openUrl(url)
+  if (options.openBrowser) {
+    try {
+      await dependencies.openUrl(url)
+    } catch (cause) {
+      await closeServer(server)
+      throw cause
+    }
+  }
 
   return { server, url, workspace }
 }

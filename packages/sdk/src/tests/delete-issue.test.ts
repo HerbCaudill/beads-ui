@@ -9,7 +9,7 @@ describe("deleteIssue", () => {
 
     await expect(deleteIssue({ cwd: "/workspace", runner }, "bd-1")).resolves.toBeUndefined()
     expect(runner).toHaveBeenCalledWith({
-      args: ["delete", "bd-1", "--force", "--json"],
+      args: ["delete", "--force", "--json", "--", "bd-1"],
       cwd: "/workspace",
     })
   })

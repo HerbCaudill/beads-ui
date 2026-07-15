@@ -76,4 +76,28 @@ describe("startApplication", () => {
       })
     }
   })
+
+  it("closes the server when browser launch fails", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "beads-start-"))
+    await mkdir(join(directory, ".beads"))
+    const server = createHttpServer()
+
+    await expect(
+      startApplication(
+        directory,
+        { openBrowser: true },
+        {
+          createServer: () => server,
+          findPort: async () => 0,
+          openUrl: async () => {
+            throw new Error("Browser unavailable")
+          },
+          runner: vi.fn<CommandRunner>(async () => ({ stdout: "bd version", stderr: "" })),
+          staticDir: "/built/ui",
+          writeLine: vi.fn(),
+        },
+      ),
+    ).rejects.toThrow("Browser unavailable")
+    expect(server.listening).toBe(false)
+  })
 })

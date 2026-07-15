@@ -56,7 +56,7 @@ describe("getIssue", () => {
     const issue = await getIssue({ cwd: "/workspace", runner }, "bd-1")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["show", "bd-1", "--json", "--include-comments", "--include-dependents"],
+      args: ["show", "--json", "--include-comments", "--include-dependents", "--", "bd-1"],
       cwd: "/workspace",
     })
     expect(issue).toEqual(

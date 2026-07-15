@@ -16,10 +16,11 @@ export async function addComment(
   const args = [
     "comments",
     "add",
+    ...(author === undefined ? [] : [`--author=${author}`]),
+    "--json",
+    "--",
     issueId,
     text,
-    ...(author === undefined ? [] : ["--author", author]),
-    "--json",
   ]
   const result = await options.runner({ args, cwd: options.cwd })
 

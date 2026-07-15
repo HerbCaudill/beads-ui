@@ -11,7 +11,7 @@ describe("labels", () => {
     await addLabel({ cwd: "/workspace", runner }, "bd-1", "frontend")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["label", "add", "bd-1", "frontend", "--json"],
+      args: ["label", "add", "--json", "--", "bd-1", "frontend"],
       cwd: "/workspace",
     })
   })
@@ -22,7 +22,7 @@ describe("labels", () => {
     await removeLabel({ cwd: "/workspace", runner }, "bd-1", "frontend")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["label", "remove", "bd-1", "frontend", "--json"],
+      args: ["label", "remove", "--json", "--", "bd-1", "frontend"],
       cwd: "/workspace",
     })
   })

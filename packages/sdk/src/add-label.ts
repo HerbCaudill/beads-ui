@@ -10,7 +10,7 @@ export async function addLabel(
   label: string,
 ): Promise<void> {
   await options.runner({
-    args: ["label", "add", issueId, label, "--json"],
+    args: ["label", "add", "--json", "--", issueId, label],
     cwd: options.cwd,
   })
 }

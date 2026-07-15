@@ -11,14 +11,17 @@ import {
   removeDependency,
   removeLabel,
   updateIssue,
-  type UpdateIssueInput,
 } from "@beads/sdk"
 import express, { type Express } from "express"
 import { basename, join, resolve } from "node:path"
 
 import { apiErrorHandler } from "./api-error-handler.js"
+import { parseAddDependencyBody } from "./parse-add-dependency-body.js"
+import { parseCommentBody } from "./parse-comment-body.js"
 import { parseCreateIssueBody } from "./parse-create-issue-body.js"
-import type { AddDependencyBody, CommentBody, LabelBody, ServerOptions } from "./types.js"
+import { parseLabelBody } from "./parse-label-body.js"
+import { parseUpdateIssueBody } from "./parse-update-issue-body.js"
+import type { ServerOptions } from "./types.js"
 
 /** Create the HTTP application for one fixed Beads workspace. */
 export function createApp(
@@ -48,14 +51,16 @@ export function createApp(
     response.json(issue)
   })
   app.patch("/api/issues/:issueId", async (request, response) => {
-    response.json(await updateIssue(sdk, request.params.issueId, request.body as UpdateIssueInput))
+    response.json(
+      await updateIssue(sdk, request.params.issueId, parseUpdateIssueBody(request.body)),
+    )
   })
   app.delete("/api/issues/:issueId", async (request, response) => {
     await deleteIssue(sdk, request.params.issueId)
     response.status(204).send()
   })
   app.post("/api/issues/:issueId/dependencies", async (request, response) => {
-    const body = request.body as AddDependencyBody
+    const body = parseAddDependencyBody(request.body)
     await addDependency(sdk, request.params.issueId, body.dependsOnId, body.type)
     response.status(204).send()
   })
@@ -64,7 +69,7 @@ export function createApp(
     response.status(204).send()
   })
   app.post("/api/issues/:issueId/labels", async (request, response) => {
-    const body = request.body as LabelBody
+    const body = parseLabelBody(request.body)
     await addLabel(sdk, request.params.issueId, body.label)
     response.status(204).send()
   })
@@ -76,7 +81,7 @@ export function createApp(
     response.json(await listComments(sdk, request.params.issueId))
   })
   app.post("/api/issues/:issueId/comments", async (request, response) => {
-    const body = request.body as CommentBody
+    const body = parseCommentBody(request.body)
     response.status(201).json(await addComment(sdk, request.params.issueId, body.text, body.author))
   })
   app.get("/api/status", async (_request, response) => {

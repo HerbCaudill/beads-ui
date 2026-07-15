@@ -22,7 +22,7 @@ describe("comments", () => {
     const comments = await listComments({ cwd: "/workspace", runner }, "bd-1")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["comments", "bd-1", "--json"],
+      args: ["comments", "--json", "--", "bd-1"],
       cwd: "/workspace",
     })
     expect(comments[0]).toEqual({
@@ -49,9 +49,42 @@ describe("comments", () => {
     const comment = await addComment({ cwd: "/workspace", runner }, "bd-1", "Done", "Herb")
 
     expect(runner).toHaveBeenCalledWith({
-      args: ["comments", "add", "bd-1", "Done", "--author", "Herb", "--json"],
+      args: ["comments", "add", "--author=Herb", "--json", "--", "bd-1", "Done"],
       cwd: "/workspace",
     })
     expect(comment.id).toBe("comment-1")
+  })
+
+  it("passes comment text after the end-of-options marker", async () => {
+    const runner = vi.fn<CommandRunner>(async () => ({
+      stdout: JSON.stringify({
+        id: "comment-1",
+        issue_id: "bd-1",
+        author: "Herb",
+        text: "--file=/etc/hosts",
+        created_at: "2026-07-15T10:00:00Z",
+      }),
+      stderr: "",
+    }))
+
+    await addComment(
+      { cwd: "/workspace", runner },
+      "--dangerous-id",
+      "--file=/etc/hosts",
+      "--author-like",
+    )
+
+    expect(runner).toHaveBeenCalledWith({
+      args: [
+        "comments",
+        "add",
+        "--author=--author-like",
+        "--json",
+        "--",
+        "--dangerous-id",
+        "--file=/etc/hosts",
+      ],
+      cwd: "/workspace",
+    })
   })
 })
