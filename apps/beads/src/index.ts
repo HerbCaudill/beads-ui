@@ -1,1 +1,8 @@
-export {}
+export { parseCliOptions } from "./parse-cli-options.js"
+export { selectPort } from "./select-port.js"
+export { startApplication } from "./start-application.js"
+export { validateWorkspace } from "./validate-workspace.js"
+export { verifyBd } from "./verify-bd.js"
+export type { StartedApplication, StartDependencies } from "./start-application.js"
+export type { CliOptions, VerifyBd } from "./types.js"
+export { assertSupportedNode } from "./assert-supported-node.js"

@@ -14,7 +14,7 @@ import {
   type UpdateIssueInput,
 } from "@beads/sdk"
 import express, { type Express } from "express"
-import { basename, resolve } from "node:path"
+import { basename, join, resolve } from "node:path"
 
 import { apiErrorHandler } from "./api-error-handler.js"
 import { parseCreateIssueBody } from "./parse-create-issue-body.js"
@@ -82,6 +82,19 @@ export function createApp(
   app.get("/api/status", async (_request, response) => {
     response.json(await getStatus(sdk))
   })
+  if (options.staticDir) {
+    const staticDir = resolve(options.staticDir)
+    app.use(express.static(staticDir))
+    app.use((request, response, next) => {
+      if (request.method !== "GET" || request.path === "/api" || request.path.startsWith("/api/")) {
+        next()
+        return
+      }
+      response.sendFile(join(staticDir, "index.html"), (error) => {
+        if (error) next(error)
+      })
+    })
+  }
   app.use(apiErrorHandler)
 
   return app

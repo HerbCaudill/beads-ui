@@ -8,6 +8,8 @@ export type ServerOptions = {
   readonly pollIntervalMs?: number
   /** Executor used for all Beads CLI operations. */
   readonly runner: CommandRunner
+  /** Built web application directory served from the same origin. */
+  readonly staticDir?: string
 }
 
 /** Request body for creating a dependency. */

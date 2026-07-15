@@ -19,6 +19,13 @@ export function createServer(
     () => broadcastWorkspaceChanged(webSockets),
     options.pollIntervalMs ?? 1_000,
   )
+  const closeHttpServer = server.close.bind(server)
+
+  server.close = (callback) => {
+    for (const client of webSockets.clients) client.terminate()
+    webSockets.close(() => closeHttpServer(callback))
+    return server
+  }
 
   server.once("close", stopPolling)
 
