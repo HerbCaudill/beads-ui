@@ -2,11 +2,11 @@
 
 ## Project overview
 
-This repository contains a standalone web manager for Beads task databases. The public package is `@herbcaudill/beads`; it launches against the current directory with `npx @herbcaudill/beads`.
+This repository contains Beads UI, a standalone web manager for Beads task databases. The public package is `@herbcaudill/beads-ui`; it launches against the current directory with `npx @herbcaudill/beads-ui`.
 
 ## Packages
 
-- `apps/beads` — published CLI and packaged web application
+- `apps/beads-ui` — published CLI and packaged web application
 - `packages/sdk` — private typed adapter around the `bd` CLI
 - `packages/server` — private single-workspace HTTP and WebSocket server
 - `packages/ui` — private React task-manager application

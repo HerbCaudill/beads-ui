@@ -28,7 +28,7 @@ export async function startApplication(
   const port = await listenOnLoopback(server, selectedPort)
   const url = `http://127.0.0.1:${port}`
 
-  dependencies.writeLine(`Beads manager: ${url}`)
+  dependencies.writeLine(`Beads UI: ${url}`)
   dependencies.writeLine(`Workspace: ${workspace}`)
   if (options.openBrowser) {
     try {

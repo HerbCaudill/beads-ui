@@ -1,8 +1,8 @@
-# Standalone Beads manager
+# Standalone Beads UI
 
 ## Goal
 
-Extract the useful Beads task-manager functionality from Ralph into a focused monorepo published as `@herbcaudill/beads`.
+Extract the useful Beads task-manager functionality from Ralph into a focused monorepo published as `@herbcaudill/beads-ui`.
 
 ## Approach
 

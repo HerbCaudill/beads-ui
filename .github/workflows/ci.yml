@@ -24,4 +24,4 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm exec playwright test
-      - run: pnpm tsx apps/beads/scripts/test-packed.ts
+      - run: pnpm tsx apps/beads-ui/scripts/test-packed.ts

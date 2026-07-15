@@ -40,7 +40,7 @@ describe("startApplication", () => {
         staticDir: "/built/ui",
       })
       expect(openUrl).toHaveBeenCalledWith(result.url)
-      expect(writeLine).toHaveBeenCalledWith(`Beads manager: ${result.url}`)
+      expect(writeLine).toHaveBeenCalledWith(`Beads UI: ${result.url}`)
       expect(writeLine).toHaveBeenCalledWith(`Workspace: ${canonical}`)
     } finally {
       await new Promise<void>((resolve, reject) => {

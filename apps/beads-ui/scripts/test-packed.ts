@@ -50,7 +50,7 @@ async function testPacked(): Promise<void> {
       stdio: "pipe",
     })
     child = spawn(
-      resolve(consumerDirectory, "node_modules/.bin/beads"),
+      resolve(consumerDirectory, "node_modules/.bin/beads-ui"),
       ["--no-open", "--port", "4174"],
       {
         cwd: workspaceDirectory,
@@ -77,7 +77,7 @@ async function testPacked(): Promise<void> {
       })
       child?.stdout?.on("data", (data) => {
         output += String(data)
-        if (output.includes("Beads manager:")) {
+        if (output.includes("Beads UI:")) {
           clearTimeout(timeout)
           resolveReady()
         }

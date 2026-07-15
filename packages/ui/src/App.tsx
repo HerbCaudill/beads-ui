@@ -237,7 +237,7 @@ export function App(_props: Props) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight">
-              {workspace?.name ?? "Beads"}
+              {workspace?.name ?? "Beads UI"}
             </h1>
             <p className="truncate text-sm text-slate-400">
               {workspace?.path ?? "Loading workspace…"}

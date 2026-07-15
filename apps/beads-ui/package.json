@@ -1,11 +1,11 @@
 {
-  "name": "@herbcaudill/beads",
+  "name": "@herbcaudill/beads-ui",
   "version": "0.1.0",
-  "description": "A polished local web manager for Beads tasks",
+  "description": "A polished local web UI for Beads tasks",
   "license": "MIT",
   "author": "Herb Caudill",
   "bin": {
-    "beads": "dist/cli.js"
+    "beads-ui": "dist/cli.js"
   },
   "files": [
     "dist"

@@ -1,8 +1,8 @@
-# Standalone Beads manager design
+# Standalone Beads UI design
 
 ## Goal
 
-Create a focused monorepo for a polished Beads task manager that runs from any Beads project with `npx @herbcaudill/beads`.
+Create a focused monorepo for a polished Beads task manager that runs from any Beads project with `npx @herbcaudill/beads-ui`.
 
 ## Architecture
 
@@ -10,14 +10,14 @@ The repository contains one public application and three private implementation 
 
 ```text
 apps/
-  beads/    # Published CLI and packaged web application
+  beads-ui/ # Published CLI and packaged web application
 packages/
   sdk/      # Typed adapter around the bd CLI
   server/   # Single-workspace HTTP and WebSocket server
   ui/       # React task manager
 ```
 
-Only `@herbcaudill/beads` is published. Its release build bundles the private runtime packages and includes the compiled UI assets, so consumers never install internal workspace packages.
+Only `@herbcaudill/beads-ui` is published. Its release build bundles the private runtime packages and includes the compiled UI assets, so consumers never install internal workspace packages.
 
 The extraction starts from the useful behavior in Ralph's `beads-sdk`, `beads-server`, `beads-view`, and `beads-demo` packages. It deliberately excludes Ralph orchestration, agent chat, workspace discovery, shared agent themes, demos, and generic component-library machinery.
 
@@ -43,7 +43,7 @@ The server listens on loopback only. The workspace is fixed at startup, canonica
 
 The SDK has unit tests for command construction, parsing, and error mapping through an injected command runner. The server has API and WebSocket integration tests against disposable fixtures. The UI uses Vitest and Testing Library for meaningful user interactions. Playwright covers the built application's main task-management flow.
 
-A release smoke test runs `npm pack`, installs the tarball in a clean directory, invokes the real executable, and verifies the packaged UI and API. CI runs formatting checks, typechecking, unit tests, the package smoke test, and Playwright. Publishing releases only `@herbcaudill/beads`, with npm provenance.
+A release smoke test runs `npm pack`, installs the tarball in a clean directory, invokes the real executable, and verifies the packaged UI and API. CI runs formatting checks, typechecking, unit tests, the package smoke test, and Playwright. Publishing releases only `@herbcaudill/beads-ui`, with npm provenance.
 
 ## Decisions
 
