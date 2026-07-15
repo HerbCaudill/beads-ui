@@ -17,18 +17,16 @@
   "scripts": {
     "build": "tsx scripts/build.ts",
     "dev": "tsx src/cli.ts",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests --exclude 'e2e/**'",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
+  "devDependencies": {
     "@beads/sdk": "workspace:*",
     "@beads/server": "workspace:*",
-    "get-port": "^7.1.0",
-    "open": "^10.2.0"
-  },
-  "devDependencies": {
     "@beads/ui": "workspace:*",
     "@types/node": "^24.10.1",
+    "get-port": "^7.1.0",
+    "open": "^10.2.0",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",

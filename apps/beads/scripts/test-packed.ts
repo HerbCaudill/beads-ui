@@ -1,0 +1,60 @@
+import assert from "node:assert/strict"
+import { spawn, execFileSync } from "node:child_process"
+import { mkdir, mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+
+/** Pack, install, launch, and probe the public package from a clean directory. */
+async function testPacked(): Promise<void> {
+  const packageDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+  const temporaryDirectory = await mkdtemp(resolve(tmpdir(), "beads-pack-"))
+  const consumerDirectory = resolve(temporaryDirectory, "consumer")
+  const workspaceDirectory = resolve(temporaryDirectory, "workspace")
+  const fixtureBin = resolve(packageDirectory, "e2e/fixtures/bin")
+  let child: ReturnType<typeof spawn> | undefined
+
+  try {
+    await mkdir(consumerDirectory)
+    await mkdir(resolve(workspaceDirectory, ".beads"), { recursive: true })
+    const packOutput = execFileSync(
+      "npm",
+      ["pack", "--json", "--pack-destination", temporaryDirectory],
+      { cwd: packageDirectory, encoding: "utf8" },
+    )
+    const packResult = JSON.parse(packOutput) as [{ readonly filename: string }]
+    const tarball = resolve(temporaryDirectory, packResult[0].filename)
+
+    execFileSync("npm", ["install", "--ignore-scripts", tarball], {
+      cwd: consumerDirectory,
+      stdio: "pipe",
+    })
+    child = spawn(
+      resolve(consumerDirectory, "node_modules/.bin/beads"),
+      ["--no-open", "--port", "4174"],
+      {
+        cwd: workspaceDirectory,
+        env: { ...process.env, PATH: `${fixtureBin}:${process.env.PATH ?? ""}` },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    )
+    await new Promise<void>((resolveReady, reject) => {
+      child?.once("exit", (code) => reject(new Error(`Packed CLI exited with code ${code}`)))
+      child?.stderr?.on("data", (data) => reject(new Error(String(data))))
+      child?.stdout?.on("data", (data) => {
+        if (String(data).includes("Beads manager:")) resolveReady()
+      })
+    })
+
+    const workspaceResponse = await fetch("http://127.0.0.1:4174/api/workspace")
+    const applicationResponse = await fetch("http://127.0.0.1:4174/")
+    assert.equal(workspaceResponse.status, 200)
+    assert.equal(applicationResponse.status, 200)
+    assert.match(await applicationResponse.text(), /<div id="root"><\/div>/)
+  } finally {
+    child?.kill("SIGINT")
+    await rm(temporaryDirectory, { force: true, recursive: true })
+  }
+}
+
+await testPacked()
