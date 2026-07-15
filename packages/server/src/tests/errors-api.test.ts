@@ -18,6 +18,20 @@ describe("API errors", () => {
     expect(runner).not.toHaveBeenCalled()
   })
 
+  it("rejects invalid optional creation fields before invoking bd", async () => {
+    const runner = vi.fn<CommandRunner>()
+    const app = createApp({ cwd: "/workspace", runner })
+
+    const labels = await request(app)
+      .post("/api/issues")
+      .send({ title: "Issue", labels: "not-an-array" })
+    const type = await request(app).post("/api/issues").send({ title: "Issue", type: "--file" })
+
+    expect(labels.status).toBe(400)
+    expect(type.status).toBe(400)
+    expect(runner).not.toHaveBeenCalled()
+  })
+
   it("returns structured runtime command failures", async () => {
     const runner = vi.fn<CommandRunner>(async () => {
       throw new BdCommandError(["list"], 1, "database unavailable", new Error("failed"))
