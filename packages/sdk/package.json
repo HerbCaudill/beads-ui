@@ -10,8 +10,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests --exclude 'dist/**'",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "effect": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
