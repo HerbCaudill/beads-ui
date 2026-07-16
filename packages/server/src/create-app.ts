@@ -16,6 +16,7 @@ import express, { type Express } from "express"
 import { basename, join, resolve } from "node:path"
 
 import { apiErrorHandler } from "./api-error-handler.js"
+import { createBeadsViewRouter } from "./create-beads-view-router.js"
 import { parseAddDependencyBody } from "./parse-add-dependency-body.js"
 import { parseCommentBody } from "./parse-comment-body.js"
 import { parseCreateIssueBody } from "./parse-create-issue-body.js"
@@ -36,6 +37,7 @@ export function createApp(
   app.get("/api/workspace", (_request, response) => {
     response.json({ name: basename(cwd), path: cwd })
   })
+  app.use("/api/tasks", createBeadsViewRouter(sdk))
   app.get("/api/issues", async (_request, response) => {
     response.json(await listIssues(sdk))
   })
