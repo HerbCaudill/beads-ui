@@ -26,7 +26,7 @@ export function TaskPanelController({
   isLoadingExternal = false,
   hideQuickInput = true,
 }: TaskPanelControllerProps) {
-  const { tasks, isLoading: isLoadingTasks, refresh } = useTasks({ all: true })
+  const { tasks, isLoading: isLoadingTasks, error, refresh } = useTasks({ all: true })
   const isLoading = isLoadingTasks || isLoadingExternal
   const searchQuery = useBeadsViewStore(selectTaskSearchQuery)
   const closedTimeFilter = useBeadsViewStore(selectClosedTimeFilter)
@@ -53,6 +53,7 @@ export function TaskPanelController({
   return (
     <TaskPanel
       tasks={tasks}
+      error={error}
       onTaskClick={onTaskClick}
       isLoading={isLoading}
       searchQuery={searchQuery}

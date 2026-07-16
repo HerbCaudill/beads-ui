@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test"
 
-test("serves the fixed workspace API and task manager", async ({ page, request }) => {
+test("serves the fixed workspace API and retained Beads View workflow", async ({
+  page,
+  request,
+}) => {
   const workspace = await request.get("/api/workspace")
   const issues = await request.get("/api/issues")
 
@@ -12,35 +15,49 @@ test("serves the fixed workspace API and task manager", async ({ page, request }
 
   await page.goto("/")
   await expect(page).toHaveTitle("Beads UI")
-  await expect(page.getByRole("heading", { name: "workspace" })).toBeVisible()
-  await expect(page.getByRole("button", { name: "New task" })).toBeVisible()
-  await expect(page.getByText("Packaged task manager works")).toBeVisible()
+  await expect(page.getByRole("textbox", { name: "New task title" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
 
-  await page.getByRole("button", { name: "New task" }).click()
-  await page.getByRole("textbox", { name: "Title" }).fill("Created in browser")
-  await page.getByRole("textbox", { name: "Description" }).fill("Complete packaged flow")
-  await page.getByRole("textbox", { name: "Labels" }).fill("e2e")
-  await page.getByRole("button", { name: "Create task" }).click()
-  await page.getByText("Created in browser").click()
+  await page.getByRole("textbox", { name: "Search tasks" }).fill("Packaged")
+  await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
+  await page.getByRole("textbox", { name: "Search tasks" }).clear()
 
-  await page.getByRole("textbox", { name: "New label" }).fill("reviewed")
+  await page.getByRole("textbox", { name: "New task title" }).fill("Created in browser")
+  await page.getByRole("textbox", { name: "New task title" }).press("Enter")
+  await page.getByRole("button", { name: "Created in browser" }).click()
+
+  await expect(page).toHaveURL(/\/issue\/bd-test\.2$/)
+  await expect(page.getByRole("dialog", { name: "Task details" })).toBeVisible()
+  await page.reload()
+  await expect(page.getByPlaceholder("Task title")).toHaveValue("Created in browser")
+
+  await page.getByPlaceholder("Task title").fill("Edited in browser")
+  await page.getByPlaceholder("Add description...").fill("Complete packaged flow")
+  await expect(page.getByRole("button", { name: "Edited in browser" })).toBeVisible()
+
   await page.getByRole("button", { name: "Add label" }).click()
-  await expect(page.getByRole("complementary").getByText("reviewed")).toBeVisible()
+  await page.getByPlaceholder("Label name").fill("reviewed")
+  await page.getByRole("button", { name: "Add", exact: true }).click()
+  await expect(page.getByText("reviewed", { exact: true })).toBeVisible()
 
-  await page.getByRole("textbox", { name: "Dependency ID" }).fill("bd-test.1")
-  await page.getByRole("button", { name: "Add dependency" }).click()
-  await expect(page.getByText(/bd-test\.1 Packaged task manager works/)).toBeVisible()
+  await page.getByRole("button", { name: "Add blocker" }).click()
+  await page.getByRole("option", { name: /Packaged task manager works/ }).click()
+  await expect(page.getByRole("button", { name: "Packaged task manager works" })).toHaveCount(2)
 
-  await page.getByRole("textbox", { name: "New comment" }).fill("--file=/etc/hosts")
+  await page.getByRole("textbox", { name: "Add comment" }).fill("--file=/etc/hosts")
   await page.getByRole("button", { name: "Add comment" }).click()
-  await expect(page.getByText("--file=/etc/hosts")).toBeVisible()
+  await expect(page.getByRole("textbox", { name: "Add comment" })).toBeEmpty()
+  await expect(page.getByText("--file=/etc/hosts", { exact: true })).toBeVisible()
 
-  await page.getByRole("button", { name: "Edit task" }).click()
-  await page.getByRole("textbox", { name: "Title" }).fill("Edited in browser")
-  await page.getByRole("button", { name: "Save changes" }).click()
-  await expect(page.getByRole("heading", { name: "Edited in browser" })).toBeVisible()
+  await page.keyboard.press("Meta+/")
+  await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible()
+  const hotkeysDialog = page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("heading", { name: "Keyboard shortcuts" }) })
+  await hotkeysDialog.getByRole("button", { name: "Close" }).first().click()
 
-  page.once("dialog", (dialog) => dialog.accept())
-  await page.getByRole("button", { name: "Delete task" }).click()
-  await expect(page.getByRole("heading", { name: "Edited in browser" })).not.toBeVisible()
+  await page.getByRole("button", { name: "Delete", exact: true }).click()
+  await page.getByRole("button", { name: "Yes, delete" }).click()
+  await expect(page).toHaveURL("/")
+  await expect(page.getByRole("button", { name: "Edited in browser" })).not.toBeVisible()
 })

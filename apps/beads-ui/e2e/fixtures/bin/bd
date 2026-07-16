@@ -103,6 +103,10 @@ if (process.argv.includes("--version")) {
   issue.comments.push(comment)
   writeFileSync(statePath, JSON.stringify(state))
   console.log(JSON.stringify(comment))
+} else if (command === "comments") {
+  const issue = state.issues.find((candidate) => candidate.id === positionals[0])
+  if (!issue) throw new Error("Issue not found")
+  console.log(JSON.stringify(issue.comments))
 } else {
   console.log("{}")
 }

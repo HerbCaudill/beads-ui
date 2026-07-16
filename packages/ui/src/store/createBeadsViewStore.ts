@@ -19,7 +19,7 @@ const TASK_REFRESH_DEBOUNCE_MS = 50
 const MAX_COMMENT_DRAFTS = 50
 
 /** Persist version for the fixed-workspace store. */
-const PERSIST_VERSION = 4
+const PERSIST_VERSION = 5
 
 /** Create a fixed-workspace Beads View store instance. */
 export function createBeadsViewStore(
@@ -145,14 +145,16 @@ export function createBeadsViewStore(
         merge: (persistedState, currentState) => ({
           ...currentState,
           ...(persistedState as Partial<BeadsViewStore>),
+          tasks: [],
+          selectedTaskId: null,
+          visibleTaskIds: [],
+          initialTaskCount: null,
           commentCacheByTask: {},
         }),
         partialize: (state) => ({
           issuePrefix: state.issuePrefix,
           accentColor: state.accentColor,
-          tasks: state.tasks,
           taskSearchQuery: state.taskSearchQuery,
-          selectedTaskId: state.selectedTaskId,
           closedTimeFilter: state.closedTimeFilter,
           statusCollapsedState: state.statusCollapsedState,
           parentCollapsedState: state.parentCollapsedState,

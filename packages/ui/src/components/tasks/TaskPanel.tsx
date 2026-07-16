@@ -4,6 +4,7 @@ import { SearchInput, type SearchInputHandle } from "./SearchInput"
 import { TaskList } from "./TaskList"
 import { QuickTaskInput, type CreatedIssue } from "./QuickTaskInput"
 import { TaskProgressBar } from "./TaskProgressBar"
+import { TaskListError } from "./TaskListError"
 import type { Task, ClosedTasksTimeFilter } from "../../types"
 
 /**
@@ -15,6 +16,7 @@ import type { Task, ClosedTasksTimeFilter } from "../../types"
  */
 export function TaskPanel({
   tasks = [],
+  error = null,
   onTaskClick,
   isLoading = false,
   searchQuery,
@@ -50,15 +52,19 @@ export function TaskPanel({
 
       {/* Scrollable task list */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <TaskList
-          tasks={tasks}
-          onTaskClick={onTaskClick}
-          isLoading={isLoading}
-          searchQuery={searchQuery}
-          closedTimeFilter={closedTimeFilter}
-          onClosedTimeFilterChange={onClosedTimeFilterChange}
-          onVisibleTaskIdsChange={onVisibleTaskIdsChange}
-        />
+        {error ? (
+          <TaskListError message={error} />
+        ) : (
+          <TaskList
+            tasks={tasks}
+            onTaskClick={onTaskClick}
+            isLoading={isLoading}
+            searchQuery={searchQuery}
+            closedTimeFilter={closedTimeFilter}
+            onClosedTimeFilterChange={onClosedTimeFilterChange}
+            onVisibleTaskIdsChange={onVisibleTaskIdsChange}
+          />
+        )}
       </div>
 
       <TaskProgressBar
@@ -76,6 +82,8 @@ export function TaskPanel({
 export type TaskPanelProps = {
   /** Array of tasks to display in the task list */
   tasks?: Task[]
+  /** Error returned while loading tasks. */
+  error?: string | null
   /** Callback when a task is clicked */
   onTaskClick?: (id: string) => void
   /** Whether tasks are currently loading */

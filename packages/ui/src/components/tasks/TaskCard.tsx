@@ -61,7 +61,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(function TaskC
 
   const handleClick = useCallback(() => {
     // Copy task ID to clipboard when card is clicked
-    navigator.clipboard.writeText(task.id)
+    void navigator.clipboard.writeText(task.id).catch(() => undefined)
     onClick?.(task.id)
   }, [onClick, task.id])
 

@@ -168,6 +168,19 @@ describe("TaskCard", () => {
 
       expect(writeText).toHaveBeenCalledWith(fullTask.id)
     })
+
+    it("still opens the task when clipboard permission is denied", async () => {
+      const onClick = vi.fn()
+      const handleRejection = vi.fn()
+      const writeText = vi.fn(() => ({ catch: handleRejection }) as unknown as Promise<void>)
+      Object.assign(navigator, { clipboard: { writeText } })
+      render(<TaskCard task={baseTask} onClick={onClick} />)
+
+      fireEvent.click(screen.getByRole("button", { name: baseTask.title }))
+
+      expect(handleRejection).toHaveBeenCalled()
+      expect(onClick).toHaveBeenCalledWith(baseTask.id)
+    })
   })
 
   describe("onClick callback", () => {

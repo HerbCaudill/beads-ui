@@ -25,7 +25,7 @@ describe("createBeadsViewStore", () => {
     vi.useRealTimers()
   })
 
-  it("migrates legacy v0 state, restoring tasks from the tasks array", async () => {
+  it("does not hydrate task data from a previous fixed workspace", async () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace/a")
     localStorage.setItem(
       STORAGE_KEY,
@@ -47,10 +47,11 @@ describe("createBeadsViewStore", () => {
     )
 
     const store = createBeadsViewStore()
-    expect(store.getState().tasks).toEqual([TASK_A])
+    expect(store.getState().tasks).toEqual([])
+    expect(store.getState().selectedTaskId).toBeNull()
   })
 
-  it("migrates v2 state with workspace cache, preserving current workspace tasks", () => {
+  it("migrates v2 state without retaining workspace task caches", () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace/a")
     localStorage.setItem(
       STORAGE_KEY,
@@ -79,8 +80,7 @@ describe("createBeadsViewStore", () => {
     )
 
     const store = createBeadsViewStore()
-    // Current workspace tasks are preserved
-    expect(store.getState().tasks).toEqual([TASK_A])
+    expect(store.getState().tasks).toEqual([])
 
     // Large caches are no longer persisted
     const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as {
@@ -105,6 +105,19 @@ describe("createBeadsViewStore", () => {
     await vi.advanceTimersByTimeAsync(100)
 
     expect(store.getState().tasks).toEqual([TASK_A])
+  })
+
+  it("does not persist runtime task data", () => {
+    const store = createBeadsViewStore()
+
+    store.getState().setTasks([TASK_A])
+    store.getState().setSelectedTaskId(TASK_A.id)
+
+    const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as {
+      state?: { tasks?: Task[]; selectedTaskId?: string | null }
+    }
+    expect(persisted.state?.tasks).toBeUndefined()
+    expect(persisted.state?.selectedTaskId).toBeUndefined()
   })
 
   it("keeps one comment cache per task regardless of legacy workspace arguments", () => {
