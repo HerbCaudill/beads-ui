@@ -1,0 +1,39 @@
+{
+  "hotkeys": {
+    "focusSearch": {
+      "key": "cmd+f",
+      "description": "Focus task search",
+      "category": "Navigation"
+    },
+    "previousTask": {
+      "key": "ArrowUp",
+      "description": "Select previous task",
+      "category": "Navigation"
+    },
+    "nextTask": {
+      "key": "ArrowDown",
+      "description": "Select next task",
+      "category": "Navigation"
+    },
+    "openTask": {
+      "key": "Enter",
+      "description": "Open selected task",
+      "category": "Navigation"
+    },
+    "showHotkeys": {
+      "key": "cmd+/",
+      "description": "Show keyboard shortcuts",
+      "category": "Help"
+    },
+    "previousWorkspace": {
+      "key": "cmd+PageUp",
+      "description": "Switch to previous workspace",
+      "category": "Navigation"
+    },
+    "nextWorkspace": {
+      "key": "cmd+PageDown",
+      "description": "Switch to next workspace",
+      "category": "Navigation"
+    }
+  }
+}

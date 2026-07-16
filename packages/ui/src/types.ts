@@ -1,129 +1,133 @@
-/** The one workspace managed by the application. */
-export type Workspace = {
-  /** Display name derived from the workspace directory. */
-  readonly name: string
-  /** Canonical absolute workspace path. */
-  readonly path: string
+/** Time window filter for closed tasks. */
+export type ClosedTasksTimeFilter =
+  | "past_hour"
+  | "past_4_hours"
+  | "past_day"
+  | "past_week"
+  | "all_time"
+
+/** Task lifecycle status. */
+export type TaskStatus = "open" | "in_progress" | "blocked" | "deferred" | "closed"
+
+/** Dependency metadata for a task. */
+export interface TaskDependency {
+  /** Dependent task ID. */
+  id: string
+  /** Current status of the dependency. */
+  status: TaskStatus
+  /** Dependency relationship type. */
+  dependency_type: string
 }
 
-/** Supported issue workflow states. */
-export type IssueStatus = "open" | "in_progress" | "blocked" | "deferred" | "closed"
-
-/** Supported issue categories. */
-export type IssueType = "bug" | "feature" | "task" | "epic" | "chore" | "decision"
-
-/** Task data returned by the local API. */
-export type Issue = {
-  /** Number of attached comments. */
-  readonly commentCount: number
-  /** Timestamp when the task was created. */
-  readonly createdAt: string
-  /** Number of active dependencies. */
-  readonly dependencyCount: number
-  /** Number of tasks depending on this task. */
-  readonly dependentCount: number
-  /** Longer task description. */
-  readonly description?: string
-  /** Stable task identifier. */
-  readonly id: string
-  /** Labels attached to the task. */
-  readonly labels: readonly string[]
-  /** Priority from zero, highest, through four, lowest. */
-  readonly priority: number
-  /** Current workflow status. */
-  readonly status: IssueStatus
-  /** Short task title. */
-  readonly title: string
-  /** Task category. */
-  readonly type: IssueType
-  /** Timestamp when the task was last updated. */
-  readonly updatedAt: string
+/** Core task data from beads. */
+export interface Task {
+  /** Task identifier. */
+  id: string
+  /** Task title. */
+  title: string
+  /** Task description. */
+  description?: string
+  /** Task status. */
+  status: TaskStatus
+  /** Priority value (lower is higher priority). */
+  priority?: number
+  /** Issue type from beads. */
+  issue_type?: string
+  /** Parent task ID. */
+  parent?: string
+  /** Creation timestamp. */
+  created_at?: string
+  /** Close timestamp. */
+  closed_at?: string
+  /** Reason the task was closed. */
+  close_reason?: string
+  /** Task dependencies. */
+  dependencies?: TaskDependency[]
+  /** IDs of issues that block this issue (from bd blocked command). */
+  blocked_by?: string[]
+  /** Number of issues blocking this issue (from bd blocked command). */
+  blocked_by_count?: number
+  /** Task labels. */
+  labels?: string[]
 }
 
-/** Workspace-level task counts. */
-export type StatusSummary = {
-  /** Number of blocked tasks. */
-  readonly blocked: number
-  /** Number of completed tasks. */
-  readonly closed: number
-  /** Number of deferred tasks. */
-  readonly deferred: number
-  /** Number of active tasks. */
-  readonly inProgress: number
-  /** Number of open tasks. */
-  readonly open: number
-  /** Number of tasks ready to start. */
-  readonly ready: number
-  /** Total tasks in the workspace. */
-  readonly total: number
+/** Payload for updating a task. */
+export type TaskUpdateData = {
+  /** Updated title. */
+  title?: string
+  /** Updated description. */
+  description?: string
+  /** Updated status. */
+  status?: TaskStatus
+  /** Updated priority. */
+  priority?: number
+  /** Updated type. */
+  type?: string
+  /** Updated parent ID. */
+  parent?: string | null
 }
 
-/** A comment attached to a task. */
-export type Comment = {
-  /** Display name of the author. */
-  readonly author: string
-  /** Timestamp when the comment was added. */
-  readonly createdAt: string
-  /** Stable comment identifier. */
-  readonly id: string
-  /** Identifier of the containing task. */
-  readonly issueId: string
-  /** Comment body. */
-  readonly text: string
+/** Task grouping buckets for list rendering. */
+export type TaskGroup = "open" | "deferred" | "closed"
+
+/** Task relationship data used in graphs. */
+export interface RelatedTask {
+  /** Related task ID. */
+  id: string
+  /** Related task title. */
+  title: string
+  /** Related task status. */
+  status: TaskStatus
+  /** Relationship type. */
+  dependency_type?: string
 }
 
-/** A task related to the selected task. */
-export type RelatedIssue = {
-  /** Relationship between the tasks. */
-  readonly dependencyType: string
-  /** Stable task identifier. */
-  readonly id: string
-  /** Task priority. */
-  readonly priority: number
-  /** Current workflow status. */
-  readonly status: IssueStatus
-  /** Short task title. */
-  readonly title: string
-  /** Task category. */
-  readonly type: IssueType
+/** Comment metadata for a task. */
+export interface Comment {
+  /** Comment ID. */
+  id: number
+  /** Associated task ID. */
+  issue_id: string
+  /** Comment author. */
+  author: string
+  /** Comment body text. */
+  text: string
+  /** Comment creation timestamp. */
+  created_at: string
 }
 
-/** Selected task with relationships and comments. */
-export type IssueDetail = Issue & {
-  /** Comments attached to the task. */
-  readonly comments: readonly Comment[]
-  /** Tasks this task depends on. */
-  readonly dependencies: readonly RelatedIssue[]
-  /** Tasks that depend on this task. */
-  readonly dependents: readonly RelatedIssue[]
+/** Node in a task hierarchy tree. */
+export interface TaskTreeNode {
+  /** Task data for this node. */
+  task: Task
+  /** Child nodes (subtasks). */
+  children: TaskTreeNode[]
 }
 
-/** Editable task fields submitted by the task form. */
-export type TaskDraft = {
-  /** Longer task description. */
-  readonly description?: string
-  /** Labels attached to the task. */
-  readonly labels?: readonly string[]
-  /** Priority from zero, highest, through four, lowest. */
-  readonly priority: number
-  /** Workflow status when editing an existing task. */
-  readonly status?: IssueStatus
-  /** Short task title. */
-  readonly title: string
-  /** Task category. */
-  readonly type: IssueType
+/** Response payload for task list endpoints. */
+export interface TasksResponse {
+  /** Whether the request succeeded. */
+  ok: boolean
+  /** Tasks returned from the API. */
+  issues?: Task[]
+  /** Error message when the request fails. */
+  error?: string
 }
 
-/** Minimal browser socket surface used by workspace subscriptions. */
-export type WorkspaceSocket = {
-  /** Register a workspace event listener. */
-  readonly addEventListener: (
-    type: "message",
-    listener: (event: MessageEvent<string>) => void,
-  ) => void
-  /** Close the socket and release resources. */
-  readonly close: () => void
+/** Response payload for task detail endpoints. */
+export interface TaskResponse {
+  /** Whether the request succeeded. */
+  ok: boolean
+  /** Task returned from the API. */
+  issue?: Task
+  /** Error message when the request fails. */
+  error?: string
 }
 
-/** Factory used to open the workspace event socket. */
-export type WorkspaceSocketFactory = (url: string) => WorkspaceSocket
+/** Response payload for delete operations. */
+export interface DeleteResponse {
+  /** Whether the request succeeded. */
+  ok: boolean
+  /** Error message when the request fails. */
+  error?: string
+}
