@@ -50,7 +50,7 @@ describe("TaskPanel", () => {
     })
 
     it("renders progress bar when running with initialTaskCount", () => {
-      render(<TaskPanel tasks={sampleTasks} isRunning initialTaskCount={5} />)
+      render(<TaskPanel tasks={sampleTasks} showProgress initialTaskCount={5} />)
       expect(screen.getByTestId("task-progress-bar")).toBeInTheDocument()
     })
   })

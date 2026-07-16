@@ -18,12 +18,12 @@ function renderProgressBar(config: {
   initialTaskCount: number | null
   accentColor?: string | null
   closedTimeFilter?: ClosedTasksTimeFilter
-  isRunning?: boolean
+  showProgress?: boolean
   className?: string
 }) {
   return render(
     <TaskProgressBar
-      isRunning={config.isRunning ?? true}
+      showProgress={config.showProgress ?? true}
       tasks={config.tasks}
       initialTaskCount={config.initialTaskCount}
       accentColor={config.accentColor ?? null}
@@ -39,7 +39,7 @@ describe("TaskProgressBar", () => {
       const { container } = renderProgressBar({
         tasks: [createTask({ status: "closed" })],
         initialTaskCount: 1,
-        isRunning: false,
+        showProgress: false,
       })
       expect(container.firstChild).toBeNull()
     })

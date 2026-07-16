@@ -447,30 +447,6 @@ describe("TaskCard", () => {
     })
   })
 
-  describe("session indicator", () => {
-    it("displays session history icon when hasSessions is true", () => {
-      render(<TaskCard task={baseTask} hasSessions={true} />)
-      expect(screen.getByLabelText("Has session history")).toBeInTheDocument()
-    })
-
-    it("does not display session history icon when hasSessions is false", () => {
-      render(<TaskCard task={baseTask} hasSessions={false} />)
-      expect(screen.queryByLabelText("Has session history")).not.toBeInTheDocument()
-    })
-
-    it("does not display session history icon by default", () => {
-      render(<TaskCard task={baseTask} />)
-      expect(screen.queryByLabelText("Has session history")).not.toBeInTheDocument()
-    })
-
-    it("session icon has correct styling", () => {
-      const { container } = render(<TaskCard task={baseTask} hasSessions={true} />)
-      const icon = container.querySelector('svg[aria-label="Has session history"]')
-      expect(icon).toHaveClass("text-muted-foreground")
-      expect(icon).toHaveClass("size-3.5")
-    })
-  })
-
   describe("keyboard selection styling", () => {
     it("applies selection style when task is selected", () => {
       beadsViewStore.setState({ selectedTaskId: baseTask.id })

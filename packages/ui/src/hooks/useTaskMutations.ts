@@ -22,7 +22,6 @@ export interface MutationEventMessage {
     issueId?: string
     [key: string]: unknown
   }
-  workspace: string
   timestamp: number
 }
 
@@ -32,8 +31,6 @@ export interface MutationEventMessage {
 export interface UseTaskMutationsOptions {
   /** Enable/disable the WebSocket connection. Defaults to true. */
   enabled?: boolean
-  /** Workspace path to subscribe to. Defaults to configured workspacePath from apiClient. */
-  workspacePath?: string
   /** Callback invoked on mutation events. */
   onMutation?: (event: MutationEventMessage["event"]) => void
 }
@@ -50,9 +47,8 @@ export interface UseTaskMutationsResult {
  * Hook that connects to beads-server WebSocket and refreshes tasks on mutation events.
  *
  * Features:
- * - Connects to beads-server /ws endpoint
- * - Subscribes to workspace for mutation events
- * - Calls store.refreshTasks() on mutation:event messages
+ * - Connects to the fixed-workspace `/api/events` endpoint
+ * - Calls store.refreshTasks() when the workspace changes
  * - Exponential backoff reconnection (1s → 2s → 4s → ... capped at 30s)
  * - StrictMode safety via setTimeout(fn, 0)
  *
@@ -65,7 +61,7 @@ export interface UseTaskMutationsResult {
  * ```
  */
 export function useTaskMutations(options: UseTaskMutationsOptions = {}): UseTaskMutationsResult {
-  const { enabled = true, workspacePath, onMutation } = options
+  const { enabled = true, onMutation } = options
 
   const [isConnected, setIsConnected] = useState(false)
 
@@ -76,16 +72,13 @@ export function useTaskMutations(options: UseTaskMutationsOptions = {}): UseTask
   const intentionalCloseRef = useRef(false)
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Get workspace path from options or fall back to API client config
-  const resolvedWorkspacePath = workspacePath ?? getApiClientConfig().workspacePath
-
   const connect = useCallback(() => {
     // Don't connect if intentionally closed
     if (intentionalCloseRef.current) return
 
     // Build WebSocket URL from API client base URL
     const config = getApiClientConfig()
-    const wsUrl = buildWsUrl(config.baseUrl, "/ws")
+    const wsUrl = buildWsUrl(config.baseUrl, "/api/events")
 
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
@@ -94,23 +87,15 @@ export function useTaskMutations(options: UseTaskMutationsOptions = {}): UseTask
       setIsConnected(true)
       // Reset backoff on successful connection
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY
-
-      // Subscribe to workspace
-      if (resolvedWorkspacePath) {
-        ws.send(
-          JSON.stringify({
-            type: "ws:subscribe_workspace",
-            workspace: resolvedWorkspacePath,
-          }),
-        )
-      }
     }
 
     ws.onmessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data as string) as { type: string; [key: string]: unknown }
 
-        if (message.type === "mutation:event") {
+        if (message.type === "workspace_changed") {
+          beadsViewStore.getState().refreshTasks()
+        } else if (message.type === "mutation:event") {
           const mutationMessage = message as unknown as MutationEventMessage
           // Call onMutation callback if provided
           onMutation?.(mutationMessage.event)
@@ -135,7 +120,7 @@ export function useTaskMutations(options: UseTaskMutationsOptions = {}): UseTask
     ws.onerror = () => {
       // Error will trigger onclose, which handles reconnection
     }
-  }, [resolvedWorkspacePath, onMutation])
+  }, [onMutation])
 
   const scheduleReconnect = useCallback(() => {
     // Clear any existing reconnect timeout
@@ -197,7 +182,7 @@ export function useTaskMutations(options: UseTaskMutationsOptions = {}): UseTask
     return () => {
       disconnect()
     }
-  }, [enabled, resolvedWorkspacePath, connect, disconnect])
+  }, [enabled, connect, disconnect])
 
   return { isConnected }
 }

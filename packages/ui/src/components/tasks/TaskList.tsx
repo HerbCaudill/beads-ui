@@ -37,10 +37,6 @@ export function TaskList({
   persistCollapsedState = true,
   /** Whether tasks are currently loading */
   isLoading = false,
-  /** Task IDs actively being worked on */
-  activelyWorkingTaskIds: activelyWorkingTaskIdsList = [],
-  /** Task IDs with saved sessions */
-  taskIdsWithSessions: taskIdsWithSessionsList = [],
   /** Search query to filter tasks */
   searchQuery = "",
   /** Time filter for closed tasks */
@@ -50,15 +46,6 @@ export function TaskList({
   /** Callback when visible task IDs change */
   onVisibleTaskIdsChange,
 }: TaskListProps) {
-  const activelyWorkingTaskIds = useMemo(
-    () => new Set(activelyWorkingTaskIdsList),
-    [activelyWorkingTaskIdsList],
-  )
-  const taskIdsWithSessions = useMemo(
-    () => new Set(taskIdsWithSessionsList),
-    [taskIdsWithSessionsList],
-  )
-
   // Get collapsed states from store
   const storeStatusCollapsedState = useBeadsViewStore(selectStatusCollapsedState)
   const storeParentCollapsedState = useBeadsViewStore(selectParentCollapsedState)
@@ -256,7 +243,6 @@ export function TaskList({
 
     // Helper to check if a tree contains an actively working task
     const treeHasActiveTask = (node: TaskTreeNode): boolean => {
-      if (activelyWorkingTaskIds.has(node.task.id)) return true
       return node.children.some((child) => treeHasActiveTask(child))
     }
 
@@ -407,7 +393,7 @@ export function TaskList({
     }
 
     return result
-  }, [tasks, closedTimeFilter, searchQuery, activelyWorkingTaskIds])
+  }, [tasks, closedTimeFilter, searchQuery])
 
   const visibleStatusGroups = useMemo(() => {
     return statusGroups.filter((group) => {
@@ -497,8 +483,6 @@ export function TaskList({
       className={className}
       onTaskClick={onTaskClick}
       newTaskIds={newTaskIds}
-      activelyWorkingTaskIds={activelyWorkingTaskIds}
-      taskIdsWithSessions={taskIdsWithSessions}
       collapsedState={parentCollapsedState}
       onToggleCollapse={handleToggleParentGroup}
     />
@@ -548,10 +532,6 @@ export type TaskListProps = {
   persistCollapsedState?: boolean
   /** Whether tasks are currently loading */
   isLoading?: boolean
-  /** Task IDs actively being worked on */
-  activelyWorkingTaskIds?: string[]
-  /** Task IDs with saved sessions */
-  taskIdsWithSessions?: string[]
   /** Search query to filter tasks */
   searchQuery?: string
   /** Time filter for closed tasks */

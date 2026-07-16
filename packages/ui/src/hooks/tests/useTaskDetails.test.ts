@@ -9,11 +9,6 @@ import type { TaskCardTask } from "../../types"
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
-// Mock linkSessionToTask
-vi.mock("../../lib/linkSessionToTask", () => ({
-  linkSessionToTask: vi.fn().mockResolvedValue(undefined),
-}))
-
 describe("useTaskDetails", () => {
   const mockTask: TaskCardTask = {
     id: "task-123",
@@ -620,61 +615,6 @@ describe("useTaskDetails", () => {
       expect(beadsViewStore.getState().getCachedCommentsForTask("task-123", "workspace/a")).toEqual(
         freshComments,
       )
-    })
-
-    it("keeps task comment caches isolated by workspace", async () => {
-      vi.useRealTimers()
-      const commentsA = [
-        {
-          id: 1,
-          issue_id: "task-123",
-          author: "a",
-          text: "workspace a comment",
-          created_at: "2026-02-11T00:00:00Z",
-        },
-      ]
-      const commentsB = [
-        {
-          id: 2,
-          issue_id: "task-123",
-          author: "b",
-          text: "workspace b comment",
-          created_at: "2026-02-11T00:00:01Z",
-        },
-      ]
-
-      beadsViewStore.getState().setCachedCommentsForTask("task-123", commentsA, "workspace/a")
-      beadsViewStore.getState().setCachedCommentsForTask("task-123", commentsB, "workspace/b")
-
-      mockFetch.mockImplementation((url: string) => {
-        if (url.includes("/labels")) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ ok: true, labels: [] }),
-          })
-        }
-        if (url.includes("/comments")) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ ok: true, comments: [] }),
-          })
-        }
-        throw new Error(`Unexpected URL: ${url}`)
-      })
-
-      configureApiClient({ workspacePath: "workspace/a" })
-      const { result, rerender } = renderHook(() => useTaskDetails(defaultOptions))
-
-      await waitFor(() => {
-        expect(result.current.comments).toEqual(commentsA)
-      })
-
-      configureApiClient({ workspacePath: "workspace/b" })
-      rerender()
-
-      await waitFor(() => {
-        expect(result.current.comments).toEqual(commentsB)
-      })
     })
 
     it("updates comment cache after adding a comment", async () => {

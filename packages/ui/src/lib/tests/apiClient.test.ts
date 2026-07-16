@@ -72,29 +72,9 @@ describe("apiClient", () => {
       expect(buildApiUrl("api/tasks")).toBe("http://localhost:3000api/tasks")
     })
 
-    it("appends workspacePath as query parameter", () => {
-      configureApiClient({ workspacePath: "/home/user/project" })
-      expect(buildApiUrl("/api/tasks")).toBe("/api/tasks?workspace=%2Fhome%2Fuser%2Fproject")
-    })
-
-    it("appends workspaceId as query parameter", () => {
-      configureApiClient({ workspaceId: "herbcaudill/ralph" })
-      expect(buildApiUrl("/api/tasks")).toBe("/api/tasks?workspace=herbcaudill%2Fralph")
-    })
-
-    it("prefers workspaceId over workspacePath", () => {
-      configureApiClient({
-        workspaceId: "herbcaudill/ralph",
-        workspacePath: "/home/user/project",
-      })
-      expect(buildApiUrl("/api/tasks")).toBe("/api/tasks?workspace=herbcaudill%2Fralph")
-    })
-
-    it("uses & separator when path already has query params", () => {
-      configureApiClient({ workspaceId: "herbcaudill/ralph" })
-      expect(buildApiUrl("/api/tasks?status=open")).toBe(
-        "/api/tasks?status=open&workspace=herbcaudill%2Fralph",
-      )
+    it("never exposes a legacy workspace path in the URL", () => {
+      configureApiClient({ workspacePath: "/home/user/project" } as never)
+      expect(buildApiUrl("/api/tasks")).toBe("/api/tasks")
     })
   })
 

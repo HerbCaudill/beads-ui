@@ -2,7 +2,7 @@ import { cn } from "../../lib/cn"
 import { forwardRef, useCallback, useState, useEffect, useMemo } from "react"
 import { useBeadsViewStore, selectSelectedTaskId, selectAccentColor } from "../../store"
 import { DEFAULT_ACCENT_COLOR } from "../../constants"
-import { IconChevronDown, IconHistory, IconTrash } from "@tabler/icons-react"
+import { IconChevronDown, IconTrash } from "@tabler/icons-react"
 import { TaskCardCompact, statusConfig } from "./TaskCardCompact"
 import type { Task } from "../../types"
 
@@ -27,10 +27,6 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(function TaskC
     onToggleCollapse,
     /** Number of subtasks for this task */
     subtaskCount = 0,
-    /** Whether this task is actively being worked on */
-    isActivelyWorking = false,
-    /** Whether this task has saved session event logs */
-    hasSessions = false,
     /** Callback to remove this task (e.g., from a relationship) */
     onRemove,
     ...props
@@ -196,15 +192,6 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(function TaskC
                 {subtaskCount}
               </span>
             )}
-
-            {/* Session indicator - shows when task has saved event logs */}
-            {hasSessions && (
-              <IconHistory
-                className="text-muted-foreground size-3.5 shrink-0"
-                title="Has session history"
-                aria-label="Has session history"
-              />
-            )}
           </TaskCardCompact>
         </div>
 
@@ -244,10 +231,6 @@ export type TaskCardProps = Omit<React.HTMLAttributes<HTMLDivElement>, "onClick"
   onToggleCollapse?: () => void
   /** Number of subtasks for epic tasks */
   subtaskCount?: number
-  /** Whether this task is actively being worked on by a running instance */
-  isActivelyWorking?: boolean
-  /** Whether this task has saved session event logs */
-  hasSessions?: boolean
   /** Callback to remove this task (e.g., from a relationship). Shows trash icon on hover when set. */
   onRemove?: (id: string) => void
 }

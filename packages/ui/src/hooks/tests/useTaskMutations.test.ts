@@ -76,7 +76,7 @@ describe("useTaskMutations", () => {
     beadsViewStore.setState({ tasks: [] })
 
     // Configure API client with base URL
-    configureApiClient({ baseUrl: "http://localhost:4243", workspacePath: mockWorkspace })
+    configureApiClient({ baseUrl: "http://localhost:4243" })
   })
 
   afterEach(() => {
@@ -94,10 +94,10 @@ describe("useTaskMutations", () => {
       })
 
       expect(MockWebSocket.instances).toHaveLength(1)
-      expect(MockWebSocket.lastInstance?.url).toBe("ws://localhost:4243/ws")
+      expect(MockWebSocket.lastInstance?.url).toBe("ws://localhost:4243/api/events")
     })
 
-    it("subscribes to workspace on connection", () => {
+    it("does not send a workspace subscription", () => {
       renderHook(() => useTaskMutations())
 
       act(() => {
@@ -107,31 +107,7 @@ describe("useTaskMutations", () => {
       const ws = MockWebSocket.lastInstance!
       ws.simulateOpen()
 
-      expect(ws.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          type: "ws:subscribe_workspace",
-          workspace: mockWorkspace,
-        }),
-      )
-    })
-
-    it("accepts custom workspacePath option", () => {
-      const customPath = "/custom/workspace"
-      renderHook(() => useTaskMutations({ workspacePath: customPath }))
-
-      act(() => {
-        vi.advanceTimersByTime(0)
-      })
-
-      const ws = MockWebSocket.lastInstance!
-      ws.simulateOpen()
-
-      expect(ws.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          type: "ws:subscribe_workspace",
-          workspace: customPath,
-        }),
-      )
+      expect(ws.send).not.toHaveBeenCalled()
     })
 
     it("closes connection on unmount", () => {
@@ -189,6 +165,17 @@ describe("useTaskMutations", () => {
   })
 
   describe("mutation handling", () => {
+    it("calls refreshTasks when the fixed workspace changes", () => {
+      const refreshTasksSpy = vi.spyOn(beadsViewStore.getState(), "refreshTasks")
+
+      renderHook(() => useTaskMutations())
+      act(() => vi.advanceTimersByTime(0))
+      const ws = MockWebSocket.lastInstance!
+      act(() => ws.simulateMessage({ type: "workspace_changed" }))
+
+      expect(refreshTasksSpy).toHaveBeenCalled()
+    })
+
     it("calls refreshTasks on mutation:event message", async () => {
       const refreshTasksSpy = vi.spyOn(beadsViewStore.getState(), "refreshTasks")
 
@@ -554,52 +541,6 @@ describe("useTaskMutations", () => {
 
       // Should not have created a connection
       expect(MockWebSocket.instances).toHaveLength(0)
-    })
-  })
-
-  describe("workspace changes", () => {
-    it("reconnects when workspace changes", () => {
-      const { rerender } = renderHook(({ workspacePath }) => useTaskMutations({ workspacePath }), {
-        initialProps: { workspacePath: "/workspace/a" },
-      })
-
-      act(() => {
-        vi.advanceTimersByTime(0)
-      })
-
-      const ws1 = MockWebSocket.lastInstance!
-      act(() => {
-        ws1.simulateOpen()
-      })
-
-      expect(ws1.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          type: "ws:subscribe_workspace",
-          workspace: "/workspace/a",
-        }),
-      )
-
-      rerender({ workspacePath: "/workspace/b" })
-
-      act(() => {
-        vi.advanceTimersByTime(0)
-      })
-
-      // Should have closed old connection and opened new one
-      expect(ws1.close).toHaveBeenCalled()
-      expect(MockWebSocket.instances.length).toBeGreaterThan(1)
-
-      const ws2 = MockWebSocket.lastInstance!
-      act(() => {
-        ws2.simulateOpen()
-      })
-
-      expect(ws2.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          type: "ws:subscribe_workspace",
-          workspace: "/workspace/b",
-        }),
-      )
     })
   })
 })

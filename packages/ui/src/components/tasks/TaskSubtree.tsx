@@ -16,10 +16,6 @@ export function TaskSubtree({
   onTaskClick,
   /** Set of task IDs that are newly added (for animation) */
   newTaskIds,
-  /** Set of task IDs that are actively being worked on */
-  activelyWorkingTaskIds,
-  /** Set of task IDs that have saved sessions */
-  taskIdsWithSessions,
   /** Record of collapsed state by task ID */
   collapsedState,
   /** Callback to toggle collapse state for a task */
@@ -47,8 +43,6 @@ export function TaskSubtree({
         isCollapsed={hasChildren ? isCollapsed : undefined}
         onToggleCollapse={hasChildren ? () => onToggleCollapse(task.id) : undefined}
         subtaskCount={descendantCount}
-        isActivelyWorking={activelyWorkingTaskIds.has(task.id)}
-        hasSessions={taskIdsWithSessions?.has(task.id) ?? false}
         onRemove={onRemove}
         className={cn(paddingClass)}
       />
@@ -61,8 +55,6 @@ export function TaskSubtree({
               depth={depth + 1}
               onTaskClick={onTaskClick}
               newTaskIds={newTaskIds}
-              activelyWorkingTaskIds={activelyWorkingTaskIds}
-              taskIdsWithSessions={taskIdsWithSessions}
               collapsedState={collapsedState}
               onToggleCollapse={onToggleCollapse}
               onRemove={onRemove}
@@ -106,10 +98,6 @@ export interface TaskSubtreeProps {
   onTaskClick?: (id: string) => void
   /** Set of task IDs that are newly added */
   newTaskIds: Set<string>
-  /** Set of task IDs that are actively being worked on */
-  activelyWorkingTaskIds: Set<string>
-  /** Set of task IDs that have saved sessions */
-  taskIdsWithSessions?: Set<string>
   /** Record of collapsed state by task ID */
   collapsedState: Record<string, boolean>
   /** Callback to toggle collapse state */

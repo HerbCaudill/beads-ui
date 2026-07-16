@@ -68,14 +68,14 @@ export const WithManyTasks: Story = {
 export const WhenStopped: Story = {
   args: {
     tasks: sampleTasks,
-    isRunning: false,
+    showProgress: false,
   },
 }
 
 export const WithProgressBar: Story = {
   args: {
     tasks: sampleTasks,
-    isRunning: true,
+    showProgress: true,
     initialTaskCount: 5,
     accentColor: "#3b82f6",
   },
@@ -197,11 +197,11 @@ export const SearchWithQueryAndClear: Story = {
   },
 }
 
-/** Verifies that the progress bar is rendered when isRunning and initialTaskCount are set. */
+/** Verifies that the progress bar is rendered when showProgress and initialTaskCount are set. */
 export const ProgressBarVisible: Story = {
   args: {
     tasks: sampleTasks,
-    isRunning: true,
+    showProgress: true,
     initialTaskCount: 5,
     accentColor: "#3b82f6",
   },
@@ -222,7 +222,7 @@ export const AllSectionsRenderedInOrder: Story = {
   ),
   args: {
     tasks: sampleTasks,
-    isRunning: true,
+    showProgress: true,
     initialTaskCount: 5,
     accentColor: "#3b82f6",
   },

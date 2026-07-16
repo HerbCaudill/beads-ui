@@ -43,7 +43,7 @@ const createTasks = (open: number, closed: number): TaskCardTask[] => {
 /** Helper to create story args with consistent task/initialTaskCount pairing. */
 const progressArgs = (open: number, closed: number) => {
   const tasks = createTasks(open, closed)
-  return { isRunning: true, tasks, initialTaskCount: tasks.length }
+  return { showProgress: true, tasks, initialTaskCount: tasks.length }
 }
 
 export const NoProgress: Story = {
@@ -75,7 +75,7 @@ export const WhenPaused: Story = {
 }
 
 export const WhenStopped: Story = {
-  args: { ...progressArgs(5, 5), isRunning: false },
+  args: { ...progressArgs(5, 5), showProgress: false },
 }
 
 export const SingleTask: Story = {
@@ -87,5 +87,5 @@ export const ManyTasks: Story = {
 }
 
 export const NoTasks: Story = {
-  args: { isRunning: true, tasks: [], initialTaskCount: 0 },
+  args: { showProgress: true, tasks: [], initialTaskCount: 0 },
 }

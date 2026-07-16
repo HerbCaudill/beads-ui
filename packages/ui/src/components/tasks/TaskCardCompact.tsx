@@ -53,7 +53,7 @@ export function TaskCardCompact({
         {task.title}
       </span>
 
-      {/* Optional extra content (e.g. subtask count, session indicator) */}
+      {/* Optional extra content such as a subtask count. */}
       {children}
 
       {/* Spacer */}
@@ -154,7 +154,7 @@ export type TaskCardCompactProps = {
   className?: string
   /** Whether to render the status icon (default true). Set false when the caller renders its own interactive status element. */
   showStatusIcon?: boolean
-  /** Extra content rendered between the title and the right-aligned badges (e.g. subtask count, session indicator). */
+  /** Extra content rendered between the title and the right-aligned badges. */
   children?: React.ReactNode
 }
 

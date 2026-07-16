@@ -17,7 +17,6 @@ export function TaskDetailsController({
   onDelete,
   readOnly = false,
   renderDescriptionEditor,
-  renderSessionLinks,
 }: TaskDetailsControllerProps) {
   const {
     formValues,
@@ -94,7 +93,6 @@ export function TaskDetailsController({
       onConfirmDelete={confirmDelete}
       onClose={handleClose}
       renderDescriptionEditor={renderDescriptionEditor}
-      renderSessionLinks={renderSessionLinks}
     />
   )
 }
@@ -130,7 +128,4 @@ export type TaskDetailsControllerProps = {
     /** Placeholder text */
     placeholder?: string
   }) => ReactNode
-
-  /** Optional renderer for session links */
-  renderSessionLinks?: (taskId: string) => ReactNode
 }

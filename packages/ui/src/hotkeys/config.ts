@@ -67,8 +67,6 @@ export type BeadsHotkeyAction =
   | "nextTask"
   | "openTask"
   | "showHotkeys"
-  | "previousWorkspace"
-  | "nextWorkspace"
 
 export type HotkeysConfig = Record<BeadsHotkeyAction, HotkeyConfig>
 

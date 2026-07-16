@@ -18,7 +18,7 @@ const TASK_B: Task = {
   status: "open",
 }
 
-describe("createBeadsViewStore workspace cache", () => {
+describe("createBeadsViewStore", () => {
   beforeEach(() => {
     localStorage.clear()
     configureApiClient({})
@@ -90,26 +90,7 @@ describe("createBeadsViewStore workspace cache", () => {
     expect(persisted.state?.commentCacheByWorkspaceTask).toBeUndefined()
   })
 
-  it("hydrates tasks for the selected workspace from in-memory cache", () => {
-    const store = createBeadsViewStore()
-
-    // Simulate populating two workspaces via setTasks
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace/a")
-    store.getState().setTasks([TASK_A])
-
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace/b")
-    store.getState().setTasks([TASK_B])
-
-    // Switch back to workspace A via hydration
-    store.getState().hydrateTasksForWorkspace("workspace/a")
-    expect(store.getState().tasks).toEqual([TASK_A])
-
-    // Switch to workspace B
-    store.getState().hydrateTasksForWorkspace("workspace/b")
-    expect(store.getState().tasks).toEqual([TASK_B])
-  })
-
-  it("writes refresh results into the in-memory workspace cache", async () => {
+  it("writes refresh results into the fixed workspace task list", async () => {
     vi.useFakeTimers()
     localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace/a")
     const fetchMock = vi.fn().mockResolvedValue({
@@ -123,13 +104,10 @@ describe("createBeadsViewStore workspace cache", () => {
 
     await vi.advanceTimersByTimeAsync(100)
 
-    // Tasks should be updated
     expect(store.getState().tasks).toEqual([TASK_A])
-    // In-memory cache should have the workspace entry
-    expect(store.getState().taskCacheByWorkspace["workspace/a"]).toEqual([TASK_A])
   })
 
-  it("caches comments by workspace and task ID in memory", () => {
+  it("keeps one comment cache per task regardless of legacy workspace arguments", () => {
     const store = createBeadsViewStore()
     const commentsA = [
       {
@@ -153,7 +131,7 @@ describe("createBeadsViewStore workspace cache", () => {
     store.getState().setCachedCommentsForTask("task-123", commentsA, "workspace/a")
     store.getState().setCachedCommentsForTask("task-123", commentsB, "workspace/b")
 
-    expect(store.getState().getCachedCommentsForTask("task-123", "workspace/a")).toEqual(commentsA)
+    expect(store.getState().getCachedCommentsForTask("task-123", "workspace/a")).toEqual(commentsB)
     expect(store.getState().getCachedCommentsForTask("task-123", "workspace/b")).toEqual(commentsB)
 
     // Comments should NOT be persisted to localStorage

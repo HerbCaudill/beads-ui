@@ -1,31 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useBeadsViewStore, selectIssuePrefix, selectTasks } from "../store"
-import { linkSessionToTask } from "../lib/linkSessionToTask"
-import { apiFetch, getApiClientConfig } from "../lib/apiClient"
+import { apiFetch } from "../lib/apiClient"
 import type { Task, TaskStatus, TaskUpdateData, Comment } from "../types"
-
-/** LocalStorage key used for the selected workspace path. */
-const WORKSPACE_STORAGE_KEY = "ralph-workspace-path"
-
-/** Fallback workspace key used when no workspace is configured. */
-const DEFAULT_WORKSPACE_CACHE_KEY = "__default__"
-
-/**
- * Get the active workspace cache key for comment hydration.
- */
-function getActiveWorkspaceCacheKey(): string {
-  try {
-    const savedWorkspacePath = localStorage.getItem(WORKSPACE_STORAGE_KEY)
-    if (savedWorkspacePath?.trim()) return savedWorkspacePath.trim()
-  } catch {
-    // Ignore storage errors.
-  }
-
-  const config = getApiClientConfig()
-  if (config.workspaceId?.trim()) return config.workspaceId.trim()
-  if (config.workspacePath?.trim()) return config.workspacePath.trim()
-  return DEFAULT_WORKSPACE_CACHE_KEY
-}
 
 /**
  * Hook to manage task details form state and API interactions.
@@ -34,13 +10,12 @@ export function useTaskDetails(
   /** Task details configuration. */
   options: UseTaskDetailsOptions,
 ): UseTaskDetailsResult {
-  const { task, open, readOnly = false, onSave, onDelete, onClose, currentSessionId } = options
+  const { task, open, readOnly = false, onSave, onDelete, onClose } = options
 
   const issuePrefix = useBeadsViewStore(selectIssuePrefix)
   const allTasks = useBeadsViewStore(selectTasks)
   const getCachedCommentsForTask = useBeadsViewStore((state) => state.getCachedCommentsForTask)
   const setCachedCommentsForTask = useBeadsViewStore((state) => state.setCachedCommentsForTask)
-  const activeWorkspaceCacheKey = getActiveWorkspaceCacheKey()
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -82,7 +57,7 @@ export function useTaskDetails(
           console.error("Failed to fetch labels:", err)
         })
 
-      const cachedComments = getCachedCommentsForTask(task.id, activeWorkspaceCacheKey)
+      const cachedComments = getCachedCommentsForTask(task.id)
       setComments(cachedComments)
       setIsLoadingComments(true)
       setCommentsError(null)
@@ -91,7 +66,7 @@ export function useTaskDetails(
         .then((data: { ok: boolean; comments?: Comment[]; error?: string }) => {
           if (data.ok && data.comments) {
             setComments(data.comments)
-            setCachedCommentsForTask(task.id, data.comments, activeWorkspaceCacheKey)
+            setCachedCommentsForTask(task.id, data.comments)
           } else {
             setCommentsError(data.error || "Failed to load comments")
           }
@@ -104,7 +79,7 @@ export function useTaskDetails(
           setIsLoadingComments(false)
         })
     }
-  }, [task, open, getCachedCommentsForTask, setCachedCommentsForTask, activeWorkspaceCacheKey])
+  }, [task, open, getCachedCommentsForTask, setCachedCommentsForTask])
 
   useEffect(() => {
     const taskId = task?.id ?? null
@@ -179,11 +154,6 @@ export function useTaskDetails(
 
       setIsSaving(true)
       try {
-        const isClosing = currentValues.status === "closed" && lastSaved.status !== "closed"
-        if (isClosing) {
-          await linkSessionToTask(task.id, currentSessionId ?? null)
-        }
-
         await onSave(task.id, updates)
         lastSavedRef.current = { ...currentValues }
       } catch (error) {
@@ -192,7 +162,7 @@ export function useTaskDetails(
         setIsSaving(false)
       }
     },
-    [task, onSave, readOnly, currentSessionId],
+    [task, onSave, readOnly],
   )
 
   const scheduleAutosave = useCallback(
@@ -377,7 +347,7 @@ export function useTaskDetails(
           }
           if (commentsData.ok && commentsData.comments) {
             setComments(commentsData.comments)
-            setCachedCommentsForTask(task.id, commentsData.comments, activeWorkspaceCacheKey)
+            setCachedCommentsForTask(task.id, commentsData.comments)
           }
         } else {
           throw new Error(data.error || "Failed to add comment")
@@ -387,7 +357,7 @@ export function useTaskDetails(
         throw err
       }
     },
-    [task, readOnly, setCachedCommentsForTask, activeWorkspaceCacheKey],
+    [task, readOnly, setCachedCommentsForTask],
   )
 
   return {
@@ -438,8 +408,6 @@ export interface UseTaskDetailsOptions {
   onDelete?: (id: string) => void | Promise<void>
   /** Callback when close is triggered. */
   onClose: () => void
-  /** Current session ID for linking to tasks when closed (optional). */
-  currentSessionId?: string | null
 }
 
 export interface TaskFormValues {

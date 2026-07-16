@@ -17,15 +17,13 @@ export function TaskPanel({
   tasks = [],
   onTaskClick,
   isLoading = false,
-  activelyWorkingTaskIds,
-  taskIdsWithSessions,
   searchQuery,
   closedTimeFilter,
   onClosedTimeFilterChange,
   onVisibleTaskIdsChange,
   showQuickInput = false,
   onTaskCreated,
-  isRunning = false,
+  showProgress = false,
   progressTasks,
   initialTaskCount = null,
   accentColor = null,
@@ -56,8 +54,6 @@ export function TaskPanel({
           tasks={tasks}
           onTaskClick={onTaskClick}
           isLoading={isLoading}
-          activelyWorkingTaskIds={activelyWorkingTaskIds}
-          taskIdsWithSessions={taskIdsWithSessions}
           searchQuery={searchQuery}
           closedTimeFilter={closedTimeFilter}
           onClosedTimeFilterChange={onClosedTimeFilterChange}
@@ -66,7 +62,7 @@ export function TaskPanel({
       </div>
 
       <TaskProgressBar
-        isRunning={isRunning}
+        showProgress={showProgress}
         tasks={progressTasks ?? tasks}
         initialTaskCount={initialTaskCount}
         accentColor={accentColor}
@@ -84,10 +80,6 @@ export type TaskPanelProps = {
   onTaskClick?: (id: string) => void
   /** Whether tasks are currently loading */
   isLoading?: boolean
-  /** Task IDs actively being worked on */
-  activelyWorkingTaskIds?: string[]
-  /** Task IDs with saved sessions */
-  taskIdsWithSessions?: string[]
   /** Search query to filter tasks */
   searchQuery?: string
   /** Time filter for closed tasks */
@@ -102,8 +94,8 @@ export type TaskPanelProps = {
   /** Callback when a new task is created via the quick input */
   onTaskCreated?: (issue: CreatedIssue) => void
 
-  /** Whether Ralph is running (controls progress bar visibility) */
-  isRunning?: boolean
+  /** Whether to show the progress summary */
+  showProgress?: boolean
   /** Tasks used for progress calculation (defaults to `tasks` if omitted) */
   progressTasks?: Task[]
   /** Initial task count for progress bar (hidden when null) */

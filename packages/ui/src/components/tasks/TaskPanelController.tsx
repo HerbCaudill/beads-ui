@@ -16,15 +16,13 @@ import type { ClosedTasksTimeFilter } from "../../types"
  * Controller component for TaskPanel.
  *
  * Connects data hooks to the TaskPanel presentational component.
- * Handles task loading and wires up the session history and progress bar.
+ * Handles task loading and wires up the progress bar.
  */
 export function TaskPanelController({
   searchInputRef,
   onTaskClick,
   onOpenTask,
-  activelyWorkingTaskIds,
-  taskIdsWithSessions,
-  isRunning = false,
+  showProgress = false,
   isLoadingExternal = false,
   hideQuickInput = true,
 }: TaskPanelControllerProps) {
@@ -57,15 +55,13 @@ export function TaskPanelController({
       tasks={tasks}
       onTaskClick={onTaskClick}
       isLoading={isLoading}
-      activelyWorkingTaskIds={activelyWorkingTaskIds}
-      taskIdsWithSessions={taskIdsWithSessions}
       searchQuery={searchQuery}
       closedTimeFilter={closedTimeFilter}
       onClosedTimeFilterChange={handleClosedTimeFilterChange}
       onVisibleTaskIdsChange={handleVisibleTaskIdsChange}
       showQuickInput={!hideQuickInput}
       onTaskCreated={handleTaskCreated}
-      isRunning={isRunning}
+      showProgress={showProgress}
       progressTasks={allStoreTasks}
       initialTaskCount={initialTaskCount}
       accentColor={accentColor}
@@ -83,13 +79,9 @@ export interface TaskPanelControllerProps {
   onTaskClick?: (taskId: string) => void
   /** Handler when a task should be opened */
   onOpenTask?: (taskId: string) => void
-  /** Task IDs actively being worked on */
-  activelyWorkingTaskIds?: string[]
-  /** Task IDs with saved sessions */
-  taskIdsWithSessions?: string[]
-  /** Whether to show progress (host decides if Ralph is running). */
-  isRunning?: boolean
-  /** External loading state (e.g., when workspace is switching). */
+  /** Whether to show the progress summary. */
+  showProgress?: boolean
+  /** External loading state supplied by the host application. */
   isLoadingExternal?: boolean
   /** Hide quick task input */
   hideQuickInput?: boolean

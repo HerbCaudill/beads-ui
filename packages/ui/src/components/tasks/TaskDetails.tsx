@@ -66,7 +66,6 @@ export function TaskDetails({
   onConfirmDelete,
   onClose,
   renderDescriptionEditor,
-  renderSessionLinks,
 }: TaskDetailsProps) {
   // Label input ref
   const labelInputRef = useRef<HTMLInputElement>(null)
@@ -474,9 +473,6 @@ export function TaskDetails({
           </div>
         </div>
 
-        {/* Session Links - links to session logs for this task */}
-        {renderSessionLinks ? renderSessionLinks(task.id) : null}
-
         {/* Related Tasks (text list - children and blockers) */}
         <RelatedTasks
           taskId={task.id}
@@ -759,8 +755,6 @@ export type TaskDetailsProps = {
   onClose: () => void
   /** Optional custom renderer for the description editor */
   renderDescriptionEditor?: (options: DescriptionEditorOptions) => ReactNode
-  /** Optional renderer for session links */
-  renderSessionLinks?: (taskId: string) => ReactNode
 }
 
 /** Options for rendering a custom description editor. */

@@ -12,8 +12,6 @@ export function GroupedTaskList({
   className,
   onTaskClick,
   newTaskIds = EMPTY_SET,
-  activelyWorkingTaskIds = EMPTY_SET,
-  taskIdsWithSessions = EMPTY_SET,
   collapsedState = {},
   onToggleCollapse = noop,
   emptyMessage = "No tasks in this group",
@@ -40,8 +38,6 @@ export function GroupedTaskList({
                     depth={0}
                     onTaskClick={onTaskClick}
                     newTaskIds={newTaskIds}
-                    activelyWorkingTaskIds={activelyWorkingTaskIds}
-                    taskIdsWithSessions={taskIdsWithSessions}
                     collapsedState={collapsedState}
                     onToggleCollapse={onToggleCollapse}
                     onRemove={group.onRemove}
@@ -97,10 +93,6 @@ export type GroupedTaskListProps = {
   onTaskClick?: (id: string) => void
   /** Set of task IDs that are newly added (for animation). */
   newTaskIds?: Set<string>
-  /** Set of task IDs actively being worked on. */
-  activelyWorkingTaskIds?: Set<string>
-  /** Set of task IDs with saved sessions. */
-  taskIdsWithSessions?: Set<string>
   /** Record of collapsed state by task ID (for parent groups within trees). */
   collapsedState?: Record<string, boolean>
   /** Callback to toggle collapse state for a parent task. */

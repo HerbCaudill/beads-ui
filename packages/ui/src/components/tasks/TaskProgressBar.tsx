@@ -8,11 +8,11 @@ import type { Task, ClosedTasksTimeFilter } from "../../types"
  * Displays a progress bar with closed tasks / total visible tasks.
  * The denominator uses the number of non-epic tasks visible in the sidebar
  * after applying the closed tasks time filter.
- * Only visible when Ralph is running.
+ * Visible when progress is enabled.
  */
 export function TaskProgressBar({
   className,
-  isRunning = false,
+  showProgress = false,
   tasks = [],
   initialTaskCount = null,
   accentColor = null,
@@ -20,7 +20,7 @@ export function TaskProgressBar({
 }: TaskProgressBarProps) {
   const progressColor = accentColor ?? DEFAULT_ACCENT_COLOR
 
-  if (!isRunning || initialTaskCount === null) return null
+  if (!showProgress || initialTaskCount === null) return null
 
   const closedCutoff = getTimeFilterCutoff(closedTimeFilter)
 
@@ -71,8 +71,8 @@ export function TaskProgressBar({
 
 export type TaskProgressBarProps = {
   className?: string
-  /** Whether to show progress (host decides if Ralph is running). */
-  isRunning?: boolean
+  /** Whether to show the progress summary. */
+  showProgress?: boolean
   /** All tasks to calculate progress from. */
   tasks?: Task[]
   /** Initial task count (progress is hidden when null). */

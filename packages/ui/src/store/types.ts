@@ -11,8 +11,6 @@ export interface BeadsViewState {
   initialTaskCount: number | null
   /** Tasks loaded from beads. */
   tasks: Task[]
-  /** Persisted task caches keyed by workspace ID/path. */
-  taskCacheByWorkspace: Record<string, Task[]>
   /** Task search query string. */
   taskSearchQuery: string
   /** Selected task ID for keyboard navigation. */
@@ -29,8 +27,8 @@ export interface BeadsViewState {
   taskInputDraft: string
   /** Draft comments keyed by task ID. */
   commentDrafts: Record<string, string>
-  /** Cached task comments keyed by `workspace::taskId`. */
-  commentCacheByWorkspaceTask: Record<string, Comment[]>
+  /** Cached task comments keyed by task ID. */
+  commentCacheByTask: Record<string, Comment[]>
 }
 
 /** Beads-view store actions. */
@@ -47,8 +45,6 @@ export interface BeadsViewActions {
   removeTask: (id: string) => void
   /** Clear all tasks. */
   clearTasks: () => void
-  /** Hydrate tasks from cache for a workspace ID/path. */
-  hydrateTasksForWorkspace: (workspacePath?: string) => void
   /** Refresh tasks from the API (debounced). */
   refreshTasks: () => void
   /** Set the task search query. */
@@ -79,10 +75,10 @@ export interface BeadsViewActions {
   setCommentDraft: (taskId: string, draft: string) => void
   /** Clear a comment draft for a task. */
   clearCommentDraft: (taskId: string) => void
-  /** Read cached comments for a task in a workspace. */
-  getCachedCommentsForTask: (taskId: string, workspacePath?: string) => Comment[]
-  /** Cache comments for a task in a workspace. */
-  setCachedCommentsForTask: (taskId: string, comments: Comment[], workspacePath?: string) => void
+  /** Read cached comments for a task. */
+  getCachedCommentsForTask: (taskId: string) => Comment[]
+  /** Cache comments for a task. */
+  setCachedCommentsForTask: (taskId: string, comments: Comment[]) => void
 }
 
 /** Combined beads-view store shape. */
