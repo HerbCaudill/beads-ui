@@ -11,3 +11,4 @@ test-results/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+node_modules
