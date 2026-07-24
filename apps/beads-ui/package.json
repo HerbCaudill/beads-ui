@@ -4,6 +4,11 @@
   "description": "A polished local web UI for Beads tasks",
   "license": "MIT",
   "author": "Herb Caudill",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HerbCaudill/beads-ui.git",
+    "directory": "apps/beads-ui"
+  },
   "bin": {
     "beads-ui": "dist/cli.js"
   },

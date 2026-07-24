@@ -48,12 +48,8 @@ The packed test creates a tarball, installs it in a clean temporary project, lau
 
 Only `@herbcaudill/beads-ui` is public. The other workspace packages have `private: true`, and the tarball contains their bundled runtime code rather than `workspace:*` dependencies.
 
-After CI passes and the package version is updated, authenticate npm through a trusted publisher or an automation token, then run:
+Publishing uses npm trusted publishing from `.github/workflows/publish.yml`. After CI passes and the package version is updated, create a non-prerelease GitHub release with a tag matching the package version, such as `v0.1.3`. The workflow verifies, builds, packs, and publishes the package under `latest` using short-lived OIDC credentials.
 
-```bash
-pnpm build
-pnpm tsx apps/beads-ui/scripts/test-packed.ts
-pnpm --filter @herbcaudill/beads-ui publish --access public --provenance
-```
+Configure the npm package's trusted publisher for the `HerbCaudill/beads-ui` repository, the `publish.yml` workflow, and the `npm publish` action. The workflow requires no npm token and publishes provenance automatically.
 
-Run the publish command from GitHub Actions when possible. npm provenance then links the package to the workflow and source commit. Do not publish any package under `packages/`.
+Do not publish any package under `packages/`.
