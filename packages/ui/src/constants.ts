@@ -18,3 +18,15 @@ export const TASK_LIST_PARENT_STORAGE_KEY = "ralph-ui-task-list-parent-collapsed
 
 /** localStorage key for closed tasks time filter setting. */
 export const TASK_LIST_CLOSED_FILTER_STORAGE_KEY = "ralph-ui-task-list-closed-filter"
+
+/** Default task list sidebar width in pixels. */
+export const TASK_LIST_SIDEBAR_DEFAULT_WIDTH = 368
+
+/** Minimum task list sidebar width in pixels. */
+export const TASK_LIST_SIDEBAR_MIN_WIDTH = 280
+
+/** Maximum task list sidebar width in pixels. */
+export const TASK_LIST_SIDEBAR_MAX_WIDTH = 640
+
+/** Task list sidebar keyboard resize step in pixels. */
+export const TASK_LIST_SIDEBAR_KEYBOARD_STEP = 16

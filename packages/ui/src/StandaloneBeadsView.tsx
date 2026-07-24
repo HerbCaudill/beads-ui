@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { HotkeysDialog } from "./components/HotkeysDialog"
+import { ResizableSidebar } from "./components/ResizableSidebar"
 import { EmptyTaskState } from "./components/tasks/EmptyTaskState"
 import {
   TaskDetailsController,
@@ -65,7 +66,7 @@ export function StandaloneBeadsView(_props: Props) {
 
   return (
     <div className="bg-background text-foreground flex h-dvh min-h-0 overflow-hidden">
-      <aside className="border-border w-[23rem] shrink-0 border-r">
+      <ResizableSidebar>
         <TaskPanelController
           searchInputRef={searchInputRef}
           onTaskClick={openTask}
@@ -73,7 +74,7 @@ export function StandaloneBeadsView(_props: Props) {
           hideQuickInput={false}
           showProgress
         />
-      </aside>
+      </ResizableSidebar>
       <main className="min-w-0 flex-1 overflow-y-auto">
         {taskDialog.selectedTask ? (
           <TaskDetailsController

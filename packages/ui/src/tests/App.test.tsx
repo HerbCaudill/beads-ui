@@ -70,4 +70,43 @@ describe("App", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("bd list failed")
   })
+
+  it("resizes the task list sidebar by dragging its separator", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ ok: true, issues: [] })),
+    )
+    vi.stubGlobal("WebSocket", FakeWebSocket)
+    vi.stubGlobal("PointerEvent", MouseEvent)
+
+    render(<App />)
+
+    const sidebar = screen.getByRole("complementary", { name: "Task list sidebar" })
+    const separator = screen.getByRole("separator", { name: "Resize task list sidebar" })
+
+    expect(sidebar).toHaveStyle({ width: "368px" })
+
+    fireEvent.pointerDown(separator, { clientX: 368 })
+    fireEvent.pointerMove(window, { clientX: 468 })
+    fireEvent.pointerUp(window)
+
+    expect(sidebar).toHaveStyle({ width: "468px" })
+  })
+
+  it("resizes the task list sidebar with arrow keys", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ ok: true, issues: [] })),
+    )
+    vi.stubGlobal("WebSocket", FakeWebSocket)
+
+    render(<App />)
+
+    const sidebar = screen.getByRole("complementary", { name: "Task list sidebar" })
+    const separator = screen.getByRole("separator", { name: "Resize task list sidebar" })
+
+    fireEvent.keyDown(separator, { key: "ArrowRight" })
+
+    expect(sidebar).toHaveStyle({ width: "384px" })
+  })
 })

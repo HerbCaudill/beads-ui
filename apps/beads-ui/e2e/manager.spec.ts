@@ -18,6 +18,20 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
   await expect(page.getByRole("textbox", { name: "New task title" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
 
+  const sidebar = page.getByRole("complementary", { name: "Task list sidebar" })
+  const separator = page.getByRole("separator", { name: "Resize task list sidebar" })
+  const separatorBox = await separator.boundingBox()
+  if (!separatorBox) throw new Error("Task list sidebar separator is not visible")
+
+  await page.mouse.move(
+    separatorBox.x + separatorBox.width / 2,
+    separatorBox.y + separatorBox.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(separatorBox.x + separatorBox.width / 2 + 100, separatorBox.y + 100)
+  await page.mouse.up()
+  await expect(sidebar).toHaveCSS("width", "468px")
+
   await page.getByRole("textbox", { name: "Search tasks" }).fill("Packaged")
   await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
   await page.getByRole("textbox", { name: "Search tasks" }).clear()
