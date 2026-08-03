@@ -100,7 +100,7 @@ export function TaskRelationCombobox({
             role="combobox"
             aria-expanded={open}
             aria-label="Parent"
-            className="h-8 w-full justify-between px-3 text-sm font-normal"
+            className="h-8 w-96 max-w-full justify-between px-3 text-sm font-normal"
           >
             <span className="truncate">{displayValue}</span>
             <IconSelector className="ml-2 h-4 w-4 shrink-0 opacity-50" />

@@ -42,6 +42,9 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
 
   await expect(page).toHaveURL(/\/issue\/bd-test\.2$/)
   await expect(page.getByRole("dialog", { name: "Task details" })).toBeVisible()
+  const parentBox = await page.getByRole("combobox", { name: "Parent" }).boundingBox()
+  if (!parentBox) throw new Error("Parent selector is not visible")
+  expect(parentBox.width).toBeLessThanOrEqual(384)
   await page.reload()
   await expect(page.getByPlaceholder("Task title")).toHaveValue("Created in browser")
 
