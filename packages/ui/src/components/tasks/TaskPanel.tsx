@@ -29,6 +29,7 @@ export function TaskPanel({
   progressTasks,
   initialTaskCount = null,
   accentColor = null,
+  issuePrefix = null,
   searchInputRef,
   onOpenTask,
   className,
@@ -59,6 +60,7 @@ export function TaskPanel({
             tasks={tasks}
             onTaskClick={onTaskClick}
             isLoading={isLoading}
+            issuePrefix={issuePrefix}
             searchQuery={searchQuery}
             closedTimeFilter={closedTimeFilter}
             onClosedTimeFilterChange={onClosedTimeFilterChange}
@@ -110,6 +112,8 @@ export type TaskPanelProps = {
   initialTaskCount?: number | null
   /** Accent color for the progress bar */
   accentColor?: string | null
+  /** Issue prefix configured for the workspace. */
+  issuePrefix?: string | null
 
   /** Reference to the search input element */
   searchInputRef?: RefObject<SearchInputHandle | null>

@@ -25,6 +25,27 @@ function startServer(): void {
           title: "Packaged task manager works",
           updated_at: "2026-07-15T10:00:00Z",
         },
+        {
+          comments: [],
+          created_at: "2026-07-15T10:00:00Z",
+          dependencies: [
+            {
+              dependency_type: "blocks",
+              id: "bd-test.1",
+              issue_type: "task",
+              priority: 2,
+              status: "open",
+              title: "Packaged task manager works",
+            },
+          ],
+          id: "bd-blocked",
+          issue_type: "task",
+          labels: [],
+          priority: 2,
+          status: "open",
+          title: "Packaged blocked task",
+          updated_at: "2026-07-15T10:00:00Z",
+        },
       ],
     }),
   )

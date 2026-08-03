@@ -31,6 +31,18 @@ if (process.argv.includes("--version")) {
   )
 } else if (command === "list") {
   console.log(JSON.stringify(state.issues))
+} else if (command === "ready") {
+  const readyIssues = state.issues.filter(
+    (issue) =>
+      issue.status === "open" &&
+      !issue.dependencies.some(
+        (dependency) =>
+          dependency.dependency_type === "blocks" && dependency.status !== "closed",
+      ),
+  )
+  console.log(JSON.stringify(readyIssues))
+} else if (command === "config" && subcommand === "get") {
+  console.log(JSON.stringify({ key: "issue_prefix", schema_version: 1, value: "bd" }))
 } else if (command === "show") {
   console.log(JSON.stringify(state.issues.filter((issue) => issue.id === positionals[0])))
 } else if (command === "create") {

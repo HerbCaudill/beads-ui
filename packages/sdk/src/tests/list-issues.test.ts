@@ -49,4 +49,42 @@ describe("listIssues", () => {
       output: "not json",
     })
   })
+
+  it("annotates issues using Beads' ready-work semantics", async () => {
+    const issues = [
+      {
+        id: "bd-ready",
+        title: "Ready issue",
+        status: "open",
+        priority: 1,
+        issue_type: "task",
+        created_at: "2026-07-15T10:00:00Z",
+        updated_at: "2026-07-15T11:00:00Z",
+      },
+      {
+        id: "bd-blocked",
+        title: "Blocked issue",
+        status: "open",
+        priority: 1,
+        issue_type: "task",
+        created_at: "2026-07-15T10:00:00Z",
+        updated_at: "2026-07-15T11:00:00Z",
+      },
+    ]
+    const runner = vi.fn<CommandRunner>(async ({ args }) => ({
+      stdout: JSON.stringify(args[0] === "ready" ? [issues[0]] : issues),
+      stderr: "",
+    }))
+
+    const result = await listIssues({ cwd: "/workspace", runner })
+
+    expect(result).toEqual([
+      expect.objectContaining({ id: "bd-ready", isReady: true }),
+      expect.objectContaining({ id: "bd-blocked", isReady: false }),
+    ])
+    expect(runner).toHaveBeenCalledWith({
+      args: ["ready", "--json", "--limit", "0"],
+      cwd: "/workspace",
+    })
+  })
 })

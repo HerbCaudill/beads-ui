@@ -23,6 +23,8 @@ export interface TaskDependency {
 export interface Task {
   /** Task identifier. */
   id: string
+  /** Whether Beads considers the task ready to claim. */
+  is_ready?: boolean
   /** Task title. */
   title: string
   /** Task description. */
@@ -108,6 +110,8 @@ export interface TaskTreeNode {
 export interface TasksResponse {
   /** Whether the request succeeded. */
   ok: boolean
+  /** Issue prefix configured for the workspace. */
+  issue_prefix?: string
   /** Tasks returned from the API. */
   issues?: Task[]
   /** Error message when the request fails. */

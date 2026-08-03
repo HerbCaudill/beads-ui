@@ -53,6 +53,7 @@ describe("useTasks", () => {
     vi.clearAllMocks()
     // Reset store
     beadsViewStore.setState({
+      issuePrefix: null,
       tasks: [],
     })
     // Default mock response
@@ -75,6 +76,19 @@ describe("useTasks", () => {
       })
 
       expect(mockFetch).toHaveBeenCalledWith("/api/tasks?all=true", undefined)
+    })
+
+    it("stores the workspace issue prefix", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true, issue_prefix: "foo-bar", issues: mockTasks }),
+      })
+
+      renderHook(() => useTasks())
+
+      await waitFor(() => {
+        expect(beadsViewStore.getState().issuePrefix).toBe("foo-bar")
+      })
     })
 
     it("sets isLoading while fetching when store is empty", async () => {

@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useCallback } from "react"
+import { forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef } from "react"
 import type { KeyboardEvent } from "react"
 import { IconSearch, IconX } from "@tabler/icons-react"
 import {
@@ -8,16 +8,18 @@ import {
   selectVisibleTaskIds,
 } from "../../store"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@beads/components"
+import { getSearchSuggestions } from "../../lib/getSearchSuggestions"
 
 /**
  * Search input for filtering tasks in the task list.
  * Uses Zustand store for state management to enable live filtering.
  */
 export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(function SearchInput(
-  { placeholder = "Search tasks...", disabled = false, className, onOpenTask },
+  { placeholder = "Search or filter tasks...", disabled = false, className, onOpenTask },
   ref,
 ) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const suggestionListId = useId()
   const query = useBeadsViewStore(selectTaskSearchQuery)
   const setQuery = useBeadsViewStore((state) => state.setTaskSearchQuery)
   const clearQuery = useBeadsViewStore((state) => state.clearTaskSearchQuery)
@@ -25,6 +27,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
   const setSelectedTaskId = useBeadsViewStore((state) => state.setSelectedTaskId)
   const clearSelectedTaskId = useBeadsViewStore((state) => state.clearSelectedTaskId)
   const visibleTaskIds = useBeadsViewStore(selectVisibleTaskIds)
+  const suggestions = useMemo(() => getSearchSuggestions(query), [query])
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -45,6 +48,12 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      if (
+        suggestions.length > 0 &&
+        (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter")
+      ) {
+        return
+      }
       if (e.key === "Enter" && selectedTaskId && onOpenTask) {
         e.preventDefault()
         onOpenTask(selectedTaskId)
@@ -83,6 +92,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
       query,
       clearQuery,
       clearSelectedTaskId,
+      suggestions.length,
     ],
   )
 
@@ -105,7 +115,15 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
         placeholder={placeholder}
         disabled={disabled}
         aria-label="Search tasks"
+        aria-description={SEARCH_HELP_TEXT}
+        title={SEARCH_HELP_TEXT}
+        list={suggestions.length > 0 ? suggestionListId : undefined}
       />
+      <datalist id={suggestionListId}>
+        {suggestions.map((suggestion) => (
+          <option key={suggestion} value={suggestion} />
+        ))}
+      </datalist>
       {query && (
         <InputGroupAddon align="inline-end">
           <InputGroupButton
@@ -122,6 +140,10 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
     </InputGroup>
   )
 })
+
+/** Concise task-search syntax guidance. */
+const SEARCH_HELP_TEXT =
+  "Filter with status:, label:, priority:, type:, parent:, or is:. Use commas for alternatives and - to exclude."
 
 export type SearchInputProps = {
   placeholder?: string

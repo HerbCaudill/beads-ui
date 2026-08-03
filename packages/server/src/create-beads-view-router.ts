@@ -5,6 +5,7 @@ import {
   createIssue,
   deleteIssue,
   getIssue,
+  getIssuePrefix,
   listComments,
   listIssues,
   removeDependency,
@@ -29,10 +30,23 @@ export function createBeadsViewRouter(
   sdk: SdkOptions,
 ): Router {
   const router = Router()
+  let issuePrefixPromise: Promise<string> | undefined
+
+  const loadIssuePrefix = () => {
+    issuePrefixPromise ??= getIssuePrefix(sdk).catch((cause: unknown) => {
+      issuePrefixPromise = undefined
+      throw cause
+    })
+    return issuePrefixPromise
+  }
 
   router.get("/", async (_request, response) => {
-    const issues = await listIssues(sdk)
-    response.json({ ok: true, issues: issues.map(toBeadsViewTask) })
+    const [issues, issuePrefix] = await Promise.all([listIssues(sdk), loadIssuePrefix()])
+    response.json({
+      ok: true,
+      issue_prefix: issuePrefix,
+      issues: issues.map(toBeadsViewTask),
+    })
   })
   router.post("/", async (request, response) => {
     const issue = await createIssue(sdk, parseCreateIssueBody(request.body))

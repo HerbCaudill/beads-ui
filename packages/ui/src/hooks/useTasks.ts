@@ -18,6 +18,7 @@ export function useTasks(
   const [isLoading, setIsLoading] = useState(storeTasks.length === 0)
   const [error, setError] = useState<string | null>(null)
   const setStoreTasks = useBeadsViewStore((state) => state.setTasks)
+  const setIssuePrefix = useBeadsViewStore((state) => state.setIssuePrefix)
 
   const tasks = useMemo(
     () => filterTasks(storeTasks, { status, ready, all }),
@@ -29,13 +30,14 @@ export function useTasks(
 
     if (result.ok && result.issues) {
       setStoreTasks(result.issues)
+      if (result.issue_prefix !== undefined) setIssuePrefix(result.issue_prefix)
       setError(null)
     } else {
       setError(result.error ?? "Failed to fetch tasks")
     }
 
     setIsLoading(false)
-  }, [setStoreTasks])
+  }, [setIssuePrefix, setStoreTasks])
 
   useEffect(() => {
     refresh()

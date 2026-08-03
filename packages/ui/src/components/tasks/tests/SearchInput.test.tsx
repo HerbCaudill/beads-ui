@@ -34,7 +34,25 @@ describe("SearchInput", () => {
 
     it("renders with default placeholder", () => {
       render(<SearchInput />)
-      expect(screen.getByPlaceholderText("Search tasks...")).toBeInTheDocument()
+      expect(screen.getByPlaceholderText("Search or filter tasks...")).toBeInTheDocument()
+    })
+
+    it("describes the structured filter syntax", () => {
+      render(<SearchInput />)
+
+      expect(screen.getByRole("textbox", { name: "Search tasks" })).toHaveAccessibleDescription(
+        "Filter with status:, label:, priority:, type:, parent:, or is:. Use commas for alternatives and - to exclude.",
+      )
+    })
+
+    it("suggests canonical filter values", () => {
+      render(<SearchInput />)
+      const input = screen.getByRole("textbox", { name: "Search tasks" })
+
+      fireEvent.change(input, { target: { value: "status:i" } })
+
+      expect(input).toHaveAttribute("list")
+      expect(document.querySelector('option[value="status:in_progress"]')).toBeInTheDocument()
     })
 
     it("renders search icon", () => {
@@ -114,6 +132,16 @@ describe("SearchInput", () => {
       expect(beadsViewStore.getState().selectedTaskId).toBe("task-1")
     })
 
+    it("leaves arrow keys available for filter suggestions", () => {
+      render(<SearchInput />)
+      const input = screen.getByRole("textbox")
+      fireEvent.change(input, { target: { value: "status:i" } })
+
+      fireEvent.keyDown(input, { key: "ArrowDown" })
+
+      expect(beadsViewStore.getState().selectedTaskId).toBe(null)
+    })
+
     it("selects next task on ArrowDown", () => {
       beadsViewStore.getState().setSelectedTaskId("task-1")
       render(<SearchInput />)
@@ -180,6 +208,18 @@ describe("SearchInput", () => {
       const onOpenTask = vi.fn()
       render(<SearchInput onOpenTask={onOpenTask} />)
       const input = screen.getByRole("textbox")
+
+      fireEvent.keyDown(input, { key: "Enter" })
+
+      expect(onOpenTask).not.toHaveBeenCalled()
+    })
+
+    it("leaves Enter available for filter suggestions", () => {
+      const onOpenTask = vi.fn()
+      beadsViewStore.getState().setSelectedTaskId("task-2")
+      render(<SearchInput onOpenTask={onOpenTask} />)
+      const input = screen.getByRole("textbox")
+      fireEvent.change(input, { target: { value: "status:i" } })
 
       fireEvent.keyDown(input, { key: "Enter" })
 

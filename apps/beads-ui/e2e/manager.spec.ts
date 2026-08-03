@@ -11,7 +11,12 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
     name: "workspace",
     path: expect.stringContaining("apps/beads-ui/e2e/fixtures/workspace"),
   })
-  expect(await issues.json()).toEqual([expect.objectContaining({ id: "bd-test.1" })])
+  expect(await issues.json()).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id: "bd-test.1", isReady: true }),
+      expect.objectContaining({ id: "bd-blocked", isReady: false }),
+    ]),
+  )
 
   await page.goto("/")
   await expect(page).toHaveTitle("Beads UI")
@@ -32,8 +37,11 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
   await page.mouse.up()
   await expect(sidebar).toHaveCSS("width", "468px")
 
-  await page.getByRole("textbox", { name: "Search tasks" }).fill("Packaged")
+  await page
+    .getByRole("textbox", { name: "Search tasks" })
+    .fill("status:open priority:P2 is:ready Packaged")
   await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Packaged blocked task" })).not.toBeVisible()
   await page.getByRole("textbox", { name: "Search tasks" }).clear()
 
   await page.getByRole("textbox", { name: "New task title" }).fill("Created in browser")

@@ -9,6 +9,7 @@ import {
   selectTasks,
   selectInitialTaskCount,
   selectAccentColor,
+  selectIssuePrefix,
 } from "../../store"
 import type { ClosedTasksTimeFilter } from "../../types"
 
@@ -35,6 +36,7 @@ export function TaskPanelController({
   const allStoreTasks = useBeadsViewStore(selectTasks)
   const initialTaskCount = useBeadsViewStore(selectInitialTaskCount)
   const accentColor = useBeadsViewStore(selectAccentColor)
+  const issuePrefix = useBeadsViewStore(selectIssuePrefix)
 
   const handleClosedTimeFilterChange = useCallback(
     (filter: ClosedTasksTimeFilter) => setClosedTimeFilter(filter),
@@ -66,6 +68,7 @@ export function TaskPanelController({
       progressTasks={allStoreTasks}
       initialTaskCount={initialTaskCount}
       accentColor={accentColor}
+      issuePrefix={issuePrefix}
       searchInputRef={searchInputRef}
       onOpenTask={onOpenTask}
     />

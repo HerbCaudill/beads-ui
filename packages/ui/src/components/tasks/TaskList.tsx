@@ -5,7 +5,8 @@ import { buildTaskTree } from "../../lib/buildTaskTree"
 import { countAllNodes } from "../../lib/countAllNodes"
 import { findRootAncestor } from "../../lib/findRootAncestor"
 import { getTimeFilterCutoff } from "../../lib/getTimeFilterCutoff"
-import { matchesSearchQuery } from "../../lib/matchesSearchQuery"
+import { matchesSearchTerms } from "../../lib/matchesSearchTerms"
+import { parseSearchQuery } from "../../lib/parseSearchQuery"
 import {
   useBeadsViewStore,
   selectStatusCollapsedState,
@@ -37,6 +38,8 @@ export function TaskList({
   persistCollapsedState = true,
   /** Whether tasks are currently loading */
   isLoading = false,
+  /** Issue prefix configured for the workspace. */
+  issuePrefix = null,
   /** Search query to filter tasks */
   searchQuery = "",
   /** Time filter for closed tasks */
@@ -131,6 +134,7 @@ export function TaskList({
 
   const statusGroups = useMemo(() => {
     const closedCutoff = getTimeFilterCutoff(closedTimeFilter)
+    const searchTerms = parseSearchQuery(searchQuery)
 
     // Helper to check if a task status is "terminal" (closed or deferred) for grouping purposes.
     // Used to determine if a subtask should stay with its parent or use its own status group.
@@ -145,7 +149,7 @@ export function TaskList({
 
     // Filter tasks by search query and time filter
     const filteredTasks = tasks.filter((task) => {
-      if (!matchesSearchQuery(task, searchQuery)) return false
+      if (!matchesSearchTerms(task, searchTerms, issuePrefix)) return false
 
       // For closed tasks, apply time filter (unless searching)
       if (shouldApplyTimeFilter(task.status) && closedCutoff && !searchQuery.trim()) {
@@ -258,7 +262,8 @@ export function TaskList({
     // Helper to add a task (with its subtree) to the appropriate status group
     const addTaskToGroup = (task: Task, includeChildren: boolean): void => {
       if (addedTaskIds.has(task.id)) return
-      if (!filteredTaskIds.has(task.id)) return
+      const taskIsVisible = filteredTaskIds.has(task.id)
+      if (!includeChildren && !taskIsVisible) return
 
       const groupKey = getStatusGroupForTask(task)
       if (!groupKey) return
@@ -266,7 +271,7 @@ export function TaskList({
       // Build tree node - either with children or as a leaf
       let node: TaskTreeNode
       if (includeChildren) {
-        const builtNode = buildFilteredTree(task, true)
+        const builtNode = buildFilteredTree(task, taskIsVisible)
         if (!builtNode) return
         node = builtNode
       } else {
@@ -300,7 +305,9 @@ export function TaskList({
         const differentGroupChildren: Task[] = []
 
         for (const child of children) {
-          if (!filteredTaskIds.has(child.id)) continue
+          const childHasVisibleBranch =
+            buildFilteredTree(child, filteredTaskIds.has(child.id)) !== null
+          if (!childHasVisibleBranch) continue
           const childGroupKey = getStatusGroupForTask(child)
           if (childGroupKey === rootGroupKey) {
             sameGroupChildren.push(child)
@@ -311,7 +318,7 @@ export function TaskList({
 
         if (differentGroupChildren.length > 0) {
           // Some children belong to different groups - add root as leaf, process children separately
-          if (filteredTaskIds.has(root.task.id)) {
+          if (filteredTaskIds.has(root.task.id) || sameGroupChildren.length > 0) {
             // Build root with only same-group children
             const nodeWithSameGroupChildren: TaskTreeNode = {
               task: root.task,
@@ -393,7 +400,7 @@ export function TaskList({
     }
 
     return result
-  }, [tasks, closedTimeFilter, searchQuery])
+  }, [tasks, closedTimeFilter, issuePrefix, searchQuery])
 
   const visibleStatusGroups = useMemo(() => {
     return statusGroups.filter((group) => {
@@ -532,6 +539,8 @@ export type TaskListProps = {
   persistCollapsedState?: boolean
   /** Whether tasks are currently loading */
   isLoading?: boolean
+  /** Issue prefix configured for the workspace. */
+  issuePrefix?: string | null
   /** Search query to filter tasks */
   searchQuery?: string
   /** Time filter for closed tasks */

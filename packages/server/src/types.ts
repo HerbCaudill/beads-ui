@@ -48,6 +48,8 @@ export type BeadsViewTask = {
   readonly dependents?: readonly BeadsViewRelatedTask[]
   /** Stable task identifier. */
   readonly id: string
+  /** Whether Beads considers the task ready to claim. */
+  readonly is_ready?: boolean
   /** Legacy name for the issue category. */
   readonly issue_type: string
   /** Labels attached to the task. */

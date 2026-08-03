@@ -6,21 +6,25 @@ import { createApp } from "../create-app.js"
 
 describe("Beads View compatibility API", () => {
   it("lists tasks using the Beads View response contract", async () => {
-    const runner = vi.fn<CommandRunner>(async () => ({
-      stdout: JSON.stringify([
-        {
-          id: "bd-1",
-          title: "Extract Beads View",
-          status: "in_progress",
-          priority: 1,
-          issue_type: "task",
-          created_at: "2026-07-16T10:00:00Z",
-          updated_at: "2026-07-16T11:00:00Z",
-          dependency_count: 1,
-          dependent_count: 2,
-          comment_count: 3,
-        },
-      ]),
+    const runner = vi.fn<CommandRunner>(async ({ args }) => ({
+      stdout: JSON.stringify(
+        args[0] === "config"
+          ? { key: "issue_prefix", schema_version: 1, value: "foo-bar" }
+          : [
+              {
+                id: "foo-bar-1",
+                title: "Extract Beads View",
+                status: "open",
+                priority: 1,
+                issue_type: "task",
+                created_at: "2026-07-16T10:00:00Z",
+                updated_at: "2026-07-16T11:00:00Z",
+                dependency_count: 1,
+                dependent_count: 2,
+                comment_count: 3,
+              },
+            ],
+      ),
       stderr: "",
     }))
     const app = createApp({ cwd: "/workspace", runner })
@@ -30,14 +34,55 @@ describe("Beads View compatibility API", () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({
       ok: true,
+      issue_prefix: "foo-bar",
       issues: [
         expect.objectContaining({
-          id: "bd-1",
+          id: "foo-bar-1",
           issue_type: "task",
           created_at: "2026-07-16T10:00:00Z",
+          is_ready: true,
         }),
       ],
     })
+  })
+
+  it("retries the issue-prefix lookup after a transient failure", async () => {
+    let prefixAttempts = 0
+    const issue = {
+      id: "bd-1",
+      title: "Retry prefix lookup",
+      status: "open",
+      priority: 1,
+      issue_type: "task",
+      created_at: "2026-07-16T10:00:00Z",
+      updated_at: "2026-07-16T11:00:00Z",
+    }
+    const runner = vi.fn<CommandRunner>(async ({ args }) => {
+      if (args[0] !== "config") {
+        return { stdout: JSON.stringify([issue]), stderr: "" }
+      }
+
+      prefixAttempts += 1
+      if (prefixAttempts === 1) throw new Error("Workspace is still starting")
+      return {
+        stdout: JSON.stringify({ key: "issue_prefix", schema_version: 1, value: "bd" }),
+        stderr: "",
+      }
+    })
+    const app = createApp({ cwd: "/workspace", runner })
+
+    expect((await request(app).get("/api/tasks?all=true")).status).toBe(500)
+
+    const response = await request(app).get("/api/tasks?all=true")
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        issue_prefix: "bd",
+        issues: [expect.objectContaining({ id: "bd-1" })],
+      }),
+    )
+    expect(prefixAttempts).toBe(2)
   })
 
   it("gets task details with legacy relationship fields", async () => {

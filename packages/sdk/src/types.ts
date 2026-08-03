@@ -80,6 +80,8 @@ export type Issue = {
   readonly description?: string
   /** Stable Beads issue identifier. */
   readonly id: string
+  /** Whether Beads considers the issue ready to claim, when readiness was requested. */
+  readonly isReady?: boolean
   /** Labels attached to the issue. */
   readonly labels: readonly string[]
   /** Issue owner, when present. */

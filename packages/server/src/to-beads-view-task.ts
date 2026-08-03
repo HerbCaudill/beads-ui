@@ -19,6 +19,7 @@ export function toBeadsViewTask(
         }
       : {}),
     id: issue.id,
+    is_ready: issue.isReady,
     issue_type: issue.type,
     labels: issue.labels,
     parent: issue.parent,

@@ -66,8 +66,17 @@ export function createBeadsViewStore(
 
             try {
               const response = await apiFetch("/api/tasks?all=true")
-              const data = (await response.json()) as { ok: boolean; issues?: Task[] }
-              if (data.ok && data.issues) set({ tasks: data.issues })
+              const data = (await response.json()) as {
+                issue_prefix?: string
+                issues?: Task[]
+                ok: boolean
+              }
+              if (data.ok && data.issues) {
+                set({
+                  issuePrefix: data.issue_prefix ?? get().issuePrefix,
+                  tasks: data.issues,
+                })
+              }
             } catch (cause) {
               console.error("Failed to refresh tasks:", cause)
             }

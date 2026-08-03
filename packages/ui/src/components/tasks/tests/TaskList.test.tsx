@@ -1239,6 +1239,78 @@ describe("TaskList", () => {
       expect(screen.queryByText("Blocked other task")).not.toBeInTheDocument()
     })
 
+    it("shows a matching child with its parent context", () => {
+      const tasks: TaskCardTask[] = [
+        { id: "bd-123", title: "Parent task", status: "open" },
+        { id: "bd-child", parent: "bd-123", title: "Child task", status: "open" },
+      ]
+
+      render(
+        <TaskList
+          tasks={tasks}
+          issuePrefix="bd"
+          persistCollapsedState={false}
+          searchQuery="parent:123"
+        />,
+      )
+
+      expect(screen.getByText("Parent task")).toBeInTheDocument()
+      expect(screen.getByText("Child task")).toBeInTheDocument()
+    })
+
+    it("expands a short parent ID using a hyphenated workspace prefix", () => {
+      const tasks: TaskCardTask[] = [
+        { id: "custom-parent", title: "Forced-ID parent", status: "open" },
+        {
+          id: "forced-child-id",
+          parent: "foo-bar-123",
+          title: "Forced-ID child",
+          status: "open",
+        },
+      ]
+
+      render(
+        <TaskList
+          tasks={tasks}
+          issuePrefix="foo-bar"
+          persistCollapsedState={false}
+          searchQuery="parent:123"
+        />,
+      )
+
+      expect(screen.getByText("Forced-ID child")).toBeInTheDocument()
+    })
+
+    it("preserves matching same-status and mixed-status branches below a terminal root", () => {
+      const tasks: TaskCardTask[] = [
+        { id: "bd-root", title: "Archived work", status: "closed" },
+        {
+          id: "bd-closed-child",
+          parent: "bd-root",
+          title: "Matching closed child",
+          status: "closed",
+        },
+        {
+          id: "bd-open-child",
+          parent: "bd-root",
+          title: "Matching open child",
+          status: "open",
+        },
+      ]
+
+      render(
+        <TaskList
+          tasks={tasks}
+          defaultCollapsed={{ closed: false }}
+          persistCollapsedState={false}
+          searchQuery="matching"
+        />,
+      )
+
+      expect(screen.getByText("Matching closed child")).toBeInTheDocument()
+      expect(screen.getByText("Matching open child")).toBeInTheDocument()
+    })
+
     it("includes closed tasks outside time filter when searching", () => {
       const now = new Date()
       const hourAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString() // 30 mins ago
