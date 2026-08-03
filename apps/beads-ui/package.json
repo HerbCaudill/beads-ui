@@ -26,9 +26,11 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@beads/mcp": "workspace:*",
     "@beads/sdk": "workspace:*",
     "@beads/server": "workspace:*",
     "@beads/ui": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/node": "^24.10.1",
     "get-port": "^7.1.0",
     "open": "^10.2.0",

@@ -1,5 +1,7 @@
-import type { CommandRunner } from "@beads/sdk"
+import type { CreateBeadsMcpServerOptions } from "@beads/mcp"
+import type { CommandRunner, Issue, IssueDetail } from "@beads/sdk"
 import type { ServerOptions } from "@beads/server"
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import type { Server } from "node:http"
 
 /** Command-line options accepted by the public executable. */
@@ -44,3 +46,35 @@ export type StartedFrontend = {
 
 /** Startup check for the external Beads executable. */
 export type VerifyBd = () => Promise<void>
+
+/** Public command selected from the CLI arguments. */
+export type CliCommand =
+  | {
+      /** Start a Model Context Protocol server over stdio. */
+      readonly kind: "mcp"
+    }
+  | {
+      /** Start the local browser manager. */
+      readonly kind: "web"
+      /** Browser manager options. */
+      readonly options: CliOptions
+    }
+
+/** Runtime dependencies used by the local MCP launcher. */
+export type StartMcpDependencies = {
+  /** Create a workspace-bound Beads MCP server. */
+  readonly createServer: (options: CreateBeadsMcpServerOptions) => {
+    /** Attach the server to the supplied transport. */
+    connect: (transport: Transport) => Promise<void>
+  }
+  /** Load one issue from the validated workspace. */
+  readonly getIssue: (workspace: string, id: string) => Promise<Issue | IssueDetail>
+  /** Load every issue from the validated workspace. */
+  readonly listIssues: (workspace: string) => Promise<readonly Issue[]>
+  /** Read the self-contained MCP App HTML bundled with the executable. */
+  readonly readViewHtml: () => Promise<string>
+  /** Bidirectional MCP transport, normally stdio. */
+  readonly transport: Transport
+  /** Validate and canonicalize the requested workspace. */
+  readonly validateWorkspace: (cwd: string) => Promise<string>
+}

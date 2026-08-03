@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { spawn, execFileSync } from "node:child_process"
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -89,6 +91,51 @@ async function testPacked(): Promise<void> {
     assert.equal(workspaceResponse.status, 200)
     assert.equal(applicationResponse.status, 200)
     assert.match(await applicationResponse.text(), /<div id="root"><\/div>/)
+
+    const mcpTransport = new StdioClientTransport({
+      args: ["mcp"],
+      command: resolve(consumerDirectory, "node_modules/.bin/beads-ui"),
+      cwd: workspaceDirectory,
+      env: {
+        BEADS_TEST_STATE: statePath,
+        PATH: `${fixtureBin}:${process.env.PATH ?? ""}`,
+      },
+      stderr: "pipe",
+    })
+    const mcpClient = new Client({ name: "packed-test", version: "1.0.0" })
+    try {
+      await mcpClient.connect(mcpTransport)
+      const tools = await mcpClient.listTools()
+      assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), ["get_issue", "list_issues"])
+      const issueList = await mcpClient.callTool({ name: "list_issues", arguments: {} })
+      const canonicalWorkspace = await realpath(workspaceDirectory)
+      assert.deepEqual(issueList.structuredContent, {
+        includeClosed: false,
+        issues: [
+          {
+            commentCount: 0,
+            createdAt: "2026-07-15T10:00:00Z",
+            dependencyCount: 0,
+            dependentCount: 0,
+            id: "bd-test.1",
+            labels: [],
+            priority: 2,
+            status: "open",
+            title: "Packed smoke task",
+            type: "task",
+            updatedAt: "2026-07-15T10:00:00Z",
+          },
+        ],
+        workspace: canonicalWorkspace,
+      })
+      const resource = await mcpClient.readResource({ uri: "ui://beads/issues.html" })
+      const view = resource.contents[0]
+      assert.ok(view && "text" in view)
+      assert.equal(view.mimeType, "text/html;profile=mcp-app")
+      assert.match(view.text, /Beads issue list/)
+    } finally {
+      await mcpClient.close()
+    }
   } finally {
     child?.kill("SIGINT")
     await rm(temporaryDirectory, { force: true, recursive: true })

@@ -14,6 +14,10 @@ async function build(): Promise<void> {
     cwd: repositoryDirectory,
     stdio: "inherit",
   })
+  execFileSync("pnpm", ["--filter", "@beads/mcp", "build"], {
+    cwd: repositoryDirectory,
+    stdio: "inherit",
+  })
   await rm(outputDirectory, { force: true, recursive: true })
   await bundle({
     banner: {
@@ -33,6 +37,10 @@ async function build(): Promise<void> {
   await cp(resolve(repositoryDirectory, "packages/ui/dist"), resolve(outputDirectory, "ui"), {
     recursive: true,
   })
+  await cp(
+    resolve(repositoryDirectory, "packages/mcp/dist/index.html"),
+    resolve(outputDirectory, "mcp-app.html"),
+  )
 }
 
 await build()
