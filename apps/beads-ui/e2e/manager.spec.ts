@@ -63,7 +63,7 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
   await expect(page.getByRole("textbox", { name: "Add comment" })).toBeEmpty()
   await expect(page.getByText("--file=/etc/hosts", { exact: true })).toBeVisible()
 
-  await page.keyboard.press("Meta+/")
+  await page.keyboard.press("ControlOrMeta+/")
   await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible()
   const hotkeysDialog = page
     .getByRole("dialog")
