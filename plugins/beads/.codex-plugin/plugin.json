@@ -1,0 +1,29 @@
+{
+  "name": "beads",
+  "version": "0.1.0",
+  "description": "Read-only Beads issue lists and inline views for Codex.",
+  "author": {
+    "name": "Herb Caudill",
+    "url": "https://github.com/HerbCaudill"
+  },
+  "homepage": "https://github.com/HerbCaudill/beads-ui",
+  "repository": "https://github.com/HerbCaudill/beads-ui",
+  "license": "MIT",
+  "keywords": ["beads", "issues", "tasks", "mcp"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Beads",
+    "shortDescription": "Browse Beads issues inline.",
+    "longDescription": "List and inspect issues from the current repository's Beads database with a searchable inline view.",
+    "developerName": "Herb Caudill",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "websiteURL": "https://github.com/HerbCaudill/beads-ui",
+    "defaultPrompt": [
+      "Show me the active Beads issues.",
+      "Review the highest-priority Beads issues.",
+      "Include closed Beads issues in the list."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}
