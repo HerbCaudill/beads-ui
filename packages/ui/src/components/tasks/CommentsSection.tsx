@@ -82,16 +82,9 @@ export function CommentsSection({
     <div className={cn("grid gap-2", className)}>
       <Label>Comments</Label>
 
-      {isLoading && (
-        <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
-          <IconLoader2 className="h-4 w-4 animate-spin" />
-          Loading comments...
-        </div>
-      )}
-
       {error && !isLoading && <div className="text-destructive py-2 text-sm">{error}</div>}
 
-      {!isLoading && !error && comments.length > 0 && (
+      {!error && comments.length > 0 && (
         <div className="space-y-3">
           {comments.map((comment) => (
             <CommentItem key={comment.id} comment={comment} />

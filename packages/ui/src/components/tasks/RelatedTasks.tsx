@@ -19,13 +19,16 @@ export function RelatedTasks({
   onTaskClick,
   onChanged,
 }: RelatedTasksProps) {
-  const [blockers, setBlockers] = useState<RelatedTask[]>([])
-  const [dependents, setDependents] = useState<RelatedTask[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [dependenciesByTask, setDependenciesByTask] = useState<Record<string, TaskDependencies>>({})
   const [isAddingChild, setIsAddingChild] = useState(false)
   const [isAddingBlocker, setIsAddingBlocker] = useState(false)
   const [isAddingBlocked, setIsAddingBlocked] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+
+  const { blockers, dependents } = useMemo(
+    () => dependenciesByTask[taskId] ?? { blockers: [], dependents: [] },
+    [dependenciesByTask, taskId],
+  )
 
   const childTasks: RelatedTask[] = allTasks
     .filter((t: Task) => t.parent === taskId)
@@ -36,7 +39,6 @@ export function RelatedTasks({
     }))
 
   const fetchDependencies = useCallback(async () => {
-    setIsLoading(true)
     try {
       const response = await apiFetch(`/api/tasks/${taskId}`)
       const data = (await response.json()) as {
@@ -67,7 +69,6 @@ export function RelatedTasks({
             status: d.status as RelatedTask["status"],
             dependency_type: d.dependency_type,
           }))
-        setBlockers(blockingDeps)
 
         const dependentsData = data.issue.dependents || []
         const dependentsList = dependentsData
@@ -78,12 +79,13 @@ export function RelatedTasks({
             status: d.status as RelatedTask["status"],
             dependency_type: d.dependency_type,
           }))
-        setDependents(dependentsList)
+        setDependenciesByTask((current) => ({
+          ...current,
+          [taskId]: { blockers: blockingDeps, dependents: dependentsList },
+        }))
       }
     } catch (err) {
       console.error("Failed to fetch task dependencies:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [taskId])
 
@@ -314,53 +316,49 @@ export function RelatedTasks({
   ])
 
   const hasContent = childTasks.length > 0 || blockers.length > 0 || dependents.length > 0
-  if (!isLoading && !hasContent && !canEdit) {
+  if (!hasContent && !canEdit) {
     return null
   }
 
   return (
     <div className="grid gap-2">
       <Label>Related</Label>
-      {isLoading ? (
-        <div className="text-muted-foreground text-sm">Loading...</div>
-      ) : (
-        <div className="space-y-2">
-          {groups.length > 0 && (
-            <GroupedTaskList groups={groups} onTaskClick={onTaskClick} className="h-auto" />
-          )}
-          {canEdit && (
-            <div className="flex flex-wrap gap-1">
-              <TaskRelationCombobox
-                task={task}
-                allTasks={allTasks}
-                issuePrefix={issuePrefix}
-                excludeIds={childTasks.map((c) => c.id)}
-                relationType="child"
-                onSelect={handleAddChild}
-                disabled={isAddingChild}
-              />
-              <TaskRelationCombobox
-                task={task}
-                allTasks={allTasks}
-                issuePrefix={issuePrefix}
-                excludeIds={blockers.map((b) => b.id)}
-                relationType="blocker"
-                onSelect={handleAddBlocker}
-                disabled={isAddingBlocker}
-              />
-              <TaskRelationCombobox
-                task={task}
-                allTasks={allTasks}
-                issuePrefix={issuePrefix}
-                excludeIds={dependents.map((d) => d.id)}
-                relationType="blocked"
-                onSelect={handleAddBlocked}
-                disabled={isAddingBlocked}
-              />
-            </div>
-          )}
-        </div>
-      )}
+      <div className="space-y-2">
+        {groups.length > 0 && (
+          <GroupedTaskList groups={groups} onTaskClick={onTaskClick} className="h-auto" />
+        )}
+        {canEdit && (
+          <div className="flex flex-wrap gap-1">
+            <TaskRelationCombobox
+              task={task}
+              allTasks={allTasks}
+              issuePrefix={issuePrefix}
+              excludeIds={childTasks.map((c) => c.id)}
+              relationType="child"
+              onSelect={handleAddChild}
+              disabled={isAddingChild}
+            />
+            <TaskRelationCombobox
+              task={task}
+              allTasks={allTasks}
+              issuePrefix={issuePrefix}
+              excludeIds={blockers.map((b) => b.id)}
+              relationType="blocker"
+              onSelect={handleAddBlocker}
+              disabled={isAddingBlocker}
+            />
+            <TaskRelationCombobox
+              task={task}
+              allTasks={allTasks}
+              issuePrefix={issuePrefix}
+              excludeIds={dependents.map((d) => d.id)}
+              relationType="blocked"
+              onSelect={handleAddBlocked}
+              disabled={isAddingBlocked}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -375,6 +373,14 @@ function toTreeNode(related: RelatedTask): TaskTreeNode {
     },
     children: [],
   }
+}
+
+/** Related tasks fetched for one task. */
+type TaskDependencies = {
+  /** Tasks that block the task. */
+  blockers: RelatedTask[]
+  /** Tasks blocked by the task. */
+  dependents: RelatedTask[]
 }
 
 export type RelatedTasksProps = {

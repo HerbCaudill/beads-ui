@@ -43,10 +43,11 @@ describe("CommentsSection", () => {
   })
 
   describe("loading state", () => {
-    it("shows loading indicator when isLoading is true", () => {
-      render(<CommentsSection taskId="rui-123" isLoading={true} />)
+    it("keeps existing comments visible without a loading indicator", () => {
+      render(<CommentsSection taskId="rui-123" comments={sampleComments} isLoading={true} />)
 
-      expect(screen.getByText("Loading comments...")).toBeInTheDocument()
+      expect(screen.getByText("Alice")).toBeInTheDocument()
+      expect(screen.queryByText("Loading comments...")).not.toBeInTheDocument()
     })
   })
 
@@ -93,7 +94,7 @@ describe("CommentsSection", () => {
       render(<CommentsSection taskId="rui-123" isLoading={true} error="Some error" />)
 
       // Loading state takes precedence
-      expect(screen.getByText("Loading comments...")).toBeInTheDocument()
+      expect(screen.queryByText("Loading comments...")).not.toBeInTheDocument()
       expect(screen.queryByText("Some error")).not.toBeInTheDocument()
     })
   })

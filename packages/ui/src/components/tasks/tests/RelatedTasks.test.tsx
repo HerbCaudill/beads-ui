@@ -59,12 +59,35 @@ describe("RelatedTasks", () => {
   }
 
   describe("loading state", () => {
-    it("shows loading indicator while fetching", async () => {
+    it("keeps known related tasks visible without a loading indicator", async () => {
+      mockTasks = [
+        { id: "rui-123.1", title: "Known child task", status: "open", parent: "rui-123" },
+      ]
       mockFetch.mockImplementation(() => new Promise(() => {})) // Never resolves
 
       renderWithContext("rui-123")
 
-      expect(screen.getByText("Loading...")).toBeInTheDocument()
+      expect(screen.getByText("Known child task")).toBeInTheDocument()
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument()
+    })
+
+    it("does not show the previous task's relationships while switching tasks", async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ ok: true, issue: sampleTaskWithDependencies }),
+        })
+        .mockImplementationOnce(() => new Promise(() => {}))
+
+      const { rerender } = renderWithContext("rui-123")
+
+      await waitFor(() => {
+        expect(screen.getByText("Blocking task 1")).toBeInTheDocument()
+      })
+
+      rerender(<RelatedTasks taskId="rui-456" allTasks={mockTasks} issuePrefix="rui" />)
+
+      expect(screen.queryByText("Blocking task 1")).not.toBeInTheDocument()
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument()
     })
   })
 
