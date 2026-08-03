@@ -29,8 +29,8 @@ The package also includes a read-only MCP server for the Beads database in the a
 Install the Codex plugin to register the MCP server and teach Codex when to prefer its inline issue list:
 
 ```bash
-codex plugin marketplace add HerbCaudill/beads-ui
-codex plugin add beads@beads-ui
+codex plugin marketplace add HerbCaudill/plugins
+codex plugin add beads@herbcaudill
 ```
 
 If you previously added the MCP server directly, remove that duplicate configuration with `codex mcp remove beads`. To register only the MCP server without the routing skill:

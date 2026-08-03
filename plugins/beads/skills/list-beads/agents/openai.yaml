@@ -1,4 +1,0 @@
-interface:
-  display_name: "List Beads"
-  short_description: "Show rich lists of Beads issues"
-  default_prompt: "Use $list-beads to show the active issues in this repository."
