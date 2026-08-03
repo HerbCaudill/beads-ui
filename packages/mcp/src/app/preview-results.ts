@@ -1,4 +1,4 @@
-import type { IssueListResult, PreviewScenario } from "./types.js"
+import type { BeadsResult, PreviewScenario } from "./types.js"
 
 /** Active issues covering the widget's supported metadata and status groups. */
 const activeIssues = [
@@ -105,9 +105,59 @@ export const previewResults = {
     issues: [...activeIssues, closedIssue],
     workspace: "/work/beads-ui",
   },
+  single: {
+    issue: {
+      assignee: "herb",
+      commentCount: 1,
+      comments: [
+        {
+          author: "Lynne",
+          createdAt: "2026-08-03T11:30:00.000Z",
+          id: "comment-1",
+          issueId: "bd-128",
+          text: "This has enough context now.",
+        },
+      ],
+      createdAt: "2026-08-01T08:00:00.000Z",
+      dependencies: [
+        {
+          dependencyType: "blocks",
+          id: "bd-123",
+          priority: 1,
+          status: "in_progress",
+          title: "Add hot-reloading MCP widget preview",
+          type: "task",
+        },
+      ],
+      dependencyCount: 1,
+      dependentCount: 1,
+      dependents: [
+        {
+          dependencyType: "blocks",
+          id: "bd-129",
+          priority: 2,
+          status: "open",
+          title: "Document the single-bead view",
+          type: "task",
+        },
+      ],
+      description: "Give one issue enough room for its full context.",
+      id: "bd-128",
+      labels: ["mcp", "design"],
+      owner: "herb@devresults.com",
+      parent: "bd-120",
+      priority: 1,
+      startedAt: "2026-08-03T09:00:00.000Z",
+      status: "in_progress",
+      title: "Display a single bead inline",
+      type: "task",
+      updatedAt: "2026-08-03T11:30:00.000Z",
+    },
+    workspace: "/work/beads-ui",
+  },
   empty: {
     includeClosed: false,
     issues: [],
     workspace: "/work/beads-ui",
   },
-} satisfies Record<PreviewScenario, IssueListResult>
+} satisfies Record<PreviewScenario, BeadsResult>

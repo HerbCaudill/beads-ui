@@ -1,4 +1,7 @@
-import type { Issue } from "@beads/sdk"
+import type { Issue, IssueDetail } from "@beads/sdk"
+
+/** Structured content supported by the bundled MCP App. */
+export type BeadsResult = IssueListResult | IssueResult
 
 /** Structured content returned by the issue-list MCP tool. */
 export type IssueListResult = {
@@ -10,8 +13,16 @@ export type IssueListResult = {
   readonly workspace: string
 }
 
+/** Structured content returned by the single-issue MCP tool. */
+export type IssueResult = {
+  /** Normalized issue and any available related data. */
+  readonly issue: Issue | IssueDetail
+  /** Absolute path to the queried Beads workspace. */
+  readonly workspace: string
+}
+
 /** Fixture set shown in the browser preview. */
-export type PreviewScenario = "active" | "all" | "empty"
+export type PreviewScenario = "active" | "all" | "empty" | "single"
 
 /** Color scheme simulated by the browser preview. */
 export type PreviewTheme = "light" | "dark"

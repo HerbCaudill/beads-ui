@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 /** Runtime schema for one issue received from an MCP tool result. */
-const IssueSchema = z.object({
+export const IssueSchema = z.object({
   assignee: z.string().optional(),
   closedAt: z.string().optional(),
   commentCount: z.number(),

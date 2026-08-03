@@ -2,7 +2,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
-import { ISSUE_LIST_RESOURCE_URI } from "./constants.js"
+import { BEADS_APP_RESOURCE_URI } from "./constants.js"
 import { filterIssues } from "./filter-issues.js"
 import { formatIssueList } from "./format-issue-list.js"
 import type { CreateBeadsMcpServerOptions } from "./types.js"
@@ -35,7 +35,7 @@ export function registerListIssuesTool(
       },
       _meta: {
         ui: {
-          resourceUri: ISSUE_LIST_RESOURCE_URI,
+          resourceUri: BEADS_APP_RESOURCE_URI,
           visibility: ["model", "app"],
         },
       },

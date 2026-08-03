@@ -24,7 +24,7 @@ The requested port must be available on `127.0.0.1`. The command reports a clear
 
 ## Use it from an agent
 
-The package also includes a read-only MCP server for the Beads database in the agent's current repository. It exposes `list_issues` and `get_issue`. The list tool returns structured issue data, a compact text fallback, and an [MCP App](https://modelcontextprotocol.io/extensions/apps/overview) that compatible hosts render inline.
+The package also includes a read-only MCP server for the Beads database in the agent's current repository. It exposes `list_issues` and `get_issue`. Both tools return structured issue data, a compact text fallback, and an [MCP App](https://modelcontextprotocol.io/extensions/apps/overview) that compatible hosts render inline as either a searchable list or a focused issue view.
 
 Install the Codex plugin to register the MCP server and teach Codex when to prefer its inline issue list:
 

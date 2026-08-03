@@ -2,27 +2,27 @@ import { App } from "@modelcontextprotocol/ext-apps"
 import { useEffect, useState } from "react"
 
 import { applyHostContext } from "./apply-host-context.js"
-import { IssueListView } from "./IssueListView.js"
-import { parseIssueListResult } from "./parse-issue-list-result.js"
-import type { IssueListResult } from "./types.js"
+import { BeadsView } from "./BeadsView.js"
+import { parseBeadsResult } from "./parse-beads-result.js"
+import type { BeadsResult } from "./types.js"
 
-/** Connect to the MCP host and render issue-list tool results. */
+/** Connect to the MCP host and render supported Beads tool results. */
 export function BeadsApp() {
-  const [result, setResult] = useState<IssueListResult>()
+  const [result, setResult] = useState<BeadsResult>()
   const [resultError, setResultError] = useState<string>()
   const [connectionError, setConnectionError] = useState<Error>()
 
   useEffect(() => {
-    const app = new App({ name: "Beads issue list", version: "0.1.0" }, {})
+    const app = new App({ name: "Beads issue view", version: "0.1.0" }, {})
     app.addEventListener("toolresult", (toolResult) => {
       if (toolResult.isError) {
-        setResultError("Beads could not load this issue list.")
+        setResultError("Beads could not load this result.")
         return
       }
 
-      const parsedResult = parseIssueListResult(toolResult.structuredContent)
+      const parsedResult = parseBeadsResult(toolResult.structuredContent)
       if (!parsedResult) {
-        setResultError("The host returned an unsupported Beads issue list.")
+        setResultError("The host returned an unsupported Beads result.")
         return
       }
 
@@ -41,7 +41,7 @@ export function BeadsApp() {
   if (connectionError || resultError) {
     return (
       <main className="app-message app-message--error">
-        <strong>Couldn’t show Beads issues</strong>
+        <strong>Couldn’t show Beads</strong>
         <span>{resultError ?? connectionError?.message}</span>
       </main>
     )
@@ -51,10 +51,10 @@ export function BeadsApp() {
     return (
       <main className="app-message" aria-live="polite">
         <span className="loading-dot" />
-        <span>Loading Beads issues…</span>
+        <span>Loading Beads…</span>
       </main>
     )
   }
 
-  return <IssueListView result={result} />
+  return <BeadsView result={result} />
 }

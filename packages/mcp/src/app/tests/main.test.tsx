@@ -31,6 +31,18 @@ test("renders an interactive MCP widget preview in development", async () => {
   expect(screen.getByText("6 issues")).toBeInTheDocument()
   expect(screen.getByRole("heading", { name: "Closed 1" })).toBeInTheDocument()
 
+  expect(screen.getByRole("option", { name: "Single issue" })).toBeInTheDocument()
+  fireEvent.change(screen.getByRole("combobox", { name: "Issue set" }), {
+    target: { value: "single" },
+  })
+  expect(screen.getByRole("heading", { name: "Display a single bead inline" })).toBeInTheDocument()
+  expect(screen.getByText("Give one issue enough room for its full context.")).toBeInTheDocument()
+  expect(screen.getByRole("heading", { name: "Dependencies 1" })).toBeInTheDocument()
+  expect(screen.getByText("blocks this issue")).toBeInTheDocument()
+  expect(screen.getByText("blocked by this issue")).toBeInTheDocument()
+  expect(screen.getByRole("heading", { name: "Comments 1" })).toBeInTheDocument()
+  expect(screen.getByText("Lynne")).toBeInTheDocument()
+
   fireEvent.change(screen.getByRole("combobox", { name: "Issue set" }), {
     target: { value: "empty" },
   })

@@ -1,6 +1,8 @@
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
+import { BEADS_APP_RESOURCE_URI } from "./constants.js"
 import { formatIssueDetail } from "./format-issue-detail.js"
 import type { CreateBeadsMcpServerOptions } from "./types.js"
 
@@ -11,7 +13,8 @@ export function registerGetIssueTool(
   /** Fixed workspace data dependencies. */
   options: CreateBeadsMcpServerOptions,
 ): void {
-  server.registerTool(
+  registerAppTool(
+    server,
     "get_issue",
     {
       annotations: {
@@ -24,6 +27,12 @@ export function registerGetIssueTool(
       description: "Get complete details for one issue in the current repository.",
       inputSchema: {
         id: z.string().min(1).describe("Beads issue ID, such as bd-123."),
+      },
+      _meta: {
+        ui: {
+          resourceUri: BEADS_APP_RESOURCE_URI,
+          visibility: ["model", "app"],
+        },
       },
       title: "Get Beads issue",
     },

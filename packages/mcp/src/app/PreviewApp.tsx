@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import "./preview.css"
-import { IssueListView } from "./IssueListView.js"
+import { BeadsView } from "./BeadsView.js"
 import { previewWidthLabels, previewWidths } from "./preview-config.js"
 import { previewResults } from "./preview-results.js"
 import type { PreviewScenario, PreviewTheme, PreviewWidth } from "./types.js"
@@ -19,7 +19,7 @@ export function PreviewApp() {
           <p className="preview-eyebrow">Development</p>
           <h1>MCP widget preview</h1>
         </div>
-        <p>Uses the same issue-list component bundled into the MCP App.</p>
+        <p>Uses the same issue views bundled into the MCP App.</p>
       </header>
 
       <section className="preview-controls" aria-label="Preview controls">
@@ -32,6 +32,7 @@ export function PreviewApp() {
           >
             <option value="active">Active issues</option>
             <option value="all">All statuses</option>
+            <option value="single">Single issue</option>
             <option value="empty">Empty state</option>
           </select>
         </label>
@@ -77,7 +78,7 @@ export function PreviewApp() {
           role="region"
           style={{ maxWidth: previewWidths[width] }}
         >
-          <IssueListView key={scenario} result={previewResults[scenario]} />
+          <BeadsView key={scenario} result={previewResults[scenario]} />
         </div>
       </section>
     </div>

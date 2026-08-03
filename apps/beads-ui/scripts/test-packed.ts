@@ -107,6 +107,13 @@ async function testPacked(): Promise<void> {
       await mcpClient.connect(mcpTransport)
       const tools = await mcpClient.listTools()
       assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), ["get_issue", "list_issues"])
+      assert.deepEqual(tools.tools.find((tool) => tool.name === "get_issue")?._meta, {
+        "ui/resourceUri": "ui://beads/issues.html",
+        ui: {
+          resourceUri: "ui://beads/issues.html",
+          visibility: ["model", "app"],
+        },
+      })
       const issueList = await mcpClient.callTool({ name: "list_issues", arguments: {} })
       const canonicalWorkspace = await realpath(workspaceDirectory)
       assert.deepEqual(issueList.structuredContent, {
@@ -126,6 +133,29 @@ async function testPacked(): Promise<void> {
             updatedAt: "2026-07-15T10:00:00Z",
           },
         ],
+        workspace: canonicalWorkspace,
+      })
+      const issueDetail = await mcpClient.callTool({
+        name: "get_issue",
+        arguments: { id: "bd-test.1" },
+      })
+      assert.deepEqual(issueDetail.structuredContent, {
+        issue: {
+          commentCount: 0,
+          comments: [],
+          createdAt: "2026-07-15T10:00:00Z",
+          dependencies: [],
+          dependencyCount: 0,
+          dependentCount: 0,
+          dependents: [],
+          id: "bd-test.1",
+          labels: [],
+          priority: 2,
+          status: "open",
+          title: "Packed smoke task",
+          type: "task",
+          updatedAt: "2026-07-15T10:00:00Z",
+        },
         workspace: canonicalWorkspace,
       })
       const resource = await mcpClient.readResource({ uri: "ui://beads/issues.html" })

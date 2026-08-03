@@ -116,6 +116,11 @@ describe("createBeadsMcpServer", () => {
 
     await Promise.all([client.connect(clientTransport), server.connect(serverTransport)])
 
+    const { tools } = await client.listTools()
+    expect(tools.find((tool) => tool.name === "get_issue")?._meta).toMatchObject({
+      ui: { resourceUri: "ui://beads/issues.html" },
+    })
+
     const result = await client.callTool({
       name: "get_issue",
       arguments: { id: "bd-456" },
