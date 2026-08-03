@@ -133,6 +133,10 @@ async function testPacked(): Promise<void> {
       assert.ok(view && "text" in view)
       assert.equal(view.mimeType, "text/html;profile=mcp-app")
       assert.match(view.text, /Beads issue list/)
+      assert.doesNotMatch(
+        view.text,
+        /MCP widget preview|preview-page|Teach the task list to make espresso/,
+      )
     } finally {
       await mcpClient.close()
     }

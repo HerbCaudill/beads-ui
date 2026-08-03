@@ -9,3 +9,12 @@ export type IssueListResult = {
   /** Absolute path to the queried Beads workspace. */
   readonly workspace: string
 }
+
+/** Fixture set shown in the browser preview. */
+export type PreviewScenario = "active" | "all" | "empty"
+
+/** Color scheme simulated by the browser preview. */
+export type PreviewTheme = "light" | "dark"
+
+/** Host width simulated by the browser preview. */
+export type PreviewWidth = "narrow" | "wide"
