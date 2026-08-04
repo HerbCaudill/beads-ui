@@ -1,4 +1,12 @@
-import { forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import type { KeyboardEvent } from "react"
 import { IconSearch, IconX } from "@tabler/icons-react"
 import {
@@ -9,6 +17,7 @@ import {
 } from "../../store"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@beads/components"
 import { getSearchSuggestions } from "../../lib/getSearchSuggestions"
+import { SearchSuggestions } from "./SearchSuggestions"
 
 /**
  * Search input for filtering tasks in the task list.
@@ -28,6 +37,9 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
   const clearSelectedTaskId = useBeadsViewStore((state) => state.clearSelectedTaskId)
   const visibleTaskIds = useBeadsViewStore(selectVisibleTaskIds)
   const suggestions = useMemo(() => getSearchSuggestions(query), [query])
+  const [isFocused, setIsFocused] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const showSuggestions = isFocused && suggestions.length > 0
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -42,16 +54,36 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setQuery(e.target.value)
+      setActiveSuggestionIndex(-1)
+    },
+    [setQuery],
+  )
+
+  const selectSuggestion = useCallback(
+    (suggestion: string) => {
+      setQuery(suggestion)
+      setActiveSuggestionIndex(-1)
+      inputRef.current?.focus()
     },
     [setQuery],
   )
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (
-        suggestions.length > 0 &&
-        (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter")
-      ) {
+      if (showSuggestions && e.key === "ArrowDown") {
+        e.preventDefault()
+        setActiveSuggestionIndex((index) => (index + 1) % suggestions.length)
+        return
+      }
+      if (showSuggestions && e.key === "ArrowUp") {
+        e.preventDefault()
+        setActiveSuggestionIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1))
+        return
+      }
+      if (showSuggestions && e.key === "Enter") {
+        e.preventDefault()
+        const suggestion = suggestions[activeSuggestionIndex]
+        if (suggestion) selectSuggestion(suggestion)
         return
       }
       if (e.key === "Enter" && selectedTaskId && onOpenTask) {
@@ -76,6 +108,8 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
         if (prevId) setSelectedTaskId(prevId)
       }
       if (e.key === "Escape") {
+        setIsFocused(false)
+        setActiveSuggestionIndex(-1)
         if (query) {
           clearQuery()
         }
@@ -92,13 +126,17 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
       query,
       clearQuery,
       clearSelectedTaskId,
-      suggestions.length,
+      showSuggestions,
+      suggestions,
+      activeSuggestionIndex,
+      selectSuggestion,
     ],
   )
 
   const handleClear = useCallback(() => {
     clearQuery()
     clearSelectedTaskId()
+    setActiveSuggestionIndex(-1)
   }, [clearQuery, clearSelectedTaskId])
 
   return (
@@ -112,19 +150,26 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
         value={query}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => {
+          setIsFocused(false)
+          setActiveSuggestionIndex(-1)
+        }}
         placeholder={placeholder}
         disabled={disabled}
+        role="combobox"
         aria-label="Search tasks"
         aria-description={SEARCH_HELP_TEXT}
+        aria-autocomplete="list"
+        aria-controls={showSuggestions ? suggestionListId : undefined}
+        aria-expanded={showSuggestions}
+        aria-activedescendant={
+          showSuggestions && activeSuggestionIndex >= 0
+            ? `${suggestionListId}-option-${activeSuggestionIndex}`
+            : undefined
+        }
         title={SEARCH_HELP_TEXT}
-        list={suggestions.length > 0 ? suggestionListId : undefined}
-        style={{ colorScheme: "light" }}
       />
-      <datalist id={suggestionListId}>
-        {suggestions.map((suggestion) => (
-          <option key={suggestion} value={suggestion} />
-        ))}
-      </datalist>
       {query && (
         <InputGroupAddon align="inline-end">
           <InputGroupButton
@@ -137,6 +182,15 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
             <IconX className="size-4" />
           </InputGroupButton>
         </InputGroupAddon>
+      )}
+      {showSuggestions && (
+        <SearchSuggestions
+          id={suggestionListId}
+          suggestions={suggestions}
+          activeIndex={activeSuggestionIndex}
+          onActiveIndexChange={setActiveSuggestionIndex}
+          onSelect={selectSuggestion}
+        />
       )}
     </InputGroup>
   )

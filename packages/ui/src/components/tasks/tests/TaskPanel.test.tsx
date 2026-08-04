@@ -72,7 +72,7 @@ describe("TaskPanel", () => {
   describe("search", () => {
     it("always renders search input", () => {
       render(<TaskPanel />)
-      expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
     })
   })
 })

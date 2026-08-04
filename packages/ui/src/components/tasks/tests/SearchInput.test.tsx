@@ -24,7 +24,7 @@ describe("SearchInput", () => {
   describe("rendering", () => {
     it("renders search input", () => {
       render(<SearchInput />)
-      expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
     })
 
     it("renders with custom placeholder", () => {
@@ -40,51 +40,76 @@ describe("SearchInput", () => {
     it("describes the structured filter syntax", () => {
       render(<SearchInput />)
 
-      expect(screen.getByRole("textbox", { name: "Search tasks" })).toHaveAccessibleDescription(
+      expect(screen.getByRole("combobox", { name: "Search tasks" })).toHaveAccessibleDescription(
         "Filter with status:, label:, priority:, type:, parent:, or is:. Use commas for alternatives and - to exclude.",
       )
     })
 
     it("suggests canonical filter values", () => {
       render(<SearchInput />)
-      const input = screen.getByRole("textbox", { name: "Search tasks" })
+      const input = screen.getByRole("combobox", { name: "Search tasks" })
 
+      fireEvent.focus(input)
       fireEvent.change(input, { target: { value: "status:i" } })
 
-      expect(input).toHaveAttribute("list")
-      expect(document.querySelector('option[value="status:in_progress"]')).toBeInTheDocument()
+      expect(input).not.toHaveAttribute("list")
+      const listbox = screen.getByRole("listbox", { name: "Search suggestions" })
+      const option = screen.getByRole("option", { name: "status:in_progress" })
+      expect(listbox).toHaveClass("bg-white")
+      expect(input).toHaveAttribute("aria-expanded", "true")
+      expect(input).toHaveAttribute("aria-controls", listbox.id)
+      expect(option).toBeInTheDocument()
+
+      fireEvent.keyDown(input, { key: "ArrowDown" })
+
+      expect(input).toHaveAttribute("aria-activedescendant", option.id)
     })
 
-    it("uses a light color scheme for the native suggestions popup", () => {
+    it("applies a suggestion with the keyboard", () => {
       render(<SearchInput />)
+      const input = screen.getByRole("combobox", { name: "Search tasks" })
+      fireEvent.focus(input)
+      fireEvent.change(input, { target: { value: "status:i" } })
 
-      expect(screen.getByRole("textbox", { name: "Search tasks" })).toHaveStyle({
-        colorScheme: "light",
-      })
+      fireEvent.keyDown(input, { key: "ArrowDown" })
+      fireEvent.keyDown(input, { key: "Enter" })
+
+      expect(input).toHaveValue("status:in_progress")
+    })
+
+    it("applies a suggestion with the mouse", () => {
+      render(<SearchInput />)
+      const input = screen.getByRole("combobox", { name: "Search tasks" })
+      fireEvent.focus(input)
+      fireEvent.change(input, { target: { value: "status:i" } })
+
+      fireEvent.click(screen.getByRole("option", { name: "status:in_progress" }))
+
+      expect(input).toHaveValue("status:in_progress")
     })
 
     it("renders search icon", () => {
       render(<SearchInput />)
       // The search icon is rendered but hidden from screen readers
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
       expect(input.parentElement?.querySelector("svg")).toBeInTheDocument()
     })
 
     it("applies custom className", () => {
       render(<SearchInput className="custom-class" />)
-      expect(screen.getByRole("textbox").parentElement).toHaveClass("custom-class")
+      expect(screen.getByRole("combobox").parentElement).toHaveClass("custom-class")
     })
 
     it("can be disabled", () => {
       render(<SearchInput disabled />)
-      expect(screen.getByRole("textbox")).toBeDisabled()
+      expect(screen.getByRole("combobox")).toBeDisabled()
     })
   })
 
   describe("input behavior", () => {
     it("updates store on input change", () => {
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.change(input, { target: { value: "test query" } })
 
@@ -118,7 +143,7 @@ describe("SearchInput", () => {
       beadsViewStore.getState().setTaskSearchQuery("test query")
       render(<SearchInput />)
 
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
       fireEvent.keyDown(input, { key: "Escape" })
 
       expect(beadsViewStore.getState().taskSearchQuery).toBe("")
@@ -133,7 +158,7 @@ describe("SearchInput", () => {
 
     it("selects first task on ArrowDown when no task is selected", () => {
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowDown" })
 
@@ -142,18 +167,23 @@ describe("SearchInput", () => {
 
     it("leaves arrow keys available for filter suggestions", () => {
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
+      fireEvent.focus(input)
       fireEvent.change(input, { target: { value: "status:i" } })
 
       fireEvent.keyDown(input, { key: "ArrowDown" })
 
       expect(beadsViewStore.getState().selectedTaskId).toBe(null)
+      expect(screen.getByRole("option", { name: "status:in_progress" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      )
     })
 
     it("selects next task on ArrowDown", () => {
       beadsViewStore.getState().setSelectedTaskId("task-1")
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowDown" })
 
@@ -163,7 +193,7 @@ describe("SearchInput", () => {
     it("stays on last task when ArrowDown at end of list", () => {
       beadsViewStore.getState().setSelectedTaskId("task-3")
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowDown" })
 
@@ -172,7 +202,7 @@ describe("SearchInput", () => {
 
     it("selects last task on ArrowUp when no task is selected", () => {
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowUp" })
 
@@ -182,7 +212,7 @@ describe("SearchInput", () => {
     it("selects previous task on ArrowUp", () => {
       beadsViewStore.getState().setSelectedTaskId("task-2")
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowUp" })
 
@@ -192,7 +222,7 @@ describe("SearchInput", () => {
     it("stays on first task when ArrowUp at beginning of list", () => {
       beadsViewStore.getState().setSelectedTaskId("task-1")
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowUp" })
 
@@ -203,7 +233,7 @@ describe("SearchInput", () => {
       const onOpenTask = vi.fn()
       beadsViewStore.getState().setSelectedTaskId("task-2")
       render(<SearchInput onOpenTask={onOpenTask} />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "Enter" })
 
@@ -215,7 +245,7 @@ describe("SearchInput", () => {
     it("does not call onOpenTask when Enter is pressed without selected task", () => {
       const onOpenTask = vi.fn()
       render(<SearchInput onOpenTask={onOpenTask} />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "Enter" })
 
@@ -226,7 +256,8 @@ describe("SearchInput", () => {
       const onOpenTask = vi.fn()
       beadsViewStore.getState().setSelectedTaskId("task-2")
       render(<SearchInput onOpenTask={onOpenTask} />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
+      fireEvent.focus(input)
       fireEvent.change(input, { target: { value: "status:i" } })
 
       fireEvent.keyDown(input, { key: "Enter" })
@@ -237,7 +268,7 @@ describe("SearchInput", () => {
     it("clears selection on Escape", () => {
       beadsViewStore.getState().setSelectedTaskId("task-2")
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "Escape" })
 
@@ -247,7 +278,7 @@ describe("SearchInput", () => {
     it("handles empty visible task list gracefully", () => {
       beadsViewStore.getState().setVisibleTaskIds([])
       render(<SearchInput />)
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
 
       fireEvent.keyDown(input, { key: "ArrowDown" })
 
@@ -260,7 +291,7 @@ describe("SearchInput", () => {
       const ref = createRef<SearchInputHandle>()
       render(<SearchInput ref={ref} />)
 
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
       expect(document.activeElement).not.toBe(input)
 
       ref.current?.focus()
@@ -282,7 +313,7 @@ describe("SearchInput", () => {
       beadsViewStore.getState().setTaskSearchQuery("existing query")
       render(<SearchInput />)
 
-      expect(screen.getByRole("textbox")).toHaveValue("existing query")
+      expect(screen.getByRole("combobox")).toHaveValue("existing query")
     })
   })
 
@@ -290,7 +321,7 @@ describe("SearchInput", () => {
     it("blurs input when Escape is pressed", () => {
       render(<SearchInput />)
 
-      const input = screen.getByRole("textbox")
+      const input = screen.getByRole("combobox")
       input.focus()
       expect(document.activeElement).toBe(input)
 

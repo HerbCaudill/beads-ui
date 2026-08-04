@@ -41,7 +41,7 @@ describe("TaskPanelController", () => {
       render(<TaskPanelController />)
 
       await waitFor(() => {
-        expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+        expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
       })
 
       expect(screen.queryByRole("textbox", { name: /new task title/i })).not.toBeInTheDocument()
@@ -51,7 +51,7 @@ describe("TaskPanelController", () => {
       render(<TaskPanelController hideQuickInput={false} />)
 
       await waitFor(() => {
-        expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+        expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
       })
 
       expect(screen.getByRole("textbox", { name: /new task title/i })).toBeInTheDocument()
@@ -103,10 +103,10 @@ describe("TaskPanelController", () => {
       render(<TaskPanelController />)
 
       await waitFor(() => {
-        expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+        expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
       })
 
-      expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
     })
   })
 
@@ -115,7 +115,7 @@ describe("TaskPanelController", () => {
       render(<TaskPanelController />)
 
       await waitFor(() => {
-        expect(screen.getByRole("textbox", { name: "Search tasks" })).toBeInTheDocument()
+        expect(screen.getByRole("combobox", { name: "Search tasks" })).toBeInTheDocument()
       })
 
       expect(screen.getByText(/tasks$/i)).toBeInTheDocument()

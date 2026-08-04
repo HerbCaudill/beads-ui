@@ -38,11 +38,11 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
   await expect(sidebar).toHaveCSS("width", "468px")
 
   await page
-    .getByRole("textbox", { name: "Search tasks" })
+    .getByRole("combobox", { name: "Search tasks" })
     .fill("status:open priority:P2 is:ready Packaged")
   await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Packaged blocked task" })).not.toBeVisible()
-  await page.getByRole("textbox", { name: "Search tasks" }).clear()
+  await page.getByRole("combobox", { name: "Search tasks" }).clear()
 
   await page.getByRole("textbox", { name: "New task title" }).fill("Created in browser")
   await page.getByRole("textbox", { name: "New task title" }).press("Enter")

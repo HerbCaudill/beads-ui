@@ -139,7 +139,7 @@ export const SearchIsAlwaysVisible: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const searchInput = canvas.getByRole("textbox", { name: "Search tasks" })
+    const searchInput = canvas.getByRole("combobox", { name: "Search tasks" })
     await expect(searchInput).toBeInTheDocument()
   },
 }
@@ -157,7 +157,7 @@ export const EscapeClearsSearchAndBlurs: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const searchInput = canvas.getByRole("textbox", { name: "Search tasks" })
+    const searchInput = canvas.getByRole("combobox", { name: "Search tasks" })
     await expect(searchInput).toBeInTheDocument()
     await expect(searchInput).toHaveValue("test")
 
@@ -184,7 +184,7 @@ export const SearchWithQueryAndClear: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const searchInput = canvas.getByRole("textbox", { name: "Search tasks" })
+    const searchInput = canvas.getByRole("combobox", { name: "Search tasks" })
 
     await userEvent.type(searchInput, "auth")
     await expect(searchInput).toHaveValue("auth")
@@ -229,7 +229,7 @@ export const AllSectionsRenderedInOrder: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    const searchInput = canvas.getByRole("textbox", { name: "Search tasks" })
+    const searchInput = canvas.getByRole("combobox", { name: "Search tasks" })
     const taskList = canvas.getByRole("list", { name: "Task list" })
     const progressBar = canvas.getByRole("progressbar", { name: "Task completion progress" })
 
