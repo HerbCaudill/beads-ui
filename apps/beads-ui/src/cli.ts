@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createBeadsMcpServer } from "@beads/mcp"
-import { createCommandRunner, getIssue, listIssues } from "@beads/sdk"
+import { createCommandRunner, getIssue, getIssuePrefix, listIssues } from "@beads/sdk"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import open from "open"
 import { readFile } from "node:fs/promises"
@@ -30,6 +30,7 @@ try {
         if (!issue) throw new Error(`Beads issue not found: ${id}`)
         return issue
       },
+      getIssuePrefix: (workspace) => getIssuePrefix({ cwd: workspace, runner }),
       listIssues: (workspace) => listIssues({ cwd: workspace, runner }),
       readViewHtml: () =>
         readFile(fileURLToPath(new URL("./mcp-app.html", import.meta.url)), "utf8"),

@@ -16,6 +16,7 @@ describe("startMcpApplication", () => {
     await startMcpApplication("/workspace", {
       createServer,
       getIssue: vi.fn(),
+      getIssuePrefix: vi.fn(async () => "foo-bar"),
       listIssues: vi.fn(),
       readViewHtml: async () => "<html>Beads</html>",
       transport: { start: vi.fn(), send: vi.fn(), close: vi.fn() },
@@ -25,6 +26,7 @@ describe("startMcpApplication", () => {
     expect(validateWorkspace).toHaveBeenCalledWith("/workspace")
     expect(createServer).toHaveBeenCalledOnce()
     expect(serverOptions).toMatchObject({
+      issuePrefix: "foo-bar",
       viewHtml: "<html>Beads</html>",
       workspace: "/canonical/workspace",
     })

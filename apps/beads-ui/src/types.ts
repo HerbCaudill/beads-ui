@@ -69,6 +69,8 @@ export type StartMcpDependencies = {
   }
   /** Load one issue from the validated workspace. */
   readonly getIssue: (workspace: string, id: string) => Promise<Issue | IssueDetail>
+  /** Load the issue prefix configured for the validated workspace. */
+  readonly getIssuePrefix: (workspace: string) => Promise<string>
   /** Load every issue from the validated workspace. */
   readonly listIssues: (workspace: string) => Promise<readonly Issue[]>
   /** Read the self-contained MCP App HTML bundled with the executable. */

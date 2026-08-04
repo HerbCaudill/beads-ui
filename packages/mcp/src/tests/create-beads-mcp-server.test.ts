@@ -18,6 +18,7 @@ describe("createBeadsMcpServer", () => {
   test("advertises a readable inline view for the issue list", async () => {
     const server = createBeadsMcpServer({
       getIssue: async () => issue,
+      issuePrefix: "bd",
       listIssues: async () => [issue],
       viewHtml: "<html>Beads task list</html>",
       workspace: "/work/acme",
@@ -31,6 +32,16 @@ describe("createBeadsMcpServer", () => {
 
     const { tools } = await client.listTools()
     const listTool = tools.find((tool) => tool.name === "list_issues")
+    expect(listTool?.inputSchema).toMatchObject({
+      properties: {
+        search: {
+          description: expect.stringMatching(
+            /Bare terms search issue ID, title, and description.*priority:<=P1/s,
+          ),
+          type: "string",
+        },
+      },
+    })
     expect(listTool?._meta).toMatchObject({
       ui: { resourceUri: "ui://beads/issues.html" },
     })
@@ -52,6 +63,7 @@ describe("createBeadsMcpServer", () => {
   test("returns active issues as structured content with a text fallback", async () => {
     const server = createBeadsMcpServer({
       getIssue: async () => issue,
+      issuePrefix: "bd",
       listIssues: async () => [closedIssue, issue],
       viewHtml: "<html></html>",
       workspace: "/work/acme",
@@ -80,6 +92,7 @@ describe("createBeadsMcpServer", () => {
   test("includes closed issues when requested", async () => {
     const server = createBeadsMcpServer({
       getIssue: async () => issue,
+      issuePrefix: "bd",
       listIssues: async () => [closedIssue, issue],
       viewHtml: "<html></html>",
       workspace: "/work/acme",
@@ -102,9 +115,44 @@ describe("createBeadsMcpServer", () => {
     })
   })
 
+  test("filters listed issues with structured search terms", async () => {
+    const server = createBeadsMcpServer({
+      getIssue: async () => issue,
+      issuePrefix: "bd",
+      listIssues: async () => [closedIssue, lowerPriorityIssue, issue],
+      viewHtml: "<html></html>",
+      workspace: "/work/acme",
+    })
+    const client = new Client({ name: "test-client", version: "1.0.0" })
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    clients.push(client)
+    servers.push(server)
+
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)])
+
+    const result = await client.callTool({
+      name: "list_issues",
+      arguments: { search: "priority:P1 type:feature" },
+    })
+
+    expect(result.structuredContent).toEqual({
+      includeClosed: false,
+      issues: [issue],
+      search: "priority:P1 type:feature",
+      workspace: "/work/acme",
+    })
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "1 active Beads issue in /work/acme\n\n[P1] bd-123 · in progress · Add MCP support",
+      },
+    ])
+  })
+
   test("returns the requested issue details", async () => {
     const server = createBeadsMcpServer({
       getIssue: async (id) => ({ ...issue, id }),
+      issuePrefix: "bd",
       listIssues: async () => [],
       viewHtml: "<html></html>",
       workspace: "/work/acme",
@@ -153,4 +201,11 @@ const closedIssue = {
   id: "bd-100",
   status: "closed",
   title: "Research MCP Apps",
+} satisfies Issue
+
+const lowerPriorityIssue = {
+  ...issue,
+  id: "bd-200",
+  priority: 2,
+  title: "Polish the MCP widget",
 } satisfies Issue

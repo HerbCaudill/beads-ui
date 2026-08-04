@@ -6,6 +6,8 @@ export type CreateBeadsMcpServerOptions = {
   readonly getIssue: (id: string) => Promise<IssueDetail | Issue>
   /** Load all issues in the workspace. */
   readonly listIssues: () => Promise<readonly Issue[]>
+  /** Issue prefix configured for the workspace. */
+  readonly issuePrefix: string
   /** Bundled HTML served as the inline MCP App. */
   readonly viewHtml: string
   /** Absolute path to the fixed Beads workspace. */
