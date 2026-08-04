@@ -55,6 +55,14 @@ describe("SearchInput", () => {
       expect(document.querySelector('option[value="status:in_progress"]')).toBeInTheDocument()
     })
 
+    it("uses a light color scheme for the native suggestions popup", () => {
+      render(<SearchInput />)
+
+      expect(screen.getByRole("textbox", { name: "Search tasks" })).toHaveStyle({
+        colorScheme: "light",
+      })
+    })
+
     it("renders search icon", () => {
       render(<SearchInput />)
       // The search icon is rendered but hidden from screen readers

@@ -118,6 +118,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
         aria-description={SEARCH_HELP_TEXT}
         title={SEARCH_HELP_TEXT}
         list={suggestions.length > 0 ? suggestionListId : undefined}
+        style={{ colorScheme: "light" }}
       />
       <datalist id={suggestionListId}>
         {suggestions.map((suggestion) => (
