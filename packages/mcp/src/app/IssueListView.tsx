@@ -1,58 +1,77 @@
+import { GroupedTaskList, type TaskGroupDescriptor, type TaskStatus } from "@beads/ui/presentation"
 import { IconSearch } from "@tabler/icons-react"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { getIssueGroups } from "./get-issue-groups.js"
-import { getWorkspaceName } from "./get-workspace-name.js"
-import { IssueGroup } from "./IssueGroup.js"
+import { issueToTask } from "./issue-to-task.js"
 import { matchesIssueSearch } from "./matches-issue-search.js"
 import type { IssueListResult } from "./types.js"
 
 /** Render the structured issue-list result inline. */
-export function IssueListView({ result }: IssueListViewProps) {
+export function IssueListView({ onOpenIssue, result }: IssueListViewProps) {
   const [query, setQuery] = useState("")
-  const issues = useMemo(
-    () => result.issues.filter((issue) => matchesIssueSearch(issue, query)),
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedGroups>({ closed: true })
+
+  const toggleGroup = useCallback(
+    (status: TaskStatus) =>
+      setCollapsedGroups((current) => ({ ...current, [status]: !(current[status] ?? false) })),
+    [],
+  )
+
+  const tasks = useMemo(
+    () => result.issues.filter((issue) => matchesIssueSearch(issue, query)).map(issueToTask),
     [query, result.issues],
   )
-  const groups = getIssueGroups(issues)
+  const groups = useMemo<TaskGroupDescriptor[]>(
+    () =>
+      getIssueGroups(tasks).map((group) => ({
+        count: group.tasks.length,
+        isCollapsed: collapsedGroups[group.status] ?? false,
+        key: group.status,
+        label: group.label,
+        onToggle: () => toggleGroup(group.status),
+        // The widget groups strictly by status, so every task renders as its own root.
+        trees: group.tasks.map((task) => ({ task, children: [] })),
+      })),
+    [collapsedGroups, tasks, toggleGroup],
+  )
+
   const hasQuery = query.trim().length > 0
   const countLabel = hasQuery
-    ? `${issues.length} matching ${issues.length === 1 ? "issue" : "issues"}`
-    : `${issues.length}${result.includeClosed ? "" : " active"} ${
-        issues.length === 1 ? "issue" : "issues"
+    ? `${tasks.length} matching ${tasks.length === 1 ? "issue" : "issues"}`
+    : `${tasks.length}${result.includeClosed ? "" : " active"} ${
+        tasks.length === 1 ? "issue" : "issues"
       }`
 
   return (
-    <main className="issue-list">
-      <header className="issue-list__header">
-        <div>
-          <p className="eyebrow">Beads</p>
-          <h1>{getWorkspaceName(result.workspace)}</h1>
-        </div>
-        <span className="issue-list__summary">{countLabel}</span>
-      </header>
-
-      <label className="search">
-        <IconSearch aria-hidden="true" />
-        <span className="sr-only">Filter issues</span>
-        <input
-          aria-label="Filter issues"
-          onChange={(event) => setQuery(event.currentTarget.value)}
-          placeholder="Filter issues"
-          type="search"
-          value={query}
-        />
-      </label>
+    <main className="min-w-70">
+      <div className="flex items-center gap-3 px-2 py-2">
+        <label className="border-border bg-muted focus-within:ring-ring flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border px-2 focus-within:ring-1">
+          <IconSearch aria-hidden="true" className="text-muted-foreground size-3.5 shrink-0" />
+          <span className="sr-only">Filter issues</span>
+          <input
+            aria-label="Filter issues"
+            className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-xs outline-none"
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder="Filter issues"
+            type="search"
+            value={query}
+          />
+        </label>
+        <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+          {countLabel}
+        </span>
+      </div>
 
       {groups.length > 0 ? (
-        <div className="issue-list__groups">
-          {groups.map((group) => (
-            <IssueGroup group={group} key={group.config.status} />
-          ))}
-        </div>
+        <GroupedTaskList
+          className="h-auto overflow-visible"
+          groups={groups}
+          onTaskClick={onOpenIssue}
+        />
       ) : (
-        <div className="empty-state">
-          <p>
+        <div className="text-muted-foreground border-border mx-2 mb-2 rounded-lg border border-dashed px-3 py-6 text-center text-xs">
+          <p className="m-0">
             {hasQuery
               ? "No matching issues"
               : result.includeClosed
@@ -66,8 +85,13 @@ export function IssueListView({ result }: IssueListViewProps) {
   )
 }
 
+/** Collapsed state for each status group, keyed by status. */
+type CollapsedGroups = Partial<Record<TaskStatus, boolean>>
+
 /** Props for the inline issue-list view. */
 export type IssueListViewProps = {
+  /** Drill into one issue. Omit to render the list as read-only. */
+  readonly onOpenIssue?: (id: string) => void
   /** Structured tool result to display. */
   readonly result: IssueListResult
 }

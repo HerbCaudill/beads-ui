@@ -106,7 +106,7 @@ export const statusConfig: Record<TaskStatus, StatusConfig> = {
   },
   in_progress: {
     icon: IconLoader2,
-    label: "In Progress",
+    label: "In progress",
     color: "text-status-info",
     bgColor: "bg-status-info/10",
     animate: "animate-spin",

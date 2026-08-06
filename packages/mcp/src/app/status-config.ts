@@ -1,30 +1,23 @@
-import {
-  IconBan,
-  IconCircle,
-  IconCircleCheck,
-  IconClock,
-  IconLoader2,
-  type TablerIcon,
-} from "@tabler/icons-react"
-import type { IssueStatus } from "@beads/sdk"
+import type { TaskStatus } from "@beads/ui/presentation"
 
-/** Presentation and ordering for issue status groups. */
-export const STATUS_CONFIG: readonly StatusConfig[] = [
-  { icon: IconLoader2, label: "In progress", status: "in_progress", tone: "info" },
-  { icon: IconBan, label: "Blocked", status: "blocked", tone: "danger" },
-  { icon: IconCircle, label: "Ready", status: "open", tone: "neutral" },
-  { icon: IconClock, label: "Deferred", status: "deferred", tone: "warning" },
-  { icon: IconCircleCheck, label: "Closed", status: "closed", tone: "success" },
+/**
+ * Status groups shown in the issue list, in workflow order.
+ *
+ * Icons and colors come from `statusConfig` in `@beads/ui`; only the ordering and
+ * the widget's own labels are defined here.
+ */
+export const STATUS_GROUPS: readonly StatusGroup[] = [
+  { label: "In progress", status: "in_progress" },
+  { label: "Blocked", status: "blocked" },
+  { label: "Ready", status: "open" },
+  { label: "Deferred", status: "deferred" },
+  { label: "Closed", status: "closed" },
 ]
 
-/** Visual details for one issue status. */
-export type StatusConfig = {
-  /** Icon shown beside the group and issue. */
-  readonly icon: TablerIcon
-  /** User-facing status label. */
+/** One status group heading in the issue list. */
+export type StatusGroup = {
+  /** User-facing group label. */
   readonly label: string
-  /** Beads status value. */
-  readonly status: IssueStatus
-  /** Semantic color token applied to the status. */
-  readonly tone: "danger" | "info" | "neutral" | "success" | "warning"
+  /** Beads status collected under the label. */
+  readonly status: TaskStatus
 }

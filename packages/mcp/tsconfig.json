@@ -2,6 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    // Bundler resolution so the widget can import `@beads/ui` source directly.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "noEmit": true,
     "rootDir": ".",
     "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"]

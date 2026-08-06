@@ -1,22 +1,20 @@
-import type { Issue } from "@beads/sdk"
+import type { Task } from "@beads/ui/presentation"
 
-import { STATUS_CONFIG, type StatusConfig } from "./status-config.js"
+import { STATUS_GROUPS, type StatusGroup } from "./status-config.js"
 
-/** Group issues in a stable workflow order, omitting empty groups. */
+/** Group tasks by status in a stable workflow order, omitting empty groups. */
 export function getIssueGroups(
-  /** Issues visible after filtering. */
-  issues: readonly Issue[],
+  /** Tasks visible after filtering. */
+  tasks: readonly Task[],
 ): readonly IssueGroup[] {
-  return STATUS_CONFIG.map((config) => ({
-    config,
-    issues: issues.filter((issue) => issue.status === config.status),
-  })).filter((group) => group.issues.length > 0)
+  return STATUS_GROUPS.map((group) => ({
+    ...group,
+    tasks: tasks.filter((task) => task.status === group.status),
+  })).filter((group) => group.tasks.length > 0)
 }
 
-/** One visible group of issues sharing a workflow status. */
-export type IssueGroup = {
-  /** Presentation details for the status. */
-  readonly config: StatusConfig
-  /** Issues belonging to the status. */
-  readonly issues: readonly Issue[]
+/** One visible group of tasks sharing a workflow status. */
+export type IssueGroup = StatusGroup & {
+  /** Tasks belonging to the status. */
+  readonly tasks: readonly Task[]
 }

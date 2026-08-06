@@ -1,4 +1,4 @@
-import type { BeadsResult, PreviewScenario } from "./types.js"
+import type { BeadsResult, IssueResult, LoadIssue, PreviewScenario } from "./types.js"
 
 /** Active issues covering the widget's supported metadata and status groups. */
 const activeIssues = [
@@ -161,3 +161,12 @@ export const previewResults = {
     workspace: "/work/beads-ui",
   },
 } satisfies Record<PreviewScenario, BeadsResult>
+
+/** Stand in for the host's `get_issue` tool so the preview can drill into a row. */
+export const loadPreviewIssue: LoadIssue = (id) => {
+  const issue = [...activeIssues, closedIssue].find((candidate) => candidate.id === id)
+  if (!issue) return Promise.reject(new Error(`Beads could not load ${id}.`))
+
+  const result: IssueResult = { issue, workspace: "/work/beads-ui" }
+  return Promise.resolve(result)
+}

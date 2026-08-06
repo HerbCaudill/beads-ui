@@ -13,13 +13,21 @@ describe("IssueListView", () => {
   test("groups issues into a compact repository summary", () => {
     render(<IssueListView result={result} />)
 
-    expect(screen.getByRole("heading", { name: "beads-ui" })).toBeInTheDocument()
     expect(screen.getByText("3 active issues")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "In progress 1" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Ready 1" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Blocked 1" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "In progress section, 1 task" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Ready section, 1 task" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Blocked section, 1 task" })).toBeInTheDocument()
     expect(screen.getByText("Add MCP support")).toBeInTheDocument()
-    expect(screen.getByText("mcp")).toBeInTheDocument()
+  })
+
+  test("collapses and expands a status group", () => {
+    render(<IssueListView result={result} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "In progress section, 1 task" }))
+    expect(screen.queryByText("Add MCP support")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "In progress section, 1 task" }))
+    expect(screen.getByText("Add MCP support")).toBeInTheDocument()
   })
 
   test("filters issues by ID, title, description, and label", () => {
@@ -76,7 +84,7 @@ describe("IssueListView", () => {
     )
 
     expect(screen.getByText("4 issues")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Closed 1" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Closed section, 1 task" })).toBeInTheDocument()
     expect(screen.queryByText("4 active issues")).not.toBeInTheDocument()
   })
 })

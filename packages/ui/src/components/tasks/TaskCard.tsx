@@ -60,8 +60,9 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(function TaskC
   const shouldSpin = !!config.animate
 
   const handleClick = useCallback(() => {
-    // Copy task ID to clipboard when card is clicked
-    void navigator.clipboard.writeText(task.id).catch(() => undefined)
+    // Copy task ID to clipboard when card is clicked. Sandboxed hosts such as the
+    // MCP widget iframe expose no clipboard at all, so selection must not depend on it.
+    void navigator.clipboard?.writeText(task.id).catch(() => undefined)
     onClick?.(task.id)
   }, [onClick, task.id])
 

@@ -12,10 +12,14 @@ export function CopyableTaskId({ taskId, displayId, className }: CopyableTaskIdP
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      navigator.clipboard.writeText(taskId).then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
-      })
+      // Sandboxed hosts such as the MCP widget iframe expose no clipboard at all.
+      void navigator.clipboard
+        ?.writeText(taskId)
+        .then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        })
+        .catch(() => undefined)
     },
     [taskId],
   )

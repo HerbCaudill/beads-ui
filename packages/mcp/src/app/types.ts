@@ -21,6 +21,16 @@ export type IssueResult = {
   readonly workspace: string
 }
 
+/**
+ * Fetch one issue's full detail so the list can drill into it.
+ *
+ * Rejects when the issue can't be loaded; the caller renders the failure.
+ */
+export type LoadIssue = (
+  /** Beads issue ID to load. */
+  id: string,
+) => Promise<IssueResult>
+
 /** Fixture set shown in the browser preview. */
 export type PreviewScenario = "active" | "all" | "empty" | "single"
 

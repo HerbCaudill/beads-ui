@@ -3,7 +3,7 @@ import { useState } from "react"
 import "./preview.css"
 import { BeadsView } from "./BeadsView.js"
 import { previewWidthLabels, previewWidths } from "./preview-config.js"
-import { previewResults } from "./preview-results.js"
+import { loadPreviewIssue, previewResults } from "./preview-results.js"
 import type { PreviewScenario, PreviewTheme, PreviewWidth } from "./types.js"
 
 /** Render the production issue-list view inside an interactive browser preview. */
@@ -78,7 +78,11 @@ export function PreviewApp() {
           role="region"
           style={{ maxWidth: previewWidths[width] }}
         >
-          <BeadsView key={scenario} result={previewResults[scenario]} />
+          <BeadsView
+            key={scenario}
+            loadIssue={loadPreviewIssue}
+            result={previewResults[scenario]}
+          />
         </div>
       </section>
     </div>

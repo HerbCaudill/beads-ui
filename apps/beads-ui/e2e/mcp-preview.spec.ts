@@ -11,16 +11,37 @@ test("previews the production widget at a narrow host width", async ({ page }) =
 
   await page.getByRole("button", { name: "Narrow width" }).click()
 
-  const workspaceHeading = page.getByRole("heading", { name: "beads-ui" })
-  const summary = page.getByText("5 active issues")
+  await expect(page.getByText("5 active issues")).toBeVisible()
+
+  const widget = page.getByRole("region", { name: "Widget preview, 360 pixels wide" })
   await expect
-    .poll(async () => {
-      const workspaceBox = await workspaceHeading.boundingBox()
-      const summaryBox = await summary.boundingBox()
-      if (!workspaceBox || !summaryBox) return false
-      return summaryBox.y > workspaceBox.y + workspaceBox.height
-    })
+    .poll(() => widget.evaluate((element) => element.scrollWidth <= element.clientWidth))
     .toBe(true)
+  expect(consoleErrors).toEqual([])
+})
+
+test("drills from the issue list into one issue and back", async ({ page }) => {
+  const consoleErrors: string[] = []
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text())
+  })
+
+  await page.goto("http://127.0.0.1:4175/")
+  await page.getByRole("searchbox", { name: "Filter issues" }).fill("espresso")
+  await expect(page.getByText("1 matching issue")).toBeVisible()
+
+  await page.getByRole("button", { name: "Teach the task list to make espresso" }).click()
+
+  await expect(
+    page.getByRole("heading", { name: "Teach the task list to make espresso" }),
+  ).toBeVisible()
+  await expect(page.getByRole("searchbox", { name: "Filter issues" })).toBeHidden()
+
+  await page.getByRole("button", { name: "All issues" }).click()
+
+  // The filter survives the round trip because the list stays mounted behind the detail.
+  await expect(page.getByRole("searchbox", { name: "Filter issues" })).toHaveValue("espresso")
+  await expect(page.getByText("1 matching issue")).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 

@@ -1,43 +1,46 @@
+import { CopyableTaskId, statusConfig } from "@beads/ui/presentation"
 import { IconGitBranch, IconUser } from "@tabler/icons-react"
 
-import { getWorkspaceName } from "./get-workspace-name.js"
 import { IssueComments } from "./IssueComments.js"
 import { RelatedIssueList } from "./RelatedIssueList.js"
-import { STATUS_CONFIG } from "./status-config.js"
 import type { IssueResult } from "./types.js"
 
 /** Render one issue with its full available Beads context. */
 export function IssueDetailView({ result }: IssueDetailViewProps) {
   const { issue } = result
-  const status = STATUS_CONFIG.find((candidate) => candidate.status === issue.status)
-  const StatusIcon = status?.icon
+  const status = statusConfig[issue.status]
+  const StatusIcon = status.icon
   const comments = "comments" in issue ? issue.comments : []
   const dependencies = "dependencies" in issue ? issue.dependencies : []
   const dependents = "dependents" in issue ? issue.dependents : []
 
   return (
-    <main className="issue-detail">
-      <header className="issue-detail__header">
-        <div className="issue-detail__context">
-          <span>Beads</span>
-          <span aria-hidden="true">·</span>
-          <span>{getWorkspaceName(result.workspace)}</span>
+    <main className="flex min-w-70 flex-col gap-4 p-4">
+      <header>
+        <div className="flex items-center gap-2">
+          <CopyableTaskId displayId={issue.id} taskId={issue.id} />
+          <span className="bg-muted text-muted-foreground rounded px-1 py-0.5 text-[10px] leading-none font-medium">
+            P{issue.priority}
+          </span>
         </div>
-        <div className="issue-detail__identity">
-          <code className="issue-id">{issue.id}</code>
-          <span className={`priority priority--${issue.priority}`}>P{issue.priority}</span>
-        </div>
-        <h1>{issue.title}</h1>
-        <div className="issue-detail__badges">
-          {StatusIcon && (
-            <span className={`status-badge status-badge--${status.tone}`}>
-              <StatusIcon aria-hidden="true" stroke={2} />
-              {status.label}
-            </span>
-          )}
-          <span className="detail-badge">{issue.type}</span>
+        <h1 className="mt-1.5 mb-0 text-lg leading-snug font-semibold break-words">
+          {issue.title}
+        </h1>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span
+            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ${status.color} ${status.bgColor}`}
+          >
+            <StatusIcon aria-hidden="true" className="size-3.5" />
+            {status.label}
+          </span>
+          <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+            {issue.type}
+          </span>
           {issue.labels.map((label) => (
-            <span className="label" key={label}>
+            <span
+              className="border-border text-muted-foreground rounded border px-1.5 py-0.5 text-xs"
+              key={label}
+            >
               {label}
             </span>
           ))}
@@ -45,51 +48,62 @@ export function IssueDetailView({ result }: IssueDetailViewProps) {
       </header>
 
       {issue.description && (
-        <section className="issue-description">
-          <h2>Description</h2>
-          <p>{issue.description}</p>
+        <section>
+          <h2 className="text-muted-foreground m-0 text-xs font-medium">Description</h2>
+          <p className="mt-1.5 mb-0 text-xs break-words whitespace-pre-wrap">{issue.description}</p>
         </section>
       )}
 
       {(issue.assignee || issue.owner || issue.parent) && (
-        <dl className="issue-detail__metadata">
+        <dl className="m-0 grid grid-cols-2 gap-3 @max-md:grid-cols-1">
           {issue.assignee && (
-            <div>
-              <dt>
-                <IconUser aria-hidden="true" />
-                Assignee
-              </dt>
-              <dd>{issue.assignee}</dd>
-            </div>
+            <Field icon={<IconUser aria-hidden="true" className="size-3.5" />} label="Assignee">
+              {issue.assignee}
+            </Field>
           )}
           {issue.owner && (
-            <div>
-              <dt>
-                <IconUser aria-hidden="true" />
-                Owner
-              </dt>
-              <dd>{issue.owner}</dd>
-            </div>
+            <Field icon={<IconUser aria-hidden="true" className="size-3.5" />} label="Owner">
+              {issue.owner}
+            </Field>
           )}
           {issue.parent && (
-            <div>
-              <dt>
-                <IconGitBranch aria-hidden="true" />
-                Parent
-              </dt>
-              <dd>{issue.parent}</dd>
-            </div>
+            <Field icon={<IconGitBranch aria-hidden="true" className="size-3.5" />} label="Parent">
+              {issue.parent}
+            </Field>
           )}
         </dl>
       )}
 
-      <div className="issue-detail__sections">
+      <div className="flex flex-col gap-4">
         <RelatedIssueList direction="dependency" issues={dependencies} title="Dependencies" />
         <RelatedIssueList direction="dependent" issues={dependents} title="Dependents" />
         <IssueComments comments={comments} />
       </div>
     </main>
   )
+}
+
+/** Render one labeled metadata field in the detail header. */
+function Field({ children, icon, label }: FieldProps) {
+  return (
+    <div>
+      <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        {icon}
+        {label}
+      </dt>
+      <dd className="m-0 mt-0.5 text-xs">{children}</dd>
+    </div>
+  )
+}
+
+/** Props for one labeled metadata field. */
+type FieldProps = {
+  /** Field value. */
+  readonly children: React.ReactNode
+  /** Icon shown beside the field label. */
+  readonly icon: React.ReactNode
+  /** Field label. */
+  readonly label: string
 }
 
 /** Props for the focused issue view. */

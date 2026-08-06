@@ -599,7 +599,7 @@ const statusConfig: Record<TaskStatus, StatusConfig> = {
   },
   in_progress: {
     icon: IconCircleDot,
-    label: "In Progress",
+    label: "In progress",
     color: "text-status-info",
     selectedBg: "bg-status-info",
     unselectedBg: "bg-transparent",

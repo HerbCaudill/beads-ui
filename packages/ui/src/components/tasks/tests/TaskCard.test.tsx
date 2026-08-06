@@ -53,7 +53,7 @@ describe("TaskCard", () => {
 
     it("renders different status icons", () => {
       const statuses: TaskStatus[] = ["open", "in_progress", "blocked", "deferred", "closed"]
-      const labels = ["Open", "In Progress", "Blocked", "Deferred", "Closed"]
+      const labels = ["Open", "In progress", "Blocked", "Deferred", "Closed"]
 
       statuses.forEach((status, i) => {
         const { unmount } = render(<TaskCard task={{ ...baseTask, status }} />)
@@ -179,6 +179,17 @@ describe("TaskCard", () => {
       fireEvent.click(screen.getByRole("button", { name: baseTask.title }))
 
       expect(handleRejection).toHaveBeenCalled()
+      expect(onClick).toHaveBeenCalledWith(baseTask.id)
+    })
+
+    it("still opens the task when the host exposes no clipboard at all", () => {
+      // Sandboxed hosts such as the MCP widget iframe leave navigator.clipboard undefined.
+      const onClick = vi.fn()
+      Object.assign(navigator, { clipboard: undefined })
+      render(<TaskCard task={baseTask} onClick={onClick} />)
+
+      fireEvent.click(screen.getByRole("button", { name: baseTask.title }))
+
       expect(onClick).toHaveBeenCalledWith(baseTask.id)
     })
   })

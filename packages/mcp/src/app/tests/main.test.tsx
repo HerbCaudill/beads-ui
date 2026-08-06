@@ -10,7 +10,6 @@ test("renders an interactive MCP widget preview in development", async () => {
   await import("../main.js")
 
   expect(await screen.findByRole("heading", { name: "MCP widget preview" })).toBeInTheDocument()
-  expect(screen.getByRole("heading", { name: "beads-ui" })).toBeInTheDocument()
   expect(screen.getByText("5 active issues")).toBeInTheDocument()
 
   fireEvent.click(screen.getByRole("button", { name: "Dark theme" }))
@@ -29,7 +28,7 @@ test("renders an interactive MCP widget preview in development", async () => {
     target: { value: "all" },
   })
   expect(screen.getByText("6 issues")).toBeInTheDocument()
-  expect(screen.getByRole("heading", { name: "Closed 1" })).toBeInTheDocument()
+  expect(screen.getByRole("button", { name: "Closed section, 1 task" })).toBeInTheDocument()
 
   expect(screen.getByRole("option", { name: "Single issue" })).toBeInTheDocument()
   fireEvent.change(screen.getByRole("combobox", { name: "Issue set" }), {
