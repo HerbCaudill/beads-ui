@@ -22,6 +22,7 @@ import { parseCommentBody } from "./parse-comment-body.js"
 import { parseCreateIssueBody } from "./parse-create-issue-body.js"
 import { parseLabelBody } from "./parse-label-body.js"
 import { parseUpdateIssueBody } from "./parse-update-issue-body.js"
+import { readPeacockColor } from "./read-peacock-color.js"
 import type { ServerOptions } from "./types.js"
 
 /** Create the HTTP application for one fixed Beads workspace. */
@@ -34,8 +35,13 @@ export function createApp(
   const app = express()
 
   app.use(express.json())
-  app.get("/api/workspace", (_request, response) => {
-    response.json({ name: basename(cwd), path: cwd })
+  app.get("/api/workspace", async (_request, response) => {
+    const peacockColor = await readPeacockColor(cwd)
+    response.json({
+      name: basename(cwd),
+      path: cwd,
+      ...(peacockColor ? { peacockColor } : {}),
+    })
   })
   app.use("/api/tasks", createBeadsViewRouter(sdk))
   app.get("/api/issues", async (_request, response) => {

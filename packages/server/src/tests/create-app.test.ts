@@ -1,5 +1,8 @@
 import request from "supertest"
 import { describe, expect, it, vi } from "vitest"
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
+import { join } from "node:path"
+import { tmpdir } from "node:os"
 
 import { createApp } from "../create-app.js"
 import type { CommandRunner } from "@beads/sdk"
@@ -14,6 +17,29 @@ describe("createApp", () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ name: "example", path: "/projects/example" })
     expect(runner).not.toHaveBeenCalled()
+  })
+
+  it("reports a Peacock color configured for the workspace", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "beads-ui-workspace-"))
+    await mkdir(join(cwd, ".vscode"))
+    await writeFile(
+      join(cwd, ".vscode/settings.json"),
+      `{
+        // Peacock stores the repository color without a leading hash.
+        "peacock.color": "67B0B1",
+      }`,
+    )
+    const runner = vi.fn<CommandRunner>()
+    const app = createApp({ cwd, runner })
+
+    const response = await request(app).get("/api/workspace")
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({
+      name: expect.stringMatching(/^beads-ui-workspace-/),
+      path: cwd,
+      peacockColor: "#67b0b1",
+    })
   })
 
   it("ignores browser-supplied workspace paths", async () => {

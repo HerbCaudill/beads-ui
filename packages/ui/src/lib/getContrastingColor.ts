@@ -6,5 +6,5 @@ export function getContrastingColor(
   backgroundColor: string,
 ): string {
   const luminance = getLuminance(backgroundColor)
-  return luminance > 0.4 ? "#000000" : "#ffffff"
+  return luminance > 0.179 ? "#000000" : "#ffffff"
 }
