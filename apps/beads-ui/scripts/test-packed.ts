@@ -125,6 +125,7 @@ async function testPacked(): Promise<void> {
             dependencyCount: 0,
             dependentCount: 0,
             id: "bd-test.1",
+            isReady: true,
             labels: [],
             priority: 2,
             status: "open",
