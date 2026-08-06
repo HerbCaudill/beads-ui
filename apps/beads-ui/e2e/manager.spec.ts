@@ -20,6 +20,7 @@ test("serves the fixed workspace API and retained Beads View workflow", async ({
 
   await page.goto("/")
   await expect(page).toHaveTitle("Beads UI")
+  await expect(page.getByRole("heading", { name: "workspace", level: 1 })).toBeVisible()
   await expect(page.getByRole("textbox", { name: "New task title" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Packaged task manager works" })).toBeVisible()
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { HotkeysDialog } from "./components/HotkeysDialog"
+import { RepositoryHeader } from "./components/RepositoryHeader"
 import { ResizableSidebar } from "./components/ResizableSidebar"
 import { EmptyTaskState } from "./components/tasks/EmptyTaskState"
 import {
@@ -65,29 +66,32 @@ export function StandaloneBeadsView(_props: Props) {
   })
 
   return (
-    <div className="bg-background text-foreground flex h-dvh min-h-0 overflow-hidden">
-      <ResizableSidebar>
-        <TaskPanelController
-          searchInputRef={searchInputRef}
-          onTaskClick={openTask}
-          onOpenTask={openTask}
-          hideQuickInput={false}
-          showProgress
-        />
-      </ResizableSidebar>
-      <main className="min-w-0 flex-1 overflow-y-auto">
-        {taskDialog.selectedTask ? (
-          <TaskDetailsController
-            task={taskDialog.selectedTask}
-            open={taskDialog.isOpen}
-            onClose={closeTask}
-            onSave={taskDialog.saveTask}
-            onDelete={taskDialog.deleteTask}
+    <div className="bg-background text-foreground flex h-dvh min-h-0 flex-col overflow-hidden">
+      <RepositoryHeader />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <ResizableSidebar>
+          <TaskPanelController
+            searchInputRef={searchInputRef}
+            onTaskClick={openTask}
+            onOpenTask={openTask}
+            hideQuickInput={false}
+            showProgress
           />
-        ) : (
-          <EmptyTaskState error={taskDialog.error} isLoading={taskDialog.isLoading} />
-        )}
-      </main>
+        </ResizableSidebar>
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          {taskDialog.selectedTask ? (
+            <TaskDetailsController
+              task={taskDialog.selectedTask}
+              open={taskDialog.isOpen}
+              onClose={closeTask}
+              onSave={taskDialog.saveTask}
+              onDelete={taskDialog.deleteTask}
+            />
+          ) : (
+            <EmptyTaskState error={taskDialog.error} isLoading={taskDialog.isLoading} />
+          )}
+        </main>
+      </div>
       <HotkeysDialog open={hotkeysOpen} onClose={hideHotkeys} hotkeys={registeredHotkeys} />
     </div>
   )

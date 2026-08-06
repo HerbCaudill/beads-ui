@@ -20,6 +20,23 @@ describe("App", () => {
     vi.unstubAllGlobals()
   })
 
+  it("shows the repository name in the application header", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input) === "/api/workspace") {
+          return Response.json({ name: "beads-ui", path: "/projects/beads-ui" })
+        }
+        return Response.json({ ok: true, issues: [] })
+      }),
+    )
+    vi.stubGlobal("WebSocket", FakeWebSocket)
+
+    render(<App />)
+
+    expect(await screen.findByRole("heading", { name: "beads-ui", level: 1 })).toBeInTheDocument()
+  })
+
   it("loads tasks and opens editable task details", async () => {
     const task = {
       id: "bd-1",
