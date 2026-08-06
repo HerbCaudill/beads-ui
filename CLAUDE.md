@@ -21,6 +21,10 @@ pnpm test
 pnpm typecheck
 ```
 
+## Releases
+
+Cut releases through CI: bump `apps/beads-ui/package.json`, commit and push the change, then publish a GitHub release whose tag matches the package version (for example, `v0.4.0`). The `Publish package` workflow verifies and publishes the package to npm. Do not publish from a local machine.
+
 ## Conventions
 
 Use TypeScript, React, pnpm, oxfmt, Vitest, and Playwright. Use named exports. Put each component and helper function in its own file, with tests in adjacent `tests/` directories. Document declarations and parameters with JSDoc block comments. Use TDD for meaningful behavior.
