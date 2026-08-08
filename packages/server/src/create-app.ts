@@ -13,7 +13,7 @@ import {
   updateIssue,
 } from "@beads/sdk"
 import express, { type Express } from "express"
-import { basename, join, resolve } from "node:path"
+import { basename, resolve } from "node:path"
 
 import { apiErrorHandler } from "./api-error-handler.js"
 import { createBeadsViewRouter } from "./create-beads-view-router.js"
@@ -103,7 +103,7 @@ export function createApp(
         next()
         return
       }
-      response.sendFile(join(staticDir, "index.html"), (error) => {
+      response.sendFile("index.html", { root: staticDir }, (error) => {
         if (error) next(error)
       })
     })
