@@ -4,10 +4,10 @@ import { IssueDetailFrame } from "./IssueDetailFrame.js"
 import { IssueDetailView } from "./IssueDetailView.js"
 import { IssueListView } from "./IssueListView.js"
 import { useIssueDetail } from "./useIssueDetail.js"
-import type { BeadsResult, LoadIssue } from "./types.js"
+import type { BeadsResult, LoadIssue, RefreshIssues } from "./types.js"
 
 /** Render the view matching one structured Beads tool result. */
-export function BeadsView({ loadIssue, result }: BeadsViewProps) {
+export function BeadsView({ loadIssue, refreshIssues, result }: BeadsViewProps) {
   const detail = useIssueDetail(loadIssue)
 
   // A single-issue result is already the detail view; there is nothing to drill into.
@@ -20,7 +20,11 @@ export function BeadsView({ loadIssue, result }: BeadsViewProps) {
        * groups survive the round trip.
        */}
       <div className={detail.state.status === "closed" ? undefined : "hidden"}>
-        <IssueListView onOpenIssue={loadIssue && detail.open} result={result} />
+        <IssueListView
+          onOpenIssue={loadIssue && detail.open}
+          onRefresh={refreshIssues}
+          result={result}
+        />
       </div>
 
       {detail.state.status !== "closed" && (
@@ -48,6 +52,8 @@ export function BeadsView({ loadIssue, result }: BeadsViewProps) {
 export type BeadsViewProps = {
   /** Loads one issue's detail on demand. Omit to disable drill-down. */
   readonly loadIssue?: LoadIssue
+  /** Reloads the current issue-list query. Omit to hide the refresh control. */
+  readonly refreshIssues?: RefreshIssues
   /** Parsed tool result to display. */
   readonly result: BeadsResult
 }

@@ -5,8 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { applyHostContext } from "./apply-host-context.js"
 import { BeadsView } from "./BeadsView.js"
 import { loadIssueFromHost } from "./load-issue-from-host.js"
+import { loadIssuesFromHost } from "./load-issues-from-host.js"
 import { parseBeadsResult } from "./parse-beads-result.js"
-import type { BeadsResult, LoadIssue } from "./types.js"
+import type { BeadsResult, LoadIssue, RefreshIssues } from "./types.js"
 
 /** Connect to the MCP host and render supported Beads tool results. */
 export function BeadsApp() {
@@ -20,6 +21,14 @@ export function BeadsApp() {
     if (!app) return Promise.reject(new Error("Not connected to the MCP host."))
     return loadIssueFromHost(app, id)
   }, [])
+
+  const refreshIssues = useCallback<RefreshIssues>(async () => {
+    const app = appRef.current
+    if (!app) throw new Error("Not connected to the MCP host.")
+    if (!result || !("issues" in result)) throw new Error("There is no issue list to refresh.")
+
+    setResult(await loadIssuesFromHost(app, result))
+  }, [result])
 
   useEffect(() => {
     const app = new App({ name: "Beads issue view", version: "0.1.0" }, {})
@@ -69,5 +78,5 @@ export function BeadsApp() {
     )
   }
 
-  return <BeadsView loadIssue={loadIssue} result={result} />
+  return <BeadsView loadIssue={loadIssue} refreshIssues={refreshIssues} result={result} />
 }

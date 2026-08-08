@@ -81,6 +81,7 @@ export function PreviewApp() {
           <BeadsView
             key={scenario}
             loadIssue={loadPreviewIssue}
+            refreshIssues={() => Promise.resolve()}
             result={previewResults[scenario]}
           />
         </div>

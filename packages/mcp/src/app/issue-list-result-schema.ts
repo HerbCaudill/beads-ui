@@ -36,5 +36,6 @@ export const IssueSchema = z.object({
 export const IssueListResultSchema = z.object({
   includeClosed: z.boolean(),
   issues: z.array(IssueSchema),
+  search: z.string().optional(),
   workspace: z.string(),
 })

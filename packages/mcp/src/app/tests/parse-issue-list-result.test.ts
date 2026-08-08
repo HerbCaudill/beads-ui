@@ -8,11 +8,13 @@ describe("parseIssueListResult", () => {
       parseIssueListResult({
         includeClosed: false,
         issues: [issue],
+        search: "status:open",
         workspace: "/work/beads-ui",
       }),
     ).toEqual({
       includeClosed: false,
       issues: [issue],
+      search: "status:open",
       workspace: "/work/beads-ui",
     })
   })

@@ -3,12 +3,13 @@ import { IconSearch } from "@tabler/icons-react"
 import { useCallback, useMemo, useState } from "react"
 
 import { getIssueGroups } from "./get-issue-groups.js"
+import { IssueListRefreshButton } from "./IssueListRefreshButton.js"
 import { issueToTask } from "./issue-to-task.js"
 import { matchesIssueSearch } from "./matches-issue-search.js"
-import type { IssueListResult } from "./types.js"
+import type { IssueListResult, RefreshIssues } from "./types.js"
 
 /** Render the structured issue-list result inline. */
-export function IssueListView({ onOpenIssue, result }: IssueListViewProps) {
+export function IssueListView({ onOpenIssue, onRefresh, result }: IssueListViewProps) {
   const [query, setQuery] = useState("")
   const [collapsedGroups, setCollapsedGroups] = useState<CollapsedGroups>({ closed: true })
 
@@ -61,6 +62,7 @@ export function IssueListView({ onOpenIssue, result }: IssueListViewProps) {
         <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
           {countLabel}
         </span>
+        {onRefresh && <IssueListRefreshButton onRefresh={onRefresh} />}
       </div>
 
       {groups.length > 0 ? (
@@ -92,6 +94,8 @@ type CollapsedGroups = Partial<Record<TaskStatus, boolean>>
 export type IssueListViewProps = {
   /** Drill into one issue. Omit to render the list as read-only. */
   readonly onOpenIssue?: (id: string) => void
+  /** Reload the current issue-list query. */
+  readonly onRefresh?: RefreshIssues
   /** Structured tool result to display. */
   readonly result: IssueListResult
 }

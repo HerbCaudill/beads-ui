@@ -9,6 +9,8 @@ export type IssueListResult = {
   readonly includeClosed: boolean
   /** Normalized issues included in the result. */
   readonly issues: readonly Issue[]
+  /** Server-side search query used to produce the result. */
+  readonly search?: string
   /** Absolute path to the queried Beads workspace. */
   readonly workspace: string
 }
@@ -30,6 +32,9 @@ export type LoadIssue = (
   /** Beads issue ID to load. */
   id: string,
 ) => Promise<IssueResult>
+
+/** Refresh the current issue-list result from Beads. */
+export type RefreshIssues = () => Promise<void>
 
 /** Fixture set shown in the browser preview. */
 export type PreviewScenario = "active" | "all" | "empty" | "single"

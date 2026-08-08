@@ -2,7 +2,7 @@
 
 import "@testing-library/jest-dom/vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, test } from "vitest"
+import { afterEach, describe, expect, test, vi } from "vitest"
 
 import { IssueListView } from "../IssueListView.js"
 import type { IssueListResult } from "../types.js"
@@ -18,6 +18,15 @@ describe("IssueListView", () => {
     expect(screen.getByRole("button", { name: "Ready section, 1 task" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Blocked section, 1 task" })).toBeInTheDocument()
     expect(screen.getByText("Add MCP support")).toBeInTheDocument()
+  })
+
+  test("refreshes the displayed issues on request", () => {
+    const onRefresh = vi.fn(() => Promise.resolve())
+    render(<IssueListView onRefresh={onRefresh} result={result} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh issues" }))
+
+    expect(onRefresh).toHaveBeenCalledOnce()
   })
 
   test("collapses and expands a status group", () => {
