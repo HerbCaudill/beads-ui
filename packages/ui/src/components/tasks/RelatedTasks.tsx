@@ -3,7 +3,10 @@ import { Label } from "@beads/components"
 import { GroupedTaskList } from "./GroupedTaskList"
 import { TaskRelationCombobox } from "./TaskRelationCombobox"
 import { apiFetch } from "../../lib/apiClient"
-import type { RelatedTask, Task, TaskTreeNode } from "../../types"
+import { buildTaskTree } from "../../lib/buildTaskTree"
+import { findRootAncestor } from "../../lib/findRootAncestor"
+import { sortTaskTreeNodes } from "../../lib/sortTaskTreeNodes"
+import type { RelatedTask, Task, TaskGroup, TaskTreeNode } from "../../types"
 
 /**
  * Displays subtasks and blocking issues for a given task.
@@ -30,13 +33,14 @@ export function RelatedTasks({
     [dependenciesByTask, taskId],
   )
 
-  const childTasks: RelatedTask[] = allTasks
-    .filter((t: Task) => t.parent === taskId)
-    .map((t) => ({
-      id: t.id,
-      title: t.title,
-      status: t.status,
-    }))
+  const childTasks = useMemo(
+    () => allTasks.filter((candidate) => candidate.parent === taskId),
+    [allTasks, taskId],
+  )
+  const childTrees = useMemo(
+    () => sortTaskTreeNodes(childTasks.map(toTreeNode), getTaskSortGroup(taskId, task, allTasks)),
+    [allTasks, childTasks, task, taskId],
+  )
 
   const fetchDependencies = useCallback(async () => {
     try {
@@ -270,7 +274,7 @@ export function RelatedTasks({
       result.push({
         key: "subtasks",
         label: "Subtasks",
-        trees: childTasks.map(toTreeNode),
+        trees: childTrees,
         count: childTasks.length,
         isCollapsed: collapsedGroups["subtasks"] ?? false,
         onToggle: () => handleToggleGroup("subtasks"),
@@ -305,6 +309,7 @@ export function RelatedTasks({
     return result
   }, [
     childTasks,
+    childTrees,
     blockers,
     dependents,
     collapsedGroups,
@@ -363,16 +368,40 @@ export function RelatedTasks({
   )
 }
 
-/** Converts a RelatedTask to a TaskTreeNode with a minimal TaskCardTask. */
-function toTreeNode(related: RelatedTask): TaskTreeNode {
+/** Convert a task or relationship summary to a leaf task tree node. */
+function toTreeNode(
+  /** Task data to wrap. */
+  related: Task | RelatedTask,
+): TaskTreeNode {
   return {
-    task: {
-      id: related.id,
-      title: related.title,
-      status: related.status,
-    },
+    task: related,
     children: [],
   }
+}
+
+/** Get the status group whose list ordering applies to a task's subtasks. */
+function getTaskSortGroup(
+  /** Selected task ID. */
+  taskId: string,
+  /** Selected task details, when available. */
+  task: Task | undefined,
+  /** Tasks available in the current list. */
+  allTasks: Task[],
+): TaskGroup {
+  const currentTask = task ?? allTasks.find((candidate) => candidate.id === taskId)
+  if (!currentTask) return "open"
+
+  const tasks = allTasks.some((candidate) => candidate.id === currentTask.id)
+    ? allTasks
+    : [...allTasks, currentTask]
+  const { taskMap } = buildTaskTree(tasks)
+  const rootTask = findRootAncestor(currentTask, taskMap)
+
+  if (rootTask.status !== "closed" && rootTask.status !== "deferred") return "open"
+  if (currentTask.status === "closed" || currentTask.status === "deferred") {
+    return currentTask.status
+  }
+  return "open"
 }
 
 /** Related tasks fetched for one task. */

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent, act, within } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { RelatedTasks } from ".././RelatedTasks"
 import { beadsViewStore } from "../../../store"
@@ -129,6 +129,45 @@ describe("RelatedTasks", () => {
       await waitFor(() => {
         expect(screen.getByLabelText("Subtasks section, 2 tasks")).toBeInTheDocument()
       })
+    })
+
+    it("shows subtasks in the same order as the task list", () => {
+      mockTasks = [
+        {
+          id: "rui-123.3",
+          title: "Later subtask",
+          status: "open",
+          parent: "rui-123",
+          priority: 1,
+          created_at: "2026-01-03T00:00:00.000Z",
+        },
+        {
+          id: "rui-123.1",
+          title: "Earliest subtask",
+          status: "closed",
+          parent: "rui-123",
+          priority: 1,
+          created_at: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "rui-123.2",
+          title: "Middle subtask",
+          status: "in_progress",
+          parent: "rui-123",
+          priority: 1,
+          created_at: "2026-01-02T00:00:00.000Z",
+        },
+      ]
+
+      mockFetch.mockImplementation(() => new Promise(() => {}))
+
+      renderWithContext("rui-123")
+
+      const subtasks = within(screen.getByRole("group", { name: "Subtasks tasks" }))
+        .getAllByText(/subtask$/)
+        .map((element) => element.textContent)
+
+      expect(subtasks).toEqual(["Earliest subtask", "Middle subtask", "Later subtask"])
     })
   })
 

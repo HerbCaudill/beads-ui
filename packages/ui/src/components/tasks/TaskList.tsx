@@ -7,6 +7,7 @@ import { findRootAncestor } from "../../lib/findRootAncestor"
 import { getTimeFilterCutoff } from "../../lib/getTimeFilterCutoff"
 import { matchesSearchTerms } from "../../lib/matchesSearchTerms"
 import { parseSearchQuery } from "../../lib/parseSearchQuery"
+import { sortTaskTreeNodes } from "../../lib/sortTaskTreeNodes"
 import {
   useBeadsViewStore,
   selectStatusCollapsedState,
@@ -207,49 +208,6 @@ export function TaskList({
       return null
     }
 
-    // Sort tree nodes by priority/closed_at
-    const sortTreeNodes = (nodes: TaskTreeNode[], groupKey: TaskGroup): TaskTreeNode[] => {
-      const sortedNodes = [...nodes].sort((a, b) => {
-        if (groupKey === "closed" || groupKey === "deferred") {
-          const aTime = a.task.closed_at ? new Date(a.task.closed_at).getTime() : 0
-          const bTime = b.task.closed_at ? new Date(b.task.closed_at).getTime() : 0
-          return bTime - aTime // Most recent first
-        }
-
-        // Check for actively working tasks
-        const aHasActive = treeHasActiveTask(a)
-        const bHasActive = treeHasActiveTask(b)
-        if (aHasActive && !bHasActive) return -1
-        if (!aHasActive && bHasActive) return 1
-
-        // Priority (ascending)
-        const priorityDiff = (a.task.priority ?? 4) - (b.task.priority ?? 4)
-        if (priorityDiff !== 0) return priorityDiff
-
-        // Bugs first
-        const aIsBug = a.task.issue_type === "bug"
-        const bIsBug = b.task.issue_type === "bug"
-        if (aIsBug && !bIsBug) return -1
-        if (!aIsBug && bIsBug) return 1
-
-        // Created_at (oldest first)
-        const aTime = a.task.created_at ? new Date(a.task.created_at).getTime() : 0
-        const bTime = b.task.created_at ? new Date(b.task.created_at).getTime() : 0
-        return aTime - bTime
-      })
-
-      // Recursively sort children
-      return sortedNodes.map((node) => ({
-        ...node,
-        children: sortTreeNodes(node.children, groupKey),
-      }))
-    }
-
-    // Helper to check if a tree contains an actively working task
-    const treeHasActiveTask = (node: TaskTreeNode): boolean => {
-      return node.children.some((child) => treeHasActiveTask(child))
-    }
-
     // Group tasks by status group
     const statusToTrees = new Map<TaskGroup, TaskTreeNode[]>()
     for (const config of groupConfigs) {
@@ -387,7 +345,7 @@ export function TaskList({
 
     for (const config of groupConfigs) {
       const trees = statusToTrees.get(config.key)!
-      const sortedTrees = sortTreeNodes(trees, config.key)
+      const sortedTrees = sortTaskTreeNodes(trees, config.key)
 
       // Count all tasks in the trees
       const totalCount = sortedTrees.reduce((sum, tree) => sum + countAllNodes(tree), 0)
