@@ -23,6 +23,8 @@ pnpm typecheck
 
 ## Releases
 
+Cutting a release is part of finalizing completed work. Use your judgment to choose a patch, minor, or major version based on the scope and compatibility of the changes.
+
 Cut releases through CI: bump `apps/beads-ui/package.json`, commit and push the change, then publish a GitHub release whose tag matches the package version (for example, `v0.4.0`). The `Publish package` workflow verifies and publishes the package to npm. Do not publish from a local machine.
 
 ## Conventions
