@@ -11,13 +11,22 @@ export async function startViteFrontend(
   backendUrl: string,
   /** Preferred Vite port, when supplied by the developer. */
   requestedPort?: number,
+  /** Named HTTPS origin supplied by the managed development launcher. */
+  publicUrl?: string,
 ): Promise<StartedFrontend> {
   const server = await createServer({
     root: uiRoot,
+    ...(publicUrl ? { cacheDir: `node_modules/.cache/localhost-dev/${requestedPort}` } : {}),
     server: {
       host: "127.0.0.1",
       port: requestedPort ?? 0,
       strictPort: requestedPort !== undefined,
+      ...(publicUrl
+        ? {
+            allowedHosts: [new URL(publicUrl).hostname],
+            hmr: { protocol: "wss" as const, host: new URL(publicUrl).hostname, clientPort: 443 },
+          }
+        : {}),
       proxy: {
         "/api": {
           target: backendUrl,
@@ -36,6 +45,6 @@ export async function startViteFrontend(
 
   return {
     close: () => server.close(),
-    url,
+    url: publicUrl ?? url,
   }
 }

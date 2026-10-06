@@ -21,7 +21,13 @@ try {
     findPort: getAvailablePort,
     openUrl: open,
     runner: createCommandRunner(executeCommand),
-    startFrontend: (backendUrl) => startViteFrontend(uiRoot, backendUrl, options.port),
+    startFrontend: (backendUrl) =>
+      startViteFrontend(
+        uiRoot,
+        backendUrl,
+        process.env.PORTLESS_URL ? Number(process.env.PORT) : options.port,
+        process.env.PORTLESS_URL,
+      ),
     writeLine: (line) => console.log(line),
   })
   installDevelopmentShutdownHandlers(application)
