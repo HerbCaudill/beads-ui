@@ -18,7 +18,7 @@
     "@beads/sdk": "workspace:*",
     "@beads/ui": "workspace:*",
     "@modelcontextprotocol/ext-apps": "^1.7.5",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "@tabler/icons-react": "^3.36.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
