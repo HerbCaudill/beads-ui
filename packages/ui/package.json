@@ -17,11 +17,10 @@
     "@beads/components": "workspace:*",
     "@fontsource-variable/ibm-plex-sans": "^5.2.8",
     "@tabler/icons-react": "^3.36.1",
-    "clsx": "^2.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailwind-merge": "^3.4.0",
-    "zustand": "^5.0.9"
+    "zustand": "^5.0.9",
+    "cn": "^0.5.0"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
